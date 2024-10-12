@@ -13,15 +13,15 @@ Faroe is an open source, self-hosted, and modular identity provider specifically
 These work with your application's UI and backend to provide a complete authentication system.
 
 ```ts
-import { Client } from "@faroe/sdk"
+import { Faroe } from "@faroe/sdk"
 
-const client = new Client(url, secret);
+const faroe = new Faroe(url, secret);
 
 async function handleLoginRequest() {
 
   // ...
 
-  const faroeUser = await client.withIP(clientIP).authenticateWithPassword(email, password);
+  const faroeUser = await faroe.withIP(clientIP).authenticateWithPassword(email, password);
 
   // Your application logic
   const user = await getUserByFaroeId(faroeUser.id);
