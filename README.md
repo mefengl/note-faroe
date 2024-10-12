@@ -9,6 +9,7 @@ Faroe is an open source, self-hosted, and modular identity provider specifically
 - Email verification
 - Password reset
 - 2FA with TOTP
+- 2FA recovery
 
 These work with your application's UI and backend to provide a complete authentication system.
 
@@ -39,7 +40,7 @@ Licensed under the MIT license.
 
 ## Features
 
-- Email login, email verification, 2FA with TOTP, and password reset
+- Email login, email verification, 2FA with TOTP, 2FA recovery, and password reset
 - Rate limiting and brute force protection
 - Proper password strength checks
 - WIP: Logging
