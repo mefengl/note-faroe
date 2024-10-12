@@ -54,3 +54,9 @@ Licensed under the MIT license.
 - Bot protection is not included. We highly recommend using Captchas or equivalent in registration and password reset forms.
 - Faroe uses SQLite in WAL mode as its database. This shouldn't cause issues unless you have 100,000+ users, and even then, the database will only handle a small part of your total requests.
 - Faroe uses in-memory storage for rate limiting.
+
+## Why?
+
+If you don't want to use a fullstack framework, implementing auth means paying for a third-party service, self-hosting an identity provider, or building one from scratch. JavaScript especially is yet to have a standard, default framework a built-in auth solution. A separate backend that handles everything is nice, but it can be frustrating to customize the overall login flow, data structure, and UI. Implementing from scratch gives you the most flexibility, but becomes time-consuming when you want to implement anything more than OAuth.
+
+Faroe is the middle ground between a dedicated auth backend and a custom implementation. You can let it handle the core logic and just build the UI and manage sessions. It's most of the hard part of auth compressed into a single binary file.

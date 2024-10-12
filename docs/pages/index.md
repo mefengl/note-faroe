@@ -25,7 +25,7 @@ async function handleLoginRequest() {
 
   // ...
 
-  const faroeUser = await faroe.withIP(clientIP).authenticateWithPassword(email, password);
+  const faroeUser = await faroe.authenticateWithPassword(email, password, clientIP);
 
   // Your application logic
   const user = await getUserByFaroeId(faroeUser.id);
@@ -50,3 +50,9 @@ Licensed under the MIT license.
 - WIP: Dashboard
 - WIP: Database backup
 - WIP: WebAuthn
+
+## Why?
+
+If you don't want to use a fullstack framework, implementing auth means paying for a third-party service, self-hosting an identity provider, or building one from scratch. JavaScript especially is yet to have a standard, default framework a built-in auth solution. A separate backend that handles everything is nice, but it can be frustrating to customize the overall login flow, data structure, and UI. Implementing from scratch gives you the most flexibility, but becomes time-consuming when you want to implement anything more than OAuth.
+
+Faroe is the middle ground between a dedicated auth backend and a custom implementation. You can let it handle the core logic and just build the UI and manage sessions. It's most of the hard part of auth compressed into a single binary file.
