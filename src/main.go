@@ -38,6 +38,8 @@ var verifyPasswordResetCodeLimitCounter = ratelimit.NewLimitCounter(5)
 
 var totpUserRateLimit = ratelimit.NewExpiringTokenBucketRateLimit(5, 15*time.Minute)
 
+var recoveryCodeUserRateLimit = ratelimit.NewExpiringTokenBucketRateLimit(5, 15*time.Minute)
+
 //go:embed schema.sql
 var schema string
 
@@ -121,6 +123,8 @@ func main() {
 	router.GET("/users/:user_id/totp", handleGetUserTOTPCredentialRequest)
 	router.POST("/users/:user_id/totp", handleRegisterTOTPRequest)
 	router.POST("/users/:user_id/verify-2fa/totp", handleVerifyTOTPRequest)
+	router.POST("/users/:user_id/reset-2fa", handleResetUser2FARequest)
+	router.POST("/users/:user_id/regenerate-recovery-code", handleRegenerateUserRecoveryCodeRequest)
 	router.POST("/users/:user_id/email-verification", handleCreateEmailVerificationRequestRequest)
 	router.GET("/users/:user_id/email-verification/:request_id", handleGetEmailVerificationRequestRequest)
 	router.DELETE("/users/:user_id/email-verification/:request_id", handleDeleteEmailVerificationRequestRequest)
@@ -131,6 +135,7 @@ func main() {
 	router.GET("/password-reset/:request_id/user", handleGetPasswordResetRequestUserRequest)
 	router.POST("/password-reset/:request_id/verify-email", handleVerifyPasswordResetRequestEmailRequest)
 	router.POST("/password-reset/:request_id/verify-2fa/totp", handleVerifyPasswordResetRequest2FAWithTOTPRequest)
+	router.POST("/password-reset/:request_id/reset-2fa", handleResetPasswordResetRequest2FAWithRecoveryCodeRequest)
 	router.POST("/reset-password", handleResetPasswordRequest)
 
 	fmt.Printf("Starting server in port %d...\n", port)

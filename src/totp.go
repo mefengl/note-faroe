@@ -82,7 +82,7 @@ func handleRegisterTOTPRequest(w http.ResponseWriter, r *http.Request, params ht
 		return
 	}
 
-	err = registerTOTP(userId, key)
+	err = registerUserTOTPCredential(userId, key)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -93,7 +93,20 @@ func handleRegisterTOTPRequest(w http.ResponseWriter, r *http.Request, params ht
 		return
 	}
 
-	w.WriteHeader(204)
+	recoveryCode, err := getUserRecoveryCode(userId)
+	if errors.Is(err, ErrRecordNotFound) {
+		writeNotFoundErrorResponse(w)
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	w.Write([]byte(encodeRecoveryCodeToJSON(recoveryCode)))
 }
 
 func handleVerifyTOTPRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -162,6 +175,51 @@ func handleVerifyTOTPRequest(w http.ResponseWriter, r *http.Request, params http
 	w.WriteHeader(204)
 }
 
+func handleDeleteUserTOTPCredentialRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyCredential(r) {
+		writeNotAuthenticatedErrorResponse(w)
+		return
+	}
+	if !verifyJSONAcceptHeader(r) {
+		writeUnsupportedMediaTypeErrorResponse(w)
+		return
+	}
+
+	userId := params.ByName("user_id")
+	userExists, err := checkUserExists(userId)
+	if !userExists {
+		writeNotFoundErrorResponse(w)
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+
+	err = deleteUserTOTPCredential(userId)
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+
+	user, err := getUser(userId)
+	if errors.Is(err, ErrRecordNotFound) {
+		writeNotFoundErrorResponse(w)
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	w.Write([]byte(user.EncodeToJSON()))
+}
+
 func handleGetUserTOTPCredentialRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	if !verifyCredential(r) {
 		writeNotAuthenticatedErrorResponse(w)
@@ -182,7 +240,19 @@ func handleGetUserTOTPCredentialRequest(w http.ResponseWriter, r *http.Request, 
 	w.Write([]byte(credential.EncodeToJSON()))
 }
 
-func registerTOTP(userId string, key []byte) error {
+func getUserTOTPCredential(userId string) (TOTPCredential, error) {
+	var credential TOTPCredential
+	var createdAtUnix int64
+	row := db.QueryRow("SELECT id, user_id, created_at, key FROM totp_credential WHERE user_id = ?", userId)
+	err := row.Scan(&credential.Id, &credential.UserId, &createdAtUnix, &credential.Key)
+	if errors.Is(err, sql.ErrNoRows) {
+		return TOTPCredential{}, ErrRecordNotFound
+	}
+	credential.CreatedAt = time.Unix(createdAtUnix, 0)
+	return credential, nil
+}
+
+func registerUserTOTPCredential(userId string, key []byte) error {
 	now := time.Now()
 	id, err := generateId()
 	if err != nil {
@@ -203,16 +273,9 @@ func registerTOTP(userId string, key []byte) error {
 	return nil
 }
 
-func getUserTOTPCredential(userId string) (TOTPCredential, error) {
-	var credential TOTPCredential
-	var createdAtUnix int64
-	row := db.QueryRow("SELECT id, user_id, created_at, key FROM totp_credential WHERE user_id = ?", userId)
-	err := row.Scan(&credential.Id, &credential.UserId, &createdAtUnix, &credential.Key)
-	if errors.Is(err, sql.ErrNoRows) {
-		return TOTPCredential{}, ErrRecordNotFound
-	}
-	credential.CreatedAt = time.Unix(createdAtUnix, 0)
-	return credential, nil
+func deleteUserTOTPCredential(userId string) error {
+	_, err := db.Exec("DELETE FROM totp_credential WHERE user_id = ?", userId)
+	return err
 }
 
 type TOTPCredential struct {

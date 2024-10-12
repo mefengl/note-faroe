@@ -199,7 +199,6 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 		writeUnexpectedErrorResponse(w)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	w.Write([]byte(user.EncodeToJSON()))
 }
@@ -272,7 +271,7 @@ func createEmailVerificationRequest(userId string, email string) (EmailVerificat
 		return EmailVerificationRequest{}, nil
 	}
 	expiresAt := now.Add(10 * time.Minute)
-	code, err := generateOneTimeCode()
+	code, err := generateSecureCode()
 	if err != nil {
 		return EmailVerificationRequest{}, nil
 	}

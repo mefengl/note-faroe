@@ -79,7 +79,7 @@ func handleCreatePasswordResetRequestRequest(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	code, err := generateOneTimeCode()
+	code, err := generateSecureCode()
 	if err != nil {
 		log.Println(err)
 		writeUnexpectedErrorResponse(w)
@@ -361,6 +361,80 @@ func handleVerifyPasswordResetRequest2FAWithTOTPRequest(w http.ResponseWriter, r
 		writeUnexpectedErrorResponse(w)
 		return
 	}
+	w.WriteHeader(204)
+}
+
+func handleResetPasswordResetRequest2FAWithRecoveryCodeRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	clientIP := r.Header.Get("X-Client-IP")
+	if !verifyCredential(r) {
+		writeNotAuthenticatedErrorResponse(w)
+		return
+	}
+	if !verifyJSONContentTypeHeader(r) {
+		writeUnsupportedMediaTypeErrorResponse(w)
+		return
+	}
+
+	resetRequestId := params.ByName("request_id")
+	resetRequest, err := getPasswordResetRequest(resetRequestId)
+	if errors.Is(err, ErrRecordNotFound) {
+		writeNotFoundErrorResponse(w)
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	// If now is or after expiration
+	if time.Now().Compare(resetRequest.ExpiresAt) >= 0 {
+		err = deletePasswordResetRequest(resetRequestId)
+		if err != nil {
+			log.Println(err)
+			writeUnexpectedErrorResponse(w)
+			return
+		}
+		writeNotFoundErrorResponse(w)
+		return
+	}
+
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	var data struct {
+		RecoveryCode *string `json:"recovery_code"`
+	}
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		return
+	}
+	if data.RecoveryCode == nil {
+		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		return
+	}
+	if !recoveryCodeUserRateLimit.Consume(resetRequest.UserId, 1) {
+		logMessageWithClientIP("INFO", "RESET_2FA_PASSWORD_RESET", "RECOVERY_CODE_USER_LIMIT_REJECTED", clientIP, fmt.Sprintf("request_id=%s user_id=%s email=\"%s\"", resetRequest.Id, resetRequest.UserId, strings.ReplaceAll(resetRequest.Email, "\"", "\\\"")))
+		writeExpectedErrorResponse(w, expectedErrorTooManyRequests)
+		return
+	}
+
+	_, valid, err := resetUser2FAWithRecoveryCode(resetRequest.UserId, *data.RecoveryCode)
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !valid {
+		writeExpectedErrorResponse(w, expectedErrorIncorrectCode)
+		return
+	}
+	recoveryCodeUserRateLimit.Reset(resetRequest.UserId)
+
 	w.WriteHeader(204)
 }
 

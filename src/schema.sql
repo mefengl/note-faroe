@@ -3,7 +3,8 @@ CREATE TABLE IF NOT EXISTS user (
     created_at INTEGER NOT NULL,
     email TEXT NOT NULL UNIQUE,
     email_verified INTEGER NOT NULL DEFAULT 0,
-    password_hash TEXT NOT NULL
+    password_hash TEXT NOT NULL,
+    recovery_code TEXT NOT NULL
 ) STRICT;
 
 CREATE INDEX IF NOT EXISTS email_index ON user(email);

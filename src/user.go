@@ -141,6 +141,7 @@ func handleGetUserRequest(w http.ResponseWriter, r *http.Request, params httprou
 		writeUnexpectedErrorResponse(w)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	w.Write([]byte(user.EncodeToJSON()))
@@ -158,6 +159,7 @@ func handleDeleteUserRequest(w http.ResponseWriter, r *http.Request, params http
 		writeUnexpectedErrorResponse(w)
 		return
 	}
+
 	w.WriteHeader(204)
 }
 
@@ -240,7 +242,110 @@ func handleUpdatePasswordRequest(w http.ResponseWriter, r *http.Request, params 
 		return
 	}
 	updateUserPassword(userId, newPasswordHash)
+
 	w.WriteHeader(204)
+}
+
+func handleResetUser2FARequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	clientIP := r.Header.Get("X-Client-IP")
+	if !verifyCredential(r) {
+		writeNotAuthenticatedErrorResponse(w)
+		return
+	}
+	if !verifyJSONContentTypeHeader(r) {
+		writeUnsupportedMediaTypeErrorResponse(w)
+		return
+	}
+	if !verifyJSONAcceptHeader(r) {
+		writeNotAcceptableErrorResponse(w)
+		return
+	}
+
+	userId := params.ByName("user_id")
+	userExists, err := checkUserExists(userId)
+	if !userExists {
+		writeNotFoundErrorResponse(w)
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	var data struct {
+		RecoveryCode *string `json:"recovery_code"`
+	}
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		return
+	}
+	if data.RecoveryCode == nil {
+		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		return
+	}
+
+	if !recoveryCodeUserRateLimit.Consume(userId, 1) {
+		logMessageWithClientIP("INFO", "RESET_2FA", "RECOVERY_CODE_USER_LIMIT_REJECTED", clientIP, fmt.Sprintf("user_id=%s", userId))
+		writeExpectedErrorResponse(w, expectedErrorTooManyRequests)
+		return
+	}
+	newRecoveryCode, valid, err := resetUser2FAWithRecoveryCode(userId, *data.RecoveryCode)
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !valid {
+		writeExpectedErrorResponse(w, expectedErrorIncorrectCode)
+		return
+	}
+	recoveryCodeUserRateLimit.Reset(userId)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	encodeRecoveryCodeToJSON(newRecoveryCode)
+}
+
+func handleRegenerateUserRecoveryCodeRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyCredential(r) {
+		writeNotAuthenticatedErrorResponse(w)
+		return
+	}
+	if !verifyJSONAcceptHeader(r) {
+		writeNotAcceptableErrorResponse(w)
+		return
+	}
+
+	userId := params.ByName("user_id")
+	userExists, err := checkUserExists(userId)
+	if !userExists {
+		writeNotFoundErrorResponse(w)
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+
+	newRecoveryCode, err := regenerateUserRecoveryCode(userId)
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	encodeRecoveryCodeToJSON(newRecoveryCode)
 }
 
 func handleGetUsersRequest(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -288,16 +393,20 @@ func createUser(email string, passwordHash string) (User, error) {
 	if err != nil {
 		return User{}, nil
 	}
-	_, err = db.Exec("INSERT INTO user (id, created_at, email, password_hash) VALUES (?, ?, ?, ?)", id, now.Unix(), email, passwordHash)
+	recoveryCode, err := generateSecureCode()
+	if err != nil {
+		return User{}, nil
+	}
+	_, err = db.Exec("INSERT INTO user (id, created_at, email, password_hash, recovery_code) VALUES (?, ?, ?, ?, ?)", id, now.Unix(), email, passwordHash, recoveryCode)
 	if err != nil {
 		return User{}, err
 	}
 	user := User{
-		Id:            id,
-		CreatedAt:     now,
-		Email:         email,
-		PasswordHash:  passwordHash,
-		EmailVerified: false,
+		Id:           id,
+		CreatedAt:    now,
+		Email:        email,
+		PasswordHash: passwordHash,
+		RecoveryCode: recoveryCode,
 	}
 	return user, nil
 }
@@ -315,8 +424,8 @@ func getUser(userId string) (User, error) {
 	var user User
 	var createdAtUnix int64
 	var emailVerified, registeredTOTP int
-	row := db.QueryRow("SELECT user.id, user.created_at, user.email, user.password_hash, user.email_verified, IIF(totp_credential.id IS NOT NULL, 1, 0) FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id WHERE user.id = ?", userId)
-	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &emailVerified, &registeredTOTP)
+	row := db.QueryRow("SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, user.email_verified, IIF(totp_credential.id IS NOT NULL, 1, 0) FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id WHERE user.id = ?", userId)
+	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &emailVerified, &registeredTOTP)
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrRecordNotFound
 	}
@@ -329,9 +438,22 @@ func getUser(userId string) (User, error) {
 	return user, nil
 }
 
+func getUserRecoveryCode(userId string) (string, error) {
+	var recoveryCode string
+	row := db.QueryRow("SELECT recovery_code FROM user WHERE id = ?", userId)
+	err := row.Scan(&recoveryCode)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrRecordNotFound
+	}
+	if err != nil {
+		return "", err
+	}
+	return recoveryCode, nil
+}
+
 func getUsersSortByCreatedDate(count, page int) ([]User, error) {
 	var users []User
-	rows, err := db.Query(`SELECT user.id, user.created_at, user.email, user.password_hash, user.email_verified, IIF(totp_credential.id IS NOT NULL, 1, 0)
+	rows, err := db.Query(`SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, user.email_verified, IIF(totp_credential.id IS NOT NULL, 1, 0)
 		FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id
 		ORDER BY user.created_at ASC LIMIT ? OFFSET ?`, count, count*(page-1))
 	if err != nil {
@@ -342,7 +464,7 @@ func getUsersSortByCreatedDate(count, page int) ([]User, error) {
 		var user User
 		var createdAtUnix int64
 		var emailVerified, registeredTOTP int
-		err = rows.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &emailVerified, &registeredTOTP)
+		err = rows.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &emailVerified, &registeredTOTP)
 		if err != nil {
 			return nil, err
 		}
@@ -367,8 +489,8 @@ func getUserFromEmail(email string) (User, error) {
 	var user User
 	var createdAtUnix int64
 	var emailVerifiedInt, registeredTOTPInt int
-	row := db.QueryRow("SELECT user.id, user.created_at, user.email, user.password_hash, user.email_verified, IIF(totp_credential.id IS NOT NULL, 1, 0) FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id WHERE user.email = ?", email)
-	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &emailVerifiedInt, &registeredTOTPInt)
+	row := db.QueryRow("SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, user.email_verified, IIF(totp_credential.id IS NOT NULL, 1, 0) FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id WHERE user.email = ?", email)
+	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &emailVerifiedInt, &registeredTOTPInt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrRecordNotFound
 	}
@@ -412,6 +534,53 @@ func updateUserPassword(userId string, passwordHash string) error {
 	return err
 }
 
+func resetUser2FAWithRecoveryCode(userId string, recoveryCode string) (string, bool, error) {
+	newRecoveryCode, err := generateSecureCode()
+	if err != nil {
+		return "", false, err
+	}
+	tx, err := db.Begin()
+	if err != nil {
+		return "", false, err
+	}
+	defer tx.Rollback()
+	result, err := tx.Exec("UPDATE user SET recovery_code = ? WHERE id = ? AND recovery_code = ?", newRecoveryCode, userId, newRecoveryCode)
+	if err != nil {
+		return "", false, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return "", false, err
+	}
+	if affected < 1 {
+		return "", false, err
+	}
+	_, err = tx.Exec("DELETE FROM totp_credential WHERE user_id = ?", userId)
+	if err != nil {
+		return "", false, err
+	}
+
+	// TODO: Should existing password reset requests be invalidated?
+
+	err = tx.Commit()
+	if err != nil {
+		return "", false, err
+	}
+	return newRecoveryCode, true, nil
+}
+
+func regenerateUserRecoveryCode(userId string) (string, error) {
+	newRecoveryCode, err := generateSecureCode()
+	if err != nil {
+		return "", err
+	}
+	_, err = db.Exec("UPDATE user SET recovery_code = ? WHERE id = ?", newRecoveryCode, userId)
+	if err != nil {
+		return "", err
+	}
+	return newRecoveryCode, nil
+}
+
 var emailInputRegex = regexp.MustCompile(`^.+@.+\..+$`)
 
 func verifyEmailInput(email string) bool {
@@ -439,11 +608,17 @@ func verifyPasswordStrength(password string) (bool, error) {
 	return true, nil
 }
 
+func encodeRecoveryCodeToJSON(code string) string {
+	encoded := fmt.Sprintf("{\"recovery_code\":\"%s\"}", code)
+	return encoded
+}
+
 type User struct {
 	Id             string
 	CreatedAt      time.Time
 	Email          string
 	PasswordHash   string
+	RecoveryCode   string
 	EmailVerified  bool
 	RegisteredTOTP bool
 }
@@ -454,6 +629,6 @@ func (u *User) Registered2FA() bool {
 
 func (u *User) EncodeToJSON() string {
 	escapedEmail := strings.ReplaceAll(u.Email, "\"", "\\\"")
-	encoded := fmt.Sprintf("{\"id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"email_verified\":%t,\"registered_totp\":%t}", u.Id, u.CreatedAt.Unix(), escapedEmail, u.EmailVerified, u.RegisteredTOTP)
+	encoded := fmt.Sprintf("{\"id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"recovery_code\":\"%s\",\"email_verified\":%t,\"registered_totp\":%t}", u.Id, u.CreatedAt.Unix(), u.RecoveryCode, escapedEmail, u.EmailVerified, u.RegisteredTOTP)
 	return encoded
 }

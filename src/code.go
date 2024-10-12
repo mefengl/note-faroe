@@ -5,7 +5,7 @@ import (
 	"encoding/base32"
 )
 
-func generateOneTimeCode() (string, error) {
+func generateSecureCode() (string, error) {
 	bytes := make([]byte, 5)
 	_, err := rand.Read(bytes)
 	if err != nil {
