@@ -122,13 +122,16 @@ func main() {
 	router.POST("/users/:user_id/password", handleUpdatePasswordRequest)
 	router.GET("/users/:user_id/totp", handleGetUserTOTPCredentialRequest)
 	router.POST("/users/:user_id/totp", handleRegisterTOTPRequest)
+	router.GET("/users/:user_id/recovery-code", handleGetUserRecoveryCodeRequest)
 	router.POST("/users/:user_id/verify-2fa/totp", handleVerifyTOTPRequest)
 	router.POST("/users/:user_id/reset-2fa", handleResetUser2FARequest)
 	router.POST("/users/:user_id/regenerate-recovery-code", handleRegenerateUserRecoveryCodeRequest)
+
 	router.POST("/users/:user_id/email-verification", handleCreateEmailVerificationRequestRequest)
 	router.GET("/users/:user_id/email-verification/:request_id", handleGetEmailVerificationRequestRequest)
 	router.DELETE("/users/:user_id/email-verification/:request_id", handleDeleteEmailVerificationRequestRequest)
 	router.POST("/users/:user_id/verify-email", handleVerifyUserEmailRequest)
+
 	router.POST("/password-reset", handleCreatePasswordResetRequestRequest)
 	router.GET("/password-reset/:request_id", handleGetPasswordResetRequestRequest)
 	router.DELETE("/password-reset/:request_id", handleDeleteEmailVerificationRequestRequest)

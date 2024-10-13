@@ -409,6 +409,33 @@ func handleGetUsersRequest(w http.ResponseWriter, r *http.Request, _ httprouter.
 	w.Write([]byte("]"))
 }
 
+func handleGetUserRecoveryCodeRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyCredential(r) {
+		writeNotAuthenticatedErrorResponse(w)
+		return
+	}
+	if !verifyJSONAcceptHeader(r) {
+		writeNotAcceptableErrorResponse(w)
+		return
+	}
+
+	userId := params.ByName("user_id")
+	recoveryCode, err := getUserRecoveryCode(userId)
+	if errors.Is(err, ErrRecordNotFound) {
+		writeNotFoundErrorResponse(w)
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		writeUnExpectedErrorResponse(w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	w.Write([]byte(encodeRecoveryCodeToJSON(recoveryCode)))
+}
+
 func createUser(email string, passwordHash string) (User, error) {
 	now := time.Now()
 	id, err := generateId()
@@ -673,7 +700,7 @@ func (u *User) Registered2FA() bool {
 
 func (u *User) EncodeToJSON() string {
 	escapedEmail := strings.ReplaceAll(u.Email, "\"", "\\\"")
-	encoded := fmt.Sprintf("{\"id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"recovery_code\":\"%s\",\"email_verified\":%t,\"registered_totp\":%t}", u.Id, u.CreatedAt.Unix(), escapedEmail, u.RecoveryCode, u.EmailVerified, u.RegisteredTOTP)
+	encoded := fmt.Sprintf("{\"id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"email_verified\":%t,\"registered_totp\":%t}", u.Id, u.CreatedAt.Unix(), escapedEmail, u.EmailVerified, u.RegisteredTOTP)
 	return encoded
 }
 
