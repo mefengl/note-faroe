@@ -423,7 +423,7 @@ func handleResetPasswordResetRequest2FAWithRecoveryCodeRequest(w http.ResponseWr
 		return
 	}
 
-	_, valid, err := resetUser2FAWithRecoveryCode(resetRequest.UserId, *data.RecoveryCode)
+	recoveryCode, valid, err := resetUser2FAWithRecoveryCode(resetRequest.UserId, *data.RecoveryCode)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
@@ -435,7 +435,9 @@ func handleResetPasswordResetRequest2FAWithRecoveryCodeRequest(w http.ResponseWr
 	}
 	recoveryCodeUserRateLimit.Reset(resetRequest.UserId)
 
-	w.WriteHeader(204)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	w.Write([]byte(encodeRecoveryCodeToJSON(recoveryCode)))
 }
 
 func handleResetPasswordRequest(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
