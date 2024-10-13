@@ -212,7 +212,18 @@ func handleDeleteEmailVerificationRequestRequest(w http.ResponseWriter, r *http.
 	}
 	userId := params.ByName("user_id")
 	verificationRequestId := params.ByName("request_id")
-	err := deleteUserEmailVerificationRequest(userId, verificationRequestId)
+	userExists, err := checkUserExists(userId)
+	if !userExists {
+		writeNotFoundErrorResponse(w)
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		writeUnExpectedErrorResponse(w)
+		return
+	}
+
+	err = deleteUserEmailVerificationRequest(userId, verificationRequestId)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
