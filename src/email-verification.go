@@ -39,13 +39,13 @@ func handleCreateEmailVerificationRequestRequest(w http.ResponseWriter, r *http.
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	var data struct {
@@ -53,28 +53,28 @@ func handleCreateEmailVerificationRequestRequest(w http.ResponseWriter, r *http.
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if data.Email == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	email := *data.Email
 	if !verifyEmailInput(email) {
-		writeExpectedErrorResponse(w, expectedErrorInvalidEmail)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidEmail)
 		return
 	}
 
 	if !createEmailVerificationUserRateLimit.Consume(userId, 1) {
 		logMessageWithClientIP("INFO", "CREATE_EMAIL_VERIFICATION_REQUEST", "PASSWORD_HASHING_LIMIT_REJECTED", clientIP, fmt.Sprintf("user_id=%s", userId))
-		writeExpectedErrorResponse(w, expectedErrorTooManyRequests)
+		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 	err = deleteUserEmailVerificationRequests(userId)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	verificationRequest, err := createEmailVerificationRequest(userId, email)
@@ -84,7 +84,7 @@ func handleCreateEmailVerificationRequestRequest(w http.ResponseWriter, r *http.
 			return
 		}
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	logMessageWithClientIP("INFO", "CREATE_EMAIL_VERIFICATION_REQUEST", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s", userId))
@@ -118,13 +118,13 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	var data struct {
@@ -133,15 +133,15 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if data.RequestId == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if data.Code == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 
@@ -152,7 +152,7 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	// If now is or after expiration
@@ -160,7 +160,7 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 		err = deleteEmailVerificationRequest(verificationRequest.Id)
 		if err != nil {
 			log.Println(err)
-			writeUnexpectedErrorResponse(w)
+			writeUnExpectedErrorResponse(w)
 			return
 		}
 		writeNotFoundErrorResponse(w)
@@ -171,22 +171,22 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 		err = deleteEmailVerificationRequest(verificationRequest.Id)
 		if err != nil {
 			log.Println(err)
-			writeUnexpectedErrorResponse(w)
+			writeUnExpectedErrorResponse(w)
 			return
 		}
 		logMessageWithClientIP("INFO", "VERIFY_EMAIL", "EMAIL_VERIFICATION_LIMIT_REJECTED", clientIP, fmt.Sprintf("user_id=%s request_id=%s", userId, verificationRequest.Id))
-		writeExpectedErrorResponse(w, expectedErrorTooManyRequests)
+		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 	validCode, verifiedEmail, err := validateEmailVerificationRequest(userId, verificationRequest.Id, *data.Code)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	if !validCode {
 		logMessageWithClientIP("INFO", "VERIFY_EMAIL", "INVALID_CODE", clientIP, fmt.Sprintf("user_id=%s", userId))
-		writeExpectedErrorResponse(w, expectedErrorIncorrectCode)
+		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
 		return
 	}
 	logMessageWithClientIP("INFO", "VERIFY_EMAIL", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s request_id=%s email=\"%s\"", userId, verificationRequest.Id, strings.ReplaceAll(verifiedEmail, "\"", "\\\"")))
@@ -196,7 +196,7 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 	user, err := getUser(verificationRequest.UserId)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	w.WriteHeader(200)
@@ -215,7 +215,7 @@ func handleDeleteEmailVerificationRequestRequest(w http.ResponseWriter, r *http.
 	err := deleteUserEmailVerificationRequest(userId, verificationRequestId)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	logMessageWithClientIP("INFO", "DELETE_EMAIL_VERIFICATION_REQUEST", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s request_id=%s", userId, verificationRequestId))
@@ -243,7 +243,7 @@ func handleGetEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Req
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	// If now is or after expiration
@@ -251,7 +251,7 @@ func handleGetEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Req
 		err = deleteEmailVerificationRequest(verificationRequest.Id)
 		if err != nil {
 			log.Println(err)
-			writeUnexpectedErrorResponse(w)
+			writeUnExpectedErrorResponse(w)
 			return
 		}
 		writeNotFoundErrorResponse(w)

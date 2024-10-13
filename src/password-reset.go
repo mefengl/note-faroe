@@ -35,7 +35,7 @@ func handleCreatePasswordResetRequestRequest(w http.ResponseWriter, r *http.Requ
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	var data struct {
@@ -43,53 +43,53 @@ func handleCreatePasswordResetRequestRequest(w http.ResponseWriter, r *http.Requ
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if data.Email == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	email := *data.Email
 
 	if !verifyEmailInput(email) {
-		writeExpectedErrorResponse(w, expectedErrorInvalidEmail)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidEmail)
 		return
 	}
 
 	user, err := getUserFromEmail(email)
 	if errors.Is(err, ErrRecordNotFound) {
 		logMessageWithClientIP("INFO", "CREATE_PASSWORD_RESET_REQUEST", "INVALID_EMAIL", clientIP, fmt.Sprintf("email_input=\"%s\"", strings.ReplaceAll(email, "\"", "\\\"")))
-		writeExpectedErrorResponse(w, expectedErrorAccountNotExists)
+		writeExpectedErrorResponse(w, ExpectedErrorAccountNotExists)
 		return
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	if clientIP != "" && !passwordHashingIPRateLimit.Consume(clientIP, 1) {
 		logMessageWithClientIP("INFO", "CREATE_PASSWORD_RESET_REQUEST", "PASSWORD_HASHING_LIMIT_REJECTED", clientIP, fmt.Sprintf("email_input=\"%s\"", strings.ReplaceAll(email, "\"", "\\\"")))
-		writeExpectedErrorResponse(w, expectedErrorTooManyRequests)
+		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 	if clientIP != "" && !createPasswordResetIPRateLimit.Consume(clientIP, 1) {
 		logMessageWithClientIP("INFO", "CREATE_PASSWORD_RESET_REQUEST", "CREATE_PASSWORD_RESET_REQUEST_LIMIT_REJECTED", clientIP, fmt.Sprintf("email_input=\"%s\"", strings.ReplaceAll(email, "\"", "\\\"")))
-		writeExpectedErrorResponse(w, expectedErrorTooManyRequests)
+		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 
 	code, err := generateSecureCode()
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
 	codeHash, err := argon2id.Hash(code)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
@@ -98,7 +98,7 @@ func handleCreatePasswordResetRequestRequest(w http.ResponseWriter, r *http.Requ
 
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	logMessageWithClientIP("INFO", "CREATE_PASSWORD_RESET_REQUEST", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s email=\"%s\" request_id=%s", user.Id, strings.ReplaceAll(user.Email, "\"", "\\\""), resetRequest.Id))
@@ -128,7 +128,7 @@ func handleGetPasswordResetRequestRequest(w http.ResponseWriter, r *http.Request
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	// If now is or after expiration
@@ -136,7 +136,7 @@ func handleGetPasswordResetRequestRequest(w http.ResponseWriter, r *http.Request
 		err = deletePasswordResetRequest(resetRequest.Id)
 		if err != nil {
 			log.Println(err)
-			writeUnexpectedErrorResponse(w)
+			writeUnExpectedErrorResponse(w)
 			return
 		}
 		writeNotFoundErrorResponse(w)
@@ -168,7 +168,7 @@ func handleGetPasswordResetRequestUserRequest(w http.ResponseWriter, r *http.Req
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	// If now is or after expiration
@@ -176,7 +176,7 @@ func handleGetPasswordResetRequestUserRequest(w http.ResponseWriter, r *http.Req
 		err = deletePasswordResetRequest(resetRequest.Id)
 		if err != nil {
 			log.Println(err)
-			writeUnexpectedErrorResponse(w)
+			writeUnExpectedErrorResponse(w)
 			return
 		}
 		writeNotFoundErrorResponse(w)
@@ -207,7 +207,7 @@ func handleVerifyPasswordResetRequestEmailRequest(w http.ResponseWriter, r *http
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	// If now is or after expiration
@@ -215,7 +215,7 @@ func handleVerifyPasswordResetRequestEmailRequest(w http.ResponseWriter, r *http
 		err = deletePasswordResetRequest(resetRequest.Id)
 		if err != nil {
 			log.Println(err)
-			writeUnexpectedErrorResponse(w)
+			writeUnExpectedErrorResponse(w)
 			return
 		}
 		writeNotFoundErrorResponse(w)
@@ -224,7 +224,7 @@ func handleVerifyPasswordResetRequestEmailRequest(w http.ResponseWriter, r *http
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	var data struct {
@@ -232,16 +232,16 @@ func handleVerifyPasswordResetRequestEmailRequest(w http.ResponseWriter, r *http
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if data.Code == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if clientIP != "" && !passwordHashingIPRateLimit.Consume(clientIP, 1) {
 		logMessageWithClientIP("INFO", "VERIFY_PASSWORD_RESET_REQUEST_EMAIL", "PASSWORD_HASHING_LIMIT_REJECTED", clientIP, "")
-		writeExpectedErrorResponse(w, expectedErrorTooManyRequests)
+		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 	if !verifyPasswordResetCodeLimitCounter.Consume(resetRequest.Id) {
@@ -249,26 +249,26 @@ func handleVerifyPasswordResetRequestEmailRequest(w http.ResponseWriter, r *http
 		err = deletePasswordResetRequest(resetRequest.Id)
 		if err != nil {
 			log.Println(err)
-			writeUnexpectedErrorResponse(w)
+			writeUnExpectedErrorResponse(w)
 			return
 		}
-		writeExpectedErrorResponse(w, expectedErrorTooManyRequests)
+		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 	validCode, err := argon2id.Verify(resetRequest.CodeHash, *data.Code)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	if !validCode {
-		writeExpectedErrorResponse(w, expectedErrorIncorrectCode)
+		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
 		return
 	}
 	err = setPasswordResetRequestAsEmailVerified(resetRequest.Id)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	w.WriteHeader(204)
@@ -293,7 +293,7 @@ func handleVerifyPasswordResetRequest2FAWithTOTPRequest(w http.ResponseWriter, r
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	// If now is or after expiration
@@ -301,7 +301,7 @@ func handleVerifyPasswordResetRequest2FAWithTOTPRequest(w http.ResponseWriter, r
 		err = deletePasswordResetRequest(resetRequestId)
 		if err != nil {
 			log.Println(err)
-			writeUnexpectedErrorResponse(w)
+			writeUnExpectedErrorResponse(w)
 			return
 		}
 		writeNotFoundErrorResponse(w)
@@ -310,14 +310,14 @@ func handleVerifyPasswordResetRequest2FAWithTOTPRequest(w http.ResponseWriter, r
 
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	var data struct {
@@ -325,32 +325,32 @@ func handleVerifyPasswordResetRequest2FAWithTOTPRequest(w http.ResponseWriter, r
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if data.Code == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if !totpUserRateLimit.Consume(resetRequest.UserId, 1) {
 		logMessageWithClientIP("INFO", "VERIFY_PASSWORD_RESET_REQUEST_2FA_TOTP", "TOTP_USER_LIMIT_REJECTED", clientIP, fmt.Sprintf("request_id=%s user_id=%s email=\"%s\"", resetRequest.Id, resetRequest.UserId, strings.ReplaceAll(resetRequest.Email, "\"", "\\\"")))
-		writeExpectedErrorResponse(w, expectedErrorTooManyRequests)
+		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 
 	totpCredential, err := getUserTOTPCredential(resetRequest.Id)
 	if errors.Is(err, ErrRecordNotFound) {
-		writeExpectedErrorResponse(w, expectedErrorSecondFactorNotAllowed)
+		writeExpectedErrorResponse(w, ExpectedErrorSecondFactorNotAllowed)
 		return
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	valid := otp.VerifyTOTP(totpCredential.Key, 30*time.Second, 6, *data.Code)
 	if !valid {
-		writeExpectedErrorResponse(w, expectedErrorIncorrectCode)
+		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
 		return
 	}
 	totpUserRateLimit.Reset(resetRequest.UserId)
@@ -358,7 +358,7 @@ func handleVerifyPasswordResetRequest2FAWithTOTPRequest(w http.ResponseWriter, r
 	err = setPasswordResetRequestAsTwoFactorVerified(resetRequest.Id)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	w.WriteHeader(204)
@@ -383,7 +383,7 @@ func handleResetPasswordResetRequest2FAWithRecoveryCodeRequest(w http.ResponseWr
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	// If now is or after expiration
@@ -391,7 +391,7 @@ func handleResetPasswordResetRequest2FAWithRecoveryCodeRequest(w http.ResponseWr
 		err = deletePasswordResetRequest(resetRequestId)
 		if err != nil {
 			log.Println(err)
-			writeUnexpectedErrorResponse(w)
+			writeUnExpectedErrorResponse(w)
 			return
 		}
 		writeNotFoundErrorResponse(w)
@@ -400,7 +400,7 @@ func handleResetPasswordResetRequest2FAWithRecoveryCodeRequest(w http.ResponseWr
 
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
@@ -410,27 +410,27 @@ func handleResetPasswordResetRequest2FAWithRecoveryCodeRequest(w http.ResponseWr
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if data.RecoveryCode == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if !recoveryCodeUserRateLimit.Consume(resetRequest.UserId, 1) {
 		logMessageWithClientIP("INFO", "RESET_2FA_PASSWORD_RESET", "RECOVERY_CODE_USER_LIMIT_REJECTED", clientIP, fmt.Sprintf("request_id=%s user_id=%s email=\"%s\"", resetRequest.Id, resetRequest.UserId, strings.ReplaceAll(resetRequest.Email, "\"", "\\\"")))
-		writeExpectedErrorResponse(w, expectedErrorTooManyRequests)
+		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 
 	_, valid, err := resetUser2FAWithRecoveryCode(resetRequest.UserId, *data.RecoveryCode)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	if !valid {
-		writeExpectedErrorResponse(w, expectedErrorIncorrectCode)
+		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
 		return
 	}
 	recoveryCodeUserRateLimit.Reset(resetRequest.UserId)
@@ -455,7 +455,7 @@ func handleResetPasswordRequest(w http.ResponseWriter, r *http.Request, _ httpro
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	var data struct {
@@ -464,48 +464,48 @@ func handleResetPasswordRequest(w http.ResponseWriter, r *http.Request, _ httpro
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 
 	if data.RequestId == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if data.Password == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	resetRequestId, password := *data.RequestId, *data.Password
 	if len(password) > 255 {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	strongPassword, err := verifyPasswordStrength(password)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	if !strongPassword {
-		writeExpectedErrorResponse(w, expectedErrorWeakPassword)
+		writeExpectedErrorResponse(w, ExpectedErrorWeakPassword)
 		return
 	}
 	passwordHash, err := argon2id.Hash(password)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
 	resetRequest, user, err := getPasswordResetRequestAndUser(resetRequestId)
 	log.Println(err)
 	if errors.Is(err, ErrRecordNotFound) {
-		writeExpectedErrorResponse(w, expectedErrorInvalidRequestId)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequestId)
 		return
 	}
 	if err != nil {
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	// If now is or after expiration
@@ -513,35 +513,35 @@ func handleResetPasswordRequest(w http.ResponseWriter, r *http.Request, _ httpro
 		err = deletePasswordResetRequest(resetRequestId)
 		if err != nil {
 			log.Println(err)
-			writeUnexpectedErrorResponse(w)
+			writeUnExpectedErrorResponse(w)
 			return
 		}
-		writeExpectedErrorResponse(w, expectedErrorInvalidRequestId)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequestId)
 		return
 	}
 	if !resetRequest.EmailVerified {
-		writeExpectedErrorResponse(w, expectedErrorEmailNotVerified)
+		writeExpectedErrorResponse(w, ExpectedErrorEmailNotVerified)
 		return
 	}
 	if user.Registered2FA() && !resetRequest.TwoFactorVerified {
-		writeExpectedErrorResponse(w, expectedErrorSecondFactorNotVerified)
+		writeExpectedErrorResponse(w, ExpectedErrorSecondFactorNotVerified)
 		return
 	}
 
 	validResetRequest, err := updateUserPasswordHashAndSetEmailAsVerifiedWithPasswordResetRequest(resetRequest.Id, passwordHash)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	if !validResetRequest {
-		writeExpectedErrorResponse(w, expectedErrorInvalidRequestId)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequestId)
 		return
 	}
 	user, err = getUser(resetRequest.UserId)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

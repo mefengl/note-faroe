@@ -31,7 +31,7 @@ func handleAuthenticateWithPasswordRequest(w http.ResponseWriter, r *http.Reques
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	var data struct {
@@ -41,49 +41,49 @@ func handleAuthenticateWithPasswordRequest(w http.ResponseWriter, r *http.Reques
 	err = json.Unmarshal(body, &data)
 	if err != nil {
 		log.Println(err)
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 
 	if data.Email == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if data.Password == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	email, password := *data.Email, *data.Password
 	user, err := getUserFromEmail(email)
 	if errors.Is(err, ErrRecordNotFound) {
 		logMessageWithClientIP("INFO", "LOGIN_ATTEMPT", "INVALID_EMAIL", clientIP, fmt.Sprintf("email_input=\"%s\"", strings.ReplaceAll(email, "\"", "\\\"")))
-		writeExpectedErrorResponse(w, expectedErrorAccountNotExists)
+		writeExpectedErrorResponse(w, ExpectedErrorAccountNotExists)
 		return
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	if clientIP != "" && !passwordHashingIPRateLimit.Consume(clientIP, 1) {
 		logMessageWithClientIP("INFO", "AUTHENTICATE_WITH_PASSWORD", "PASSWORD_HASHING_LIMIT_REJECTED", clientIP, "")
-		writeExpectedErrorResponse(w, expectedErrorTooManyRequests)
+		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 	if clientIP != "" && !loginIPRateLimit.Consume(clientIP, 1) {
 		logMessageWithClientIP("INFO", "AUTHENTICATE_WITH_PASSWORD", "LOGIN_LIMIT_REJECTED", clientIP, "")
-		writeExpectedErrorResponse(w, expectedErrorTooManyRequests)
+		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 	validPassword, err := argon2id.Verify(user.PasswordHash, password)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	if !validPassword {
 		logMessageWithClientIP("INFO", "LOGIN_ATTEMPT", "INVALID_PASSWORD", clientIP, fmt.Sprintf("email=\"%s\" user_id=%s", strings.ReplaceAll(email, "\"", "\\\""), user.Id))
-		writeExpectedErrorResponse(w, expectedErrorIncorrectPassword)
+		writeExpectedErrorResponse(w, ExpectedErrorIncorrectPassword)
 		return
 	}
 	if clientIP != "" {

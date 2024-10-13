@@ -150,7 +150,7 @@ func writeExpectedErrorResponse(w http.ResponseWriter, message string) {
 	w.Write([]byte(fmt.Sprintf("{\"error\": \"%s\"}", escapedMessage)))
 }
 
-func writeUnexpectedErrorResponse(w http.ResponseWriter) {
+func writeUnExpectedErrorResponse(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 	w.Write([]byte("{\"error\":\"UNEXPECTED_ERROR\"}"))
@@ -197,20 +197,27 @@ func generateId() (string, error) {
 	return id, nil
 }
 
+type SortOrder int
+
 const (
-	expectedErrorInvalidData             = "INVALID_DATA"
-	expectedErrorTooManyRequests         = "TOO_MANY_REQUESTS"
-	expectedErrorInvalidEmail            = "INVALID_EMAIL"
-	expectedErrorWeakPassword            = "WEAK_PASSWORD"
-	expectedErrorPasswordTooLarge        = "PASSWORD_TOO_LARGE"
-	expectedErrorEmailAlreadyUsed        = "EMAIL_ALREADY_USED"
-	expectedErrorAccountNotExists        = "ACCOUNT_NOT_EXISTS"
-	expectedErrorIncorrectPassword       = "INCORRECT_PASSWORD"
-	expectedErrorIncorrectCode           = "INCORRECT_CODE"
-	expectedErrorEmailNotVerified        = "EMAIL_NOT_VERIFIED"
-	expectedErrorSecondFactorNotVerified = "SECOND_FACTOR_NOT_VERIFIED"
-	expectedErrorSecondFactorNotAllowed  = "SECOND_FACTOR_NOT_ALLOWED"
-	expectedErrorInvalidRequestId        = "INVALID_REQUEST_ID"
+	SortOrderAscending SortOrder = iota
+	SortOrderDescending
+)
+
+const (
+	ExpectedErrorInvalidData             = "INVALID_DATA"
+	ExpectedErrorTooManyRequests         = "TOO_MANY_REQUESTS"
+	ExpectedErrorInvalidEmail            = "INVALID_EMAIL"
+	ExpectedErrorWeakPassword            = "WEAK_PASSWORD"
+	ExpectedErrorPasswordTooLarge        = "PASSWORD_TOO_LARGE"
+	ExpectedErrorEmailAlreadyUsed        = "EMAIL_ALREADY_USED"
+	ExpectedErrorAccountNotExists        = "ACCOUNT_NOT_EXISTS"
+	ExpectedErrorIncorrectPassword       = "INCORRECT_PASSWORD"
+	ExpectedErrorIncorrectCode           = "INCORRECT_CODE"
+	ExpectedErrorEmailNotVerified        = "EMAIL_NOT_VERIFIED"
+	ExpectedErrorSecondFactorNotVerified = "SECOND_FACTOR_NOT_VERIFIED"
+	ExpectedErrorSecondFactorNotAllowed  = "SECOND_FACTOR_NOT_ALLOWED"
+	ExpectedErrorInvalidRequestId        = "INVALID_REQUEST_ID"
 )
 
 var ErrRecordNotFound = errors.New("record not found")

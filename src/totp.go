@@ -33,14 +33,14 @@ func handleRegisterTOTPRequest(w http.ResponseWriter, r *http.Request, params ht
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	var data struct {
@@ -49,36 +49,36 @@ func handleRegisterTOTPRequest(w http.ResponseWriter, r *http.Request, params ht
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if data.Key == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	key, err := base64.StdEncoding.DecodeString(*data.Key)
 	if err != nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if len(key) != 20 {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 
 	if data.Code == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	code := *data.Code
 	if len(code) != 6 {
-		writeExpectedErrorResponse(w, expectedErrorIncorrectCode)
+		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
 		return
 	}
 
 	validCode := otp.VerifyTOTP(key, 30*time.Second, 6, code)
 	if !validCode {
-		writeExpectedErrorResponse(w, expectedErrorIncorrectCode)
+		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
 		return
 	}
 
@@ -89,7 +89,7 @@ func handleRegisterTOTPRequest(w http.ResponseWriter, r *http.Request, params ht
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
@@ -100,7 +100,7 @@ func handleRegisterTOTPRequest(w http.ResponseWriter, r *http.Request, params ht
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
@@ -128,25 +128,25 @@ func handleVerifyTOTPRequest(w http.ResponseWriter, r *http.Request, params http
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
 	credential, err := getUserTOTPCredential(userId)
 	if errors.Is(err, ErrRecordNotFound) {
-		writeExpectedErrorResponse(w, expectedErrorSecondFactorNotAllowed)
+		writeExpectedErrorResponse(w, ExpectedErrorSecondFactorNotAllowed)
 		return
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	var data struct {
@@ -154,21 +154,21 @@ func handleVerifyTOTPRequest(w http.ResponseWriter, r *http.Request, params http
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if data.Code == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if !totpUserRateLimit.Consume(userId, 1) {
 		logMessageWithClientIP("INFO", "VERIFY_2FA_TOTP", "TOTP_USER_LIMIT_REJECTED", clientIP, fmt.Sprintf("user_id=%s", userId))
-		writeExpectedErrorResponse(w, expectedErrorTooManyRequests)
+		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 	valid := otp.VerifyTOTP(credential.Key, 30*time.Second, 6, *data.Code)
 	if !valid {
-		writeExpectedErrorResponse(w, expectedErrorIncorrectCode)
+		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
 		return
 	}
 	totpUserRateLimit.Reset(userId)
@@ -193,14 +193,14 @@ func handleDeleteUserTOTPCredentialRequest(w http.ResponseWriter, r *http.Reques
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
 	err = deleteUserTOTPCredential(userId)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
@@ -211,7 +211,7 @@ func handleDeleteUserTOTPCredentialRequest(w http.ResponseWriter, r *http.Reques
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 

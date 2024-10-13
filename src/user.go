@@ -39,7 +39,7 @@ func handleCreateUserRequest(w http.ResponseWriter, r *http.Request, _ httproute
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	var data struct {
@@ -49,68 +49,68 @@ func handleCreateUserRequest(w http.ResponseWriter, r *http.Request, _ httproute
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 
 	if data.Email == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if data.Password == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	email, password, _ := *data.Email, *data.Password, data.Context
 	if !verifyEmailInput(email) {
-		writeExpectedErrorResponse(w, expectedErrorInvalidEmail)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidEmail)
 		return
 	}
 	emailAvailable, err := checkEmailAvailability(email)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	if !emailAvailable {
-		writeExpectedErrorResponse(w, expectedErrorEmailAlreadyUsed)
+		writeExpectedErrorResponse(w, ExpectedErrorEmailAlreadyUsed)
 		return
 	}
 
 	if len(password) > 255 {
-		writeExpectedErrorResponse(w, expectedErrorPasswordTooLarge)
+		writeExpectedErrorResponse(w, ExpectedErrorPasswordTooLarge)
 		return
 	}
 	strongPassword, err := verifyPasswordStrength(password)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	if !strongPassword {
-		writeExpectedErrorResponse(w, expectedErrorWeakPassword)
+		writeExpectedErrorResponse(w, ExpectedErrorWeakPassword)
 		return
 	}
 
 	if clientIP != "" && !passwordHashingIPRateLimit.Consume(clientIP, 1) {
 		logMessageWithClientIP("INFO", "CREATE_USER", "PASSWORD_HASHING_LIMIT_REJECTED", clientIP, fmt.Sprintf("email_input=\"%s\"", strings.ReplaceAll(email, "\"", "\\\"")))
-		writeExpectedErrorResponse(w, expectedErrorTooManyRequests)
+		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 	passwordHash, err := argon2id.Hash(password)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	user, err := createUser(email, passwordHash)
 	if err != nil {
 		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
-			writeExpectedErrorResponse(w, expectedErrorEmailAlreadyUsed)
+			writeExpectedErrorResponse(w, ExpectedErrorEmailAlreadyUsed)
 			return
 		}
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	logMessageWithClientIP("INFO", "CREATE_USER", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s email=\"%s\"", user.Id, strings.ReplaceAll(user.Email, "\"", "\\\"")))
@@ -138,7 +138,7 @@ func handleGetUserRequest(w http.ResponseWriter, r *http.Request, params httprou
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
@@ -156,7 +156,7 @@ func handleDeleteUserRequest(w http.ResponseWriter, r *http.Request, params http
 	err := deleteUser(userId)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
@@ -181,14 +181,14 @@ func handleUpdatePasswordRequest(w http.ResponseWriter, r *http.Request, params 
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	var data struct {
@@ -197,48 +197,48 @@ func handleUpdatePasswordRequest(w http.ResponseWriter, r *http.Request, params 
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 
 	if data.Password == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	password, newPassword := *data.Password, *data.NewPassword
 	if len(password) > 255 {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if len(newPassword) > 255 {
-		writeExpectedErrorResponse(w, expectedErrorPasswordTooLarge)
+		writeExpectedErrorResponse(w, ExpectedErrorPasswordTooLarge)
 		return
 	}
 	strongPassword, err := verifyPasswordStrength(newPassword)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	if !strongPassword {
-		writeExpectedErrorResponse(w, expectedErrorWeakPassword)
+		writeExpectedErrorResponse(w, ExpectedErrorWeakPassword)
 		return
 	}
 
 	validPassword, err := argon2id.Verify(user.PasswordHash, password)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	if !validPassword {
-		writeExpectedErrorResponse(w, expectedErrorIncorrectPassword)
+		writeExpectedErrorResponse(w, ExpectedErrorIncorrectPassword)
 		return
 	}
 	newPasswordHash, err := argon2id.Hash(newPassword)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	updateUserPassword(userId, newPasswordHash)
@@ -269,14 +269,14 @@ func handleResetUser2FARequest(w http.ResponseWriter, r *http.Request, params ht
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	var data struct {
@@ -284,27 +284,27 @@ func handleResetUser2FARequest(w http.ResponseWriter, r *http.Request, params ht
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	if data.RecoveryCode == nil {
-		writeExpectedErrorResponse(w, expectedErrorInvalidData)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 
 	if !recoveryCodeUserRateLimit.Consume(userId, 1) {
 		logMessageWithClientIP("INFO", "RESET_2FA", "RECOVERY_CODE_USER_LIMIT_REJECTED", clientIP, fmt.Sprintf("user_id=%s", userId))
-		writeExpectedErrorResponse(w, expectedErrorTooManyRequests)
+		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 	newRecoveryCode, valid, err := resetUser2FAWithRecoveryCode(userId, *data.RecoveryCode)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	if !valid {
-		writeExpectedErrorResponse(w, expectedErrorIncorrectCode)
+		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
 		return
 	}
 	recoveryCodeUserRateLimit.Reset(userId)
@@ -332,14 +332,14 @@ func handleRegenerateUserRecoveryCodeRequest(w http.ResponseWriter, r *http.Requ
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
 	newRecoveryCode, err := regenerateUserRecoveryCode(userId)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
@@ -357,6 +357,28 @@ func handleGetUsersRequest(w http.ResponseWriter, r *http.Request, _ httprouter.
 		writeUnsupportedMediaTypeErrorResponse(w)
 		return
 	}
+	var sortBy UserSortBy
+	sortByQuery := r.URL.Query().Get("sort_by")
+	if sortByQuery == "created_at" {
+		sortBy = UserSortByCreatedAt
+	} else if sortByQuery == "email" {
+		sortBy = UserSortByEmail
+	} else if sortByQuery == "id" {
+		sortBy = UserSortById
+	} else {
+		sortBy = UserSortByCreatedAt
+	}
+
+	var sortOrder SortOrder
+	sortOrderQuery := r.URL.Query().Get("sort_order")
+	if sortOrderQuery == "ascending" {
+		sortOrder = SortOrderAscending
+	} else if sortOrderQuery == "descending" {
+		sortOrder = SortOrderDescending
+	} else {
+		sortOrder = SortOrderAscending
+	}
+
 	count, err := strconv.Atoi(r.URL.Query().Get("count"))
 	if err != nil || count < 1 {
 		count = 20
@@ -365,10 +387,10 @@ func handleGetUsersRequest(w http.ResponseWriter, r *http.Request, _ httprouter.
 	if err != nil || page < 1 {
 		page = 1
 	}
-	users, err := getUsersSortByCreatedDate(count, page)
+	users, err := getUsers(sortBy, sortOrder, count, page)
 	if err != nil {
 		log.Println(err)
-		writeUnexpectedErrorResponse(w)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -451,11 +473,33 @@ func getUserRecoveryCode(userId string) (string, error) {
 	return recoveryCode, nil
 }
 
-func getUsersSortByCreatedDate(count, page int) ([]User, error) {
-	var users []User
-	rows, err := db.Query(`SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, user.email_verified, IIF(totp_credential.id IS NOT NULL, 1, 0)
+func getUsers(sortBy UserSortBy, sortOrder SortOrder, count, page int) ([]User, error) {
+	var orderBySQL, orderSQL string
+
+	if sortBy == UserSortByCreatedAt {
+		orderBySQL = "user.created_at"
+	} else if sortBy == UserSortByEmail {
+		orderBySQL = "user.email"
+	} else if sortBy == UserSortById {
+		orderBySQL = "user.id"
+	} else {
+		return nil, errors.New("invalid 'sortBy' value")
+	}
+
+	if sortOrder == SortOrderAscending {
+		orderSQL = "ASC"
+	} else if sortOrder == SortOrderDescending {
+		orderSQL = "DESC"
+	} else {
+		return nil, errors.New("invalid 'sortOrder' value")
+	}
+
+	query := fmt.Sprintf(`SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, user.email_verified, IIF(totp_credential.id IS NOT NULL, 1, 0)
 		FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id
-		ORDER BY user.created_at ASC LIMIT ? OFFSET ?`, count, count*(page-1))
+		ORDER BY %s %s LIMIT ? OFFSET ?`, orderBySQL, orderSQL)
+
+	var users []User
+	rows, err := db.Query(query, count, count*(page-1))
 	if err != nil {
 		return nil, err
 	}
@@ -629,6 +673,14 @@ func (u *User) Registered2FA() bool {
 
 func (u *User) EncodeToJSON() string {
 	escapedEmail := strings.ReplaceAll(u.Email, "\"", "\\\"")
-	encoded := fmt.Sprintf("{\"id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"recovery_code\":\"%s\",\"email_verified\":%t,\"registered_totp\":%t}", u.Id, u.CreatedAt.Unix(), u.RecoveryCode, escapedEmail, u.EmailVerified, u.RegisteredTOTP)
+	encoded := fmt.Sprintf("{\"id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"recovery_code\":\"%s\",\"email_verified\":%t,\"registered_totp\":%t}", u.Id, u.CreatedAt.Unix(), escapedEmail, u.RecoveryCode, u.EmailVerified, u.RegisteredTOTP)
 	return encoded
 }
+
+type UserSortBy int
+
+const (
+	UserSortByCreatedAt UserSortBy = iota
+	UserSortByEmail
+	UserSortById
+)
