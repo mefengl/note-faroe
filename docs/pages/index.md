@@ -37,7 +37,7 @@ async function handleLoginRequest() {
 
 This is not a full authentication backend (Auth0, Supabase, etc) nor a full identity provider (KeyCloak, etc). It is specfically designed to only handle the backend logic for email and password authentication. Faroe does not provide session management, frontend UI, or OAuth integration.
 
-Faroe is written in GO and uses SQLite as its database.
+Faroe is written in Go and uses SQLite as its database.
 
 Licensed under the MIT license.
 
@@ -46,6 +46,7 @@ Licensed under the MIT license.
 - Email login, email verification, 2FA with TOTP, 2FA recovery, and password reset
 - Rate limiting and brute force protection
 - Proper password strength checks
+- Everything included in a single binary
 - WIP: Logging
 - WIP: Dashboard
 - WIP: Database backup
