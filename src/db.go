@@ -35,3 +35,15 @@ func backupDatabase() error {
 	_, err = db.Exec("COMMIT")
 	return err
 }
+
+func cleanUpDatabase() error {
+	_, err := db.Exec("DELETE FROM email_verification_request WHERE expires_at <= ?", time.Now().Unix())
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec("DELETE FROM password_reset_request WHERE expires_at <= ?", time.Now().Unix())
+	if err != nil {
+		return err
+	}
+	return err
+}

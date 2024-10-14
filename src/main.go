@@ -123,12 +123,19 @@ func serveCommand() {
 		log.Fatal(err)
 	}
 
-	// TODO: delete expired data
-
 	_, err = db.Exec(schema)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	go func() {
+		for range time.Tick(10 * 24 * time.Hour) {
+			err := cleanUpDatabase()
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	}()
 
 	go func() {
 		// for range time.Tick(1 * time.Hour) {
