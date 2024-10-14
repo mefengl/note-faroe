@@ -62,7 +62,7 @@ func handleCreateUserRequest(w http.ResponseWriter, r *http.Request, _ httproute
 	}
 	email, password := *data.Email, *data.Password
 	if !verifyEmailInput(email) {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidEmail)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	emailAvailable, err := checkEmailAvailability(email)
@@ -76,8 +76,8 @@ func handleCreateUserRequest(w http.ResponseWriter, r *http.Request, _ httproute
 		return
 	}
 
-	if len(password) > 255 {
-		writeExpectedErrorResponse(w, ExpectedErrorPasswordTooLarge)
+	if len(password) > 127 {
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 	strongPassword, err := verifyPasswordStrength(password)
@@ -173,7 +173,7 @@ func handleDeleteUserRequest(w http.ResponseWriter, r *http.Request, params http
 	w.WriteHeader(204)
 }
 
-func handleUpdatePasswordRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func handleUpdateUserPasswordRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
 	if !verifyCredential(r) {
 		writeNotAuthenticatedErrorResponse(w)
@@ -217,12 +217,12 @@ func handleUpdatePasswordRequest(w http.ResponseWriter, r *http.Request, params 
 		return
 	}
 	password, newPassword := *data.Password, *data.NewPassword
-	if len(password) > 255 {
+	if len(password) < 8 || len(password) > 127 {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	if len(newPassword) > 255 {
-		writeExpectedErrorResponse(w, ExpectedErrorPasswordTooLarge)
+	if len(newPassword) < 8 || len(newPassword) > 127 {
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 

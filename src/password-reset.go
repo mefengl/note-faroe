@@ -53,7 +53,7 @@ func handleCreatePasswordResetRequestRequest(w http.ResponseWriter, r *http.Requ
 	email := *data.Email
 
 	if !verifyEmailInput(email) {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidEmail)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 
@@ -478,7 +478,7 @@ func handleResetPasswordRequest(w http.ResponseWriter, r *http.Request, _ httpro
 		return
 	}
 	resetRequestId, password := *data.RequestId, *data.Password
-	if len(password) > 255 {
+	if len(password) > 127 {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}

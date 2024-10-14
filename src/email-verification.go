@@ -62,7 +62,7 @@ func handleCreateEmailVerificationRequestRequest(w http.ResponseWriter, r *http.
 	}
 	email := *data.Email
 	if !verifyEmailInput(email) {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidEmail)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
 

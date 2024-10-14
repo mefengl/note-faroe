@@ -121,7 +121,7 @@ func main() {
 	router.GET("/users", handleGetUsersRequest)
 	router.GET("/users/:user_id", handleGetUserRequest)
 	router.DELETE("/users/:user_id", handleDeleteUserRequest)
-	router.POST("/users/:user_id/password", handleUpdatePasswordRequest)
+	router.POST("/users/:user_id/password", handleUpdateUserPasswordRequest)
 	router.GET("/users/:user_id/totp", handleGetUserTOTPCredentialRequest)
 	router.POST("/users/:user_id/totp", handleRegisterTOTPRequest)
 	router.GET("/users/:user_id/recovery-code", handleGetUserRecoveryCodeRequest)
@@ -212,9 +212,7 @@ const (
 const (
 	ExpectedErrorInvalidData             = "INVALID_DATA"
 	ExpectedErrorTooManyRequests         = "TOO_MANY_REQUESTS"
-	ExpectedErrorInvalidEmail            = "INVALID_EMAIL"
 	ExpectedErrorWeakPassword            = "WEAK_PASSWORD"
-	ExpectedErrorPasswordTooLarge        = "PASSWORD_TOO_LARGE"
 	ExpectedErrorEmailAlreadyUsed        = "EMAIL_ALREADY_USED"
 	ExpectedErrorUserNotExists           = "USER_NOT_EXISTS"
 	ExpectedErrorIncorrectPassword       = "INCORRECT_PASSWORD"
