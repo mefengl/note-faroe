@@ -632,7 +632,7 @@ func resetUser2FAWithRecoveryCode(userId string, recoveryCode string) (string, b
 		return "", false, err
 	}
 	defer tx.Rollback()
-	result, err := tx.Exec("UPDATE user SET recovery_code = ? WHERE id = ? AND recovery_code = ?", newRecoveryCode, userId, newRecoveryCode)
+	result, err := tx.Exec("UPDATE user SET recovery_code = ? WHERE id = ? AND recovery_code = ?", newRecoveryCode, userId, recoveryCode)
 	if err != nil {
 		return "", false, err
 	}

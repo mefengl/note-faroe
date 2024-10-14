@@ -58,6 +58,7 @@ func main() {
 Usage:
 
 faroe serve - Start the Faroe server
+faroe generate-secret - Generate a secure secret
 \n`)
 		return
 	}
@@ -66,8 +67,22 @@ faroe serve - Start the Faroe server
 		serveCommand()
 		return
 	}
+	if os.Args[1] == "generate-secret" {
+		generateSecretCommand()
+		return
+	}
 
 	fmt.Println("Unknown command")
+}
+
+func generateSecretCommand() {
+	bytes := make([]byte, 25)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		log.Fatal("Failed to generate secret\n")
+	}
+	secret := base32.NewEncoding("abcdefghijkmnpqrstuvwxyz23456789").EncodeToString(bytes)
+	fmt.Println(secret)
 }
 
 func serveCommand() {
