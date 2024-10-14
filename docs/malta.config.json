@@ -1,34 +1,37 @@
 {
-  "name": "Faroe",
-  "description": "Faroe is an open source, self-hosted, and modular identity provider for email and password authentication.",
-  "domain": "https://faroe.dev",
-  "twitter": "@pilcrowonpaper",
-  "asset_hashing": true,
-  "sidebar": [
-    {
-      "title": "Faroe server",
-      "pages": [["Getting started", "/faroe-server/getting-started"]]
-    },
-    {
-      "title": "Guides",
-      "pages": [
-        ["Sign up", "/guides/signup"],
-        ["Sign in", "/guides/login"],
-        ["Email verification", "/guides/email-verification"],
-        ["Password reset", "/guides/password-reset"],
-        ["Two-factor authentication", "/guides/2fa"]
-      ]
-    },
-    {
-      "title": "API reference",
-      "pages": [
-        ["Rest API", "/api-reference/rest"],
-        ["JavaScript SDK", "/api-reference/js"]
-      ]
-    },
-    {
-      "title": "Link",
-      "pages": [["GitHub", "https://github.com/faroedev/faroe"]]
-    }
-  ]
+    "name": "Faroe",
+    "description": "Faroe is an open source, self-hosted, and modular identity provider for email and password authentication.",
+    "domain": "https://faroe.dev",
+    "twitter": "@pilcrowonpaper",
+    "asset_hashing": true,
+    "sidebar": [
+        {
+            "title": "Faroe server",
+            "pages": [
+                ["Getting started", "/faroe-server/getting-started"],
+                ["Overview", "/faroe-server/overview"]
+            ]
+        },
+        {
+            "title": "Guides",
+            "pages": [
+                ["Sign up", "/guides/signup"],
+                ["Sign in", "/guides/login"],
+                ["Email verification", "/guides/email-verification"],
+                ["Password reset", "/guides/password-reset"],
+                ["Two-factor authentication", "/guides/2fa"]
+            ]
+        },
+        {
+            "title": "API reference",
+            "pages": [
+                ["Rest API", "/api-reference/rest"],
+                ["JavaScript SDK", "/api-reference/js"]
+            ]
+        },
+        {
+            "title": "Link",
+            "pages": [["GitHub", "https://github.com/faroedev/faroe"]]
+        }
+    ]
 }
