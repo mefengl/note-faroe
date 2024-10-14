@@ -7,12 +7,15 @@ import (
 	"strings"
 )
 
-func verifyCredential(r *http.Request) bool {
+func verifySecret(r *http.Request) bool {
+	if len(secret) == 0 {
+		return true
+	}
 	authorizationHeader, ok := r.Header["Authorization"]
 	if !ok {
 		return false
 	}
-	return subtle.ConstantTimeCompare(credential, []byte(authorizationHeader[0])) == 1
+	return subtle.ConstantTimeCompare(secret, []byte(authorizationHeader[0])) == 1
 }
 
 func verifyJSONContentTypeHeader(r *http.Request) bool {

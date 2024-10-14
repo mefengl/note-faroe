@@ -19,7 +19,7 @@ import (
 func handleCreatePasswordResetRequestRequest(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
 
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -110,7 +110,7 @@ func handleCreatePasswordResetRequestRequest(w http.ResponseWriter, r *http.Requ
 func handleGetPasswordResetRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
 
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -150,7 +150,7 @@ func handleGetPasswordResetRequestRequest(w http.ResponseWriter, r *http.Request
 func handleGetPasswordResetRequestUserRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
 
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -189,7 +189,7 @@ func handleGetPasswordResetRequestUserRequest(w http.ResponseWriter, r *http.Req
 
 func handleVerifyPasswordResetRequestEmailRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -275,7 +275,7 @@ func handleVerifyPasswordResetRequestEmailRequest(w http.ResponseWriter, r *http
 
 func handleVerifyPasswordResetRequest2FAWithTOTPRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -365,7 +365,7 @@ func handleVerifyPasswordResetRequest2FAWithTOTPRequest(w http.ResponseWriter, r
 
 func handleResetPasswordResetRequest2FAWithRecoveryCodeRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -440,7 +440,7 @@ func handleResetPasswordResetRequest2FAWithRecoveryCodeRequest(w http.ResponseWr
 }
 
 func handleResetPasswordRequest(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}

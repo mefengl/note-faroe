@@ -6,11 +6,11 @@ import (
 	"encoding/base32"
 	"errors"
 	"faroe/ratelimit"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -20,7 +20,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var credential []byte
+const version = "0.1.0"
+
+var secret []byte
 
 var db *sql.DB
 
@@ -44,25 +46,44 @@ var recoveryCodeUserRateLimit = ratelimit.NewExpiringTokenBucketRateLimit(5, 15*
 var schema string
 
 func main() {
-	if len(os.Args) < 2 {
-		log.Fatal("Please define a port: faroe 3000")
-	}
-	port, err := strconv.Atoi(os.Args[1])
-	if err != nil {
-		log.Fatal("Invalid port")
-	}
-
-	envKV := os.Environ()
-	for _, kv := range envKV {
-		parts := strings.Split(kv, "=")
-		if len(parts) == 2 && parts[0] == "credential" {
-			credential = []byte(parts[1])
+	for _, arg := range os.Args {
+		if arg == "-v" || arg == "--version" {
+			fmt.Printf("Faroe version %s\n", version)
+			return
 		}
 	}
 
-	if len(credential) == 0 {
-		log.Fatal("Please define a credential with --credential=CREDENTIAL")
+	if len(os.Args) < 2 {
+		fmt.Print(`
+Usage:
+
+faroe serve - Start the Faroe server
+\n`)
+		return
 	}
+
+	if os.Args[1] == "serve" {
+		serveCommand()
+		return
+	}
+
+	fmt.Println("Unknown command")
+}
+
+func serveCommand() {
+	// Remove "server" command since Go's flag package stops parsing at first non-flag argument.
+	os.Args = os.Args[1:]
+	if len(os.Args) < 2 {
+		log.Fatal("Please define a port: faroe 3000")
+	}
+
+	var port int
+	var secretString string
+	flag.IntVar(&port, "port", 3000, "Port number")
+	flag.StringVar(&secretString, "secret", "", "Server secret")
+	flag.Parse()
+
+	secret = []byte(secretString)
 
 	go func() {
 		for range time.Tick(10 * 24 * time.Hour) {
@@ -77,7 +98,7 @@ func main() {
 		}
 	}()
 
-	err = os.MkdirAll("faroe_data", os.ModePerm)
+	err := os.MkdirAll("faroe_data", os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -107,13 +128,21 @@ func main() {
 
 	router := &httprouter.Router{
 		NotFound: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !verifyCredential(r) {
+			if !verifySecret(r) {
 				writeNotAuthenticatedErrorResponse(w)
 			} else {
 				writeNotFoundErrorResponse(w)
 			}
 		}),
 	}
+
+	router.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		if !verifySecret(r) {
+			writeNotAuthenticatedErrorResponse(w)
+			return
+		}
+		w.Write([]byte(fmt.Sprintf("Faroe version %s\n\nRead the documentation: https://faroe.dev\n", version)))
+	})
 
 	router.POST("/authenticate/password", handleAuthenticateWithPasswordRequest)
 

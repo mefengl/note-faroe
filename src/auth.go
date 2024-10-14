@@ -15,7 +15,7 @@ import (
 
 func handleAuthenticateWithPasswordRequest(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}

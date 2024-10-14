@@ -23,7 +23,7 @@ import (
 
 func handleCreateUserRequest(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -120,7 +120,7 @@ func handleCreateUserRequest(w http.ResponseWriter, r *http.Request, _ httproute
 }
 
 func handleGetUserRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -147,7 +147,7 @@ func handleGetUserRequest(w http.ResponseWriter, r *http.Request, params httprou
 }
 
 func handleDeleteUserRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -175,7 +175,7 @@ func handleDeleteUserRequest(w http.ResponseWriter, r *http.Request, params http
 
 func handleUpdateUserPasswordRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -265,7 +265,7 @@ func handleUpdateUserPasswordRequest(w http.ResponseWriter, r *http.Request, par
 
 func handleResetUser2FARequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -332,7 +332,7 @@ func handleResetUser2FARequest(w http.ResponseWriter, r *http.Request, params ht
 }
 
 func handleRegenerateUserRecoveryCodeRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -366,7 +366,7 @@ func handleRegenerateUserRecoveryCodeRequest(w http.ResponseWriter, r *http.Requ
 }
 
 func handleGetUsersRequest(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -427,7 +427,7 @@ func handleGetUsersRequest(w http.ResponseWriter, r *http.Request, _ httprouter.
 }
 
 func handleGetUserRecoveryCodeRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}

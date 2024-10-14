@@ -18,7 +18,7 @@ import (
 func handleCreateEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
 
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -92,7 +92,7 @@ func handleCreateEmailVerificationRequestRequest(w http.ResponseWriter, r *http.
 func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
 
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -201,7 +201,7 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 func handleDeleteEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
 
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -231,7 +231,7 @@ func handleDeleteEmailVerificationRequestRequest(w http.ResponseWriter, r *http.
 func handleGetEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
 
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}

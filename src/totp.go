@@ -16,7 +16,7 @@ import (
 )
 
 func handleRegisterTOTPRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -111,7 +111,7 @@ func handleRegisterTOTPRequest(w http.ResponseWriter, r *http.Request, params ht
 
 func handleVerifyTOTPRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -176,7 +176,7 @@ func handleVerifyTOTPRequest(w http.ResponseWriter, r *http.Request, params http
 }
 
 func handleDeleteUserTOTPCredentialRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -204,7 +204,7 @@ func handleDeleteUserTOTPCredentialRequest(w http.ResponseWriter, r *http.Reques
 }
 
 func handleGetUserTOTPCredentialRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifyCredential(r) {
+	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
