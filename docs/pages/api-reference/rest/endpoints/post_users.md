@@ -23,8 +23,8 @@ All fields are required.
 }
 ```
 
-- `email`
-- `password`: Must be at least 8 characters long and not be part of past data leaks (checked using the [HaveIBeenPwned API](https://haveibeenpwned.com/API/v3#PwnedPasswords)).
+- `email`: A valid email address.
+- `password`: A valid password. Password strength is determined by checking it aginst past data leaks using the [HaveIBeenPwned API](https://haveibeenpwned.com/API/v3#PwnedPasswords).
 
 ### Example
 
@@ -42,7 +42,6 @@ Returns the [user model](/api-reference/rest/models/user) of the created user.
 ## Error codess
 
 - [400] `INVALID_DATA`: Invalid request data.
-- [400] `INVALID_EMAIL`: Malformed email address.
 - [400] `EMAIL_ALREADY_USED`
 - [400] `PASSWORD_TOO_LARGE`: The password is too long.
 - [400] `WEAK_PASSWORD`: The password is too weak.

@@ -22,7 +22,7 @@ All fields are required.
 }
 ```
 
-- `email`
+- `email`: A valid email address.
 
 ### Example
 
@@ -39,7 +39,6 @@ Returns the [email verification request model](/api-reference/rest/models/email-
 ## Error codess
 
 - [400] `INVALID_DATA`: Invalid request data.
-- [400] `INVALID_EMAIL`: Malformed email address.
 - [400] `EMAIL_ALREADY_USED`: The email is already used by an existing account.
 - [400] `TOO_MANY_REQUESTS`: Exceeded rate limit.
 - [404] `NOT_FOUND`: The user does not exist.

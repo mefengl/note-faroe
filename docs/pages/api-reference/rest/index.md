@@ -26,15 +26,20 @@ All error responses have a 4xx or 5xx status and includes a JSON object with an 
 }
 ```
 
-## Rate limiting
+## User IP address
 
-Set the `X-Client-IP` header to the client's IP address to enable IP-based rate limiting.
+Send the IP address of the user in the `X-Client-IP` header to enable IP-based rate limiting and better logs.
 
 ```
 X-Client-IP: 255.255.255.255
 ```
 
 All endpoints that hashes passwords with Argon2id are rate limited based on IP addresses to prevent DoS attacks.
+
+## Data types
+
+- Email address: Must be less than 256 characters long, have a "@", and a "." in the domain part. Cannot start or end with a whitespace.
+- Password: Must be between 8 and 127 characters.
 
 ## Models
 
@@ -47,7 +52,7 @@ All endpoints that hashes passwords with Argon2id are rate limited based on IP a
 
 ### Authentication
 
-- [POST /login/password](/api-reference/rest/endpoints/post_authenticate_password): Authenticate user with email and password.
+- [POST /authenticate/password](/api-reference/rest/endpoints/post_authenticate_password): Authenticate user with email and password.
 
 ### Users
 
@@ -60,18 +65,19 @@ All endpoints that hashes passwords with Argon2id are rate limited based on IP a
 #### Email verification
 
 - [POST /users/\[user_id\]/email-verification](/api-reference/rest/endpoints/post_users_userid_email-verification): Create a new user email verification request.
-- [GET /users/\[user_id\]/email-verification/\[request_id\]](/api-reference/rest/endpoints/get_users_userid_email-verification_requestid): Get a user's email verification request.
-- [DELETE /users/\[user_id\]/email-verification/\[request_id\]](/api-reference/rest/endpoints/delete_users_userid_email-verification_requestid): Delete a user's email verification request.
-- [POST /users/\[user_id\]/verify-email](/api-reference/rest/endpoints/post_users_userid_verify-email): Update the user's email by verifying their email verification request.
+- [GET /users/\[user_id\]/email-verification/\[request_id\]](/api-reference/rest/endpoints/get_users_userid_email-verification_requestid): Get an email verification request.
+- [DELETE /users/\[user_id\]/email-verification/\[request_id\]](/api-reference/rest/endpoints/delete_users_userid_email-verification_requestid): Delete an email verification request.
+- [POST /users/\[user_id\]/verify-email](/api-reference/rest/endpoints/post_users_userid_verify-email): Update a user's email by verifying their email verification request code.
 
 #### Two-factor authentication
 
 - [POST /users/\[user_id\/totp](/api-reference/rest/endpoints/post_users_userid_totp): Register a TOTP credential.
 - [GET /users/\[user_id\]/totp](/api-reference/rest/endpoints/get_users_userid_totp): Get a user's TOTP credential.
+- [DELETE /users/\[user_id\]/totp](/api-reference/rest/endpoints/delete_users_userid_totp): Deletes a user's TOTP credential.
 - [POST /users/\[user_id\]/verify-2fa/totp](/api-reference/rest/endpoints/post_users_userid_verify-2fa_totp): Verify a user's TOTP code.
 - [GET /users/\[user_id\]/recovery-code](/api-reference/rest/endpoints/get_users_userid_recovery-code): Get a user's recovery code.
 - [POST /users/\[user_id\]/regenerate-recovery-code](/api-reference/rest/endpoints/post_users_userid_regenerate-recovery-code): Generate a new user recovery code.
-- [GET /users/\[user_id\]/reset-2fa](/api-reference/rest/endpoints/post_users_userid_reset-2fa): Reset a user's second factors with a recovery code.
+- [POST /users/\[user_id\]/reset-2fa](/api-reference/rest/endpoints/post_users_userid_reset-2fa): Reset a user's second factors with a recovery code.
 
 ### Password reset
 

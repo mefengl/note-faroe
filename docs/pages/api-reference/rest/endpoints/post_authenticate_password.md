@@ -21,8 +21,8 @@ All fields are required.
 }
 ```
 
-- `email`
-- `password`
+- `email`: A valid email address.
+- `password`: A valid password.
 
 ### Example
 

@@ -4,7 +4,7 @@ title: "POST /password-reset/[request_id]/verify-2fa/totp"
 
 # POST /password-reset/[request_id]/verify-2fa/totp
 
-Verifies the TOTP code of a password reset request's user. The password reset request will be marked as 2FA-verfied. The user will be locked out from using TOTP as their second factor for 15 minutes after their 5th consecutive failed attempts.
+Verifies the TOTP code of a password reset request's user and marks the password reset as 2FA-verfied. The user will be locked out from using TOTP as their second factor for 15 minutes after their 5th consecutive failed attempts.
 
 ```
 POST https://your-domain.com/password-reset/REQUEST_ID/verify-2fa/totp

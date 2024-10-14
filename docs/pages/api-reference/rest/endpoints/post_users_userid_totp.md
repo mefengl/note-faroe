@@ -4,7 +4,7 @@ title: "POST /users/[user_id]/totp"
 
 # POST /users/[user_id]/totp
 
-Registers a TOTP (HMAC SHA-1) credential to a user.
+Registers a TOTP (SHA-1, 6 digits, 30 seconds interval) credential to a user.
 
 ```
 POST https://your-domain.com/users/USER_ID/totp
@@ -22,7 +22,7 @@ All fields are required.
 ```
 
 - `totp_key`: A base64-encoded TOTP key. The encoded key must be 20 bytes.
-- `code`: The current TOTP for verification.
+- `code`: The TOTP code from the key for verification.
 
 ## Response body
 

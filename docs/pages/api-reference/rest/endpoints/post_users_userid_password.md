@@ -21,8 +21,8 @@ All fields are required.
 }
 ```
 
-- `password`: Old password.
-- `new_password`: Must be at least 8 characters long and not be part of past data leaks (checked using the [HaveIBeenPwned API](https://haveibeenpwned.com/API/v3#PwnedPasswords)).
+- `password`: The current password.
+- `new_password`: A valid password. Password strength is determined by checking it aginst past data leaks using the [HaveIBeenPwned API](https://haveibeenpwned.com/API/v3#PwnedPasswords).
 
 ### Example
 
@@ -35,12 +35,12 @@ All fields are required.
 
 ## Succesful response
 
-Returns the [user model](/api-reference/rest/models/user) of the created user.
+No response body (204).
 
 ## Error codess
 
 - [400] `INVALID_DATA`: Invalid request data.
-- [400] `PASSWORD_TOO_LARGE`: The password is too long.
 - [400] `WEAK_PASSWORD`: The password is too weak.
 - [400] `TOO_MANY_REQUESTS`: Exceeded rate limit.
+- [404] `NOT_FOUND`: The user does not exist.
 - [500] `UNKNOWN_ERROR`

@@ -68,7 +68,6 @@ Returns the [password reset request model](/api-reference/rest/models/password-r
 ## Error codess
 
 - [400] `INVALID_DATA`: Invalid request data.
-- [400] `INVALID_EMAIL`: Malformed email address.
 - [400] `USER_NOT_EXISTS`: A user linked to the email does not exist.
 - [400] `TOO_MANY_REQUESTS`: Exceeded rate limit.
 - [500] `UNKNOWN_ERROR`
