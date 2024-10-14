@@ -57,7 +57,7 @@ func handleAuthenticateWithPasswordRequest(w http.ResponseWriter, r *http.Reques
 	user, err := getUserFromEmail(email)
 	if errors.Is(err, ErrRecordNotFound) {
 		logMessageWithClientIP("INFO", "LOGIN_ATTEMPT", "INVALID_EMAIL", clientIP, fmt.Sprintf("email_input=\"%s\"", strings.ReplaceAll(email, "\"", "\\\"")))
-		writeExpectedErrorResponse(w, ExpectedErrorAccountNotExists)
+		writeExpectedErrorResponse(w, ExpectedErrorUserNotExists)
 		return
 	}
 	if err != nil {
@@ -82,7 +82,7 @@ func handleAuthenticateWithPasswordRequest(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if !validPassword {
-		logMessageWithClientIP("INFO", "LOGIN_ATTEMPT", "INVALID_PASSWORD", clientIP, fmt.Sprintf("email=\"%s\" user_id=%s", strings.ReplaceAll(email, "\"", "\\\""), user.Id))
+		logMessageWithClientIP("INFO", "LOGIN_ATTEMPT", "INCORRECT_PASSWORD", clientIP, fmt.Sprintf("email=\"%s\" user_id=%s", strings.ReplaceAll(email, "\"", "\\\""), user.Id))
 		writeExpectedErrorResponse(w, ExpectedErrorIncorrectPassword)
 		return
 	}

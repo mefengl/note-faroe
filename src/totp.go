@@ -180,10 +180,6 @@ func handleDeleteUserTOTPCredentialRequest(w http.ResponseWriter, r *http.Reques
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
-	if !verifyJSONAcceptHeader(r) {
-		writeUnsupportedMediaTypeErrorResponse(w)
-		return
-	}
 
 	userId := params.ByName("user_id")
 	userExists, err := checkUserExists(userId)
@@ -204,20 +200,7 @@ func handleDeleteUserTOTPCredentialRequest(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	user, err := getUser(userId)
-	if errors.Is(err, ErrRecordNotFound) {
-		writeNotFoundErrorResponse(w)
-		return
-	}
-	if err != nil {
-		log.Println(err)
-		writeUnExpectedErrorResponse(w)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	w.Write([]byte(user.EncodeToJSON()))
+	w.WriteHeader(204)
 }
 
 func handleGetUserTOTPCredentialRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {

@@ -71,16 +71,11 @@ func handleCreateEmailVerificationRequestRequest(w http.ResponseWriter, r *http.
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
-	err = deleteUserEmailVerificationRequests(userId)
-	if err != nil {
-		log.Println(err)
-		writeUnExpectedErrorResponse(w)
-		return
-	}
+
 	verificationRequest, err := createEmailVerificationRequest(userId, email)
 	if err != nil {
 		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
-			writeNotFoundErrorResponse(w)
+			writeExpectedErrorResponse(w, ExpectedErrorEmailAlreadyUsed)
 			return
 		}
 		log.Println(err)
@@ -147,7 +142,7 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 
 	verificationRequest, err := getUserEmailVerificationRequest(userId, *data.RequestId)
 	if errors.Is(err, ErrRecordNotFound) {
-		writeNotFoundErrorResponse(w)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequestId)
 		return
 	}
 	if err != nil {
@@ -163,7 +158,7 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 			writeUnExpectedErrorResponse(w)
 			return
 		}
-		writeNotFoundErrorResponse(w)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequestId)
 		return
 	}
 	if !verifyEmailVerificationCodeLimitCounter.Consume(verificationRequest.Email) {
@@ -384,6 +379,6 @@ type EmailVerificationRequest struct {
 
 func (r *EmailVerificationRequest) EncodeToJSON() string {
 	escapedEmail := strings.ReplaceAll(r.Email, "\"", "\\\"")
-	encoded := fmt.Sprintf("{\"id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"expires_at\":%d,\"code\":\"%s\"}", r.Id, r.CreatedAt.Unix(), escapedEmail, r.ExpiresAt.Unix(), r.Code)
+	encoded := fmt.Sprintf("{\"id\":\"%s\",\"user_id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"expires_at\":%d,\"code\":\"%s\"}", r.Id, r.UserId, r.CreatedAt.Unix(), escapedEmail, r.ExpiresAt.Unix(), r.Code)
 	return encoded
 }

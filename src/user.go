@@ -45,7 +45,6 @@ func handleCreateUserRequest(w http.ResponseWriter, r *http.Request, _ httproute
 	var data struct {
 		Email    *string `json:"email"`
 		Password *string `json:"password"`
-		Context  *string `json:"context"`
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
@@ -61,7 +60,7 @@ func handleCreateUserRequest(w http.ResponseWriter, r *http.Request, _ httproute
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	email, password, _ := *data.Email, *data.Password, data.Context
+	email, password := *data.Email, *data.Password
 	if !verifyEmailInput(email) {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidEmail)
 		return
@@ -153,7 +152,18 @@ func handleDeleteUserRequest(w http.ResponseWriter, r *http.Request, params http
 		return
 	}
 	userId := params.ByName("user_id")
-	err := deleteUser(userId)
+	userExists, err := checkUserExists(userId)
+	if !userExists {
+		writeNotFoundErrorResponse(w)
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		writeUnExpectedErrorResponse(w)
+		return
+	}
+
+	err = deleteUser(userId)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
@@ -164,6 +174,7 @@ func handleDeleteUserRequest(w http.ResponseWriter, r *http.Request, params http
 }
 
 func handleUpdatePasswordRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	clientIP := r.Header.Get("X-Client-IP")
 	if !verifyCredential(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -212,6 +223,12 @@ func handleUpdatePasswordRequest(w http.ResponseWriter, r *http.Request, params 
 	}
 	if len(newPassword) > 255 {
 		writeExpectedErrorResponse(w, ExpectedErrorPasswordTooLarge)
+		return
+	}
+
+	if !passwordHashingIPRateLimit.Consume(clientIP, 1) {
+		logMessageWithClientIP("INFO", "UPDATE)USER_PASSWORD", "PASSWORD_HASHING_LIMIT_REJECTED", clientIP, fmt.Sprintf("user_id=\"%s\"", user.Id))
+		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 	strongPassword, err := verifyPasswordStrength(newPassword)

@@ -60,7 +60,7 @@ func handleCreatePasswordResetRequestRequest(w http.ResponseWriter, r *http.Requ
 	user, err := getUserFromEmail(email)
 	if errors.Is(err, ErrRecordNotFound) {
 		logMessageWithClientIP("INFO", "CREATE_PASSWORD_RESET_REQUEST", "INVALID_EMAIL", clientIP, fmt.Sprintf("email_input=\"%s\"", strings.ReplaceAll(email, "\"", "\\\"")))
-		writeExpectedErrorResponse(w, ExpectedErrorAccountNotExists)
+		writeExpectedErrorResponse(w, ExpectedErrorUserNotExists)
 		return
 	}
 	if err != nil {
@@ -93,14 +93,13 @@ func handleCreatePasswordResetRequestRequest(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = deleteEmailUnverifiedUserPasswordResetRequests(user.Id)
 	resetRequest, err := createPasswordResetRequest(user.Id, user.Email, codeHash)
-
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
 		return
 	}
+
 	logMessageWithClientIP("INFO", "CREATE_PASSWORD_RESET_REQUEST", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s email=\"%s\" request_id=%s", user.Id, strings.ReplaceAll(user.Email, "\"", "\\\""), resetRequest.Id))
 
 	w.Header().Set("Content-Type", "application/json")
@@ -530,7 +529,7 @@ func handleResetPasswordRequest(w http.ResponseWriter, r *http.Request, _ httpro
 		return
 	}
 
-	validResetRequest, err := updateUserPasswordHashAndSetEmailAsVerifiedWithPasswordResetRequest(resetRequest.Id, passwordHash)
+	validResetRequest, err := resetUserPasswordWithPasswordResetRequest(resetRequest.Id, passwordHash)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
@@ -625,15 +624,14 @@ func getPasswordResetRequestAndUser(requestId string) (PasswordResetRequest, Use
 	return request, user, nil
 }
 
-func updateUserPasswordHashAndSetEmailAsVerifiedWithPasswordResetRequest(requestId string, passwordHash string) (bool, error) {
+func resetUserPasswordWithPasswordResetRequest(requestId string, passwordHash string) (bool, error) {
 	tx, err := db.Begin()
 	if err != nil {
 		return false, err
 	}
 	var userId string
-	var expiresAtUnix int64
 	var email string
-	err = db.QueryRow("DELETE FROM password_reset_request WHERE id = ? RETURNING user_id, expires_at, email", requestId).Scan(&userId, &expiresAtUnix, &email)
+	err = db.QueryRow("DELETE FROM password_reset_request WHERE id = ? AND expires_at > ? RETURNING user_id, email", requestId, time.Now().Unix()).Scan(&userId, &email)
 	if errors.Is(err, sql.ErrNoRows) {
 		err = tx.Commit()
 		if err != nil {
@@ -646,13 +644,10 @@ func updateUserPasswordHashAndSetEmailAsVerifiedWithPasswordResetRequest(request
 		tx.Rollback()
 		return false, err
 	}
-	if time.Now().Compare(time.Unix(expiresAtUnix, 0)) >= 0 {
-		err = tx.Commit()
-		if err != nil {
-			tx.Rollback()
-			return false, err
-		}
-		return false, nil
+	_, err = db.Exec("DELETE FROM password_reset_request WHERE user_id = ?", userId)
+	if err != nil {
+		tx.Rollback()
+		return false, err
 	}
 	_, err = db.Exec("UPDATE user SET password_hash = ? WHERE id = ?", passwordHash, userId)
 	if err != nil {

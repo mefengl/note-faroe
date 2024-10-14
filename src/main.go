@@ -26,7 +26,7 @@ var db *sql.DB
 
 var passwordHashingIPRateLimit = ratelimit.NewTokenBucketRateLimit(5, 10*time.Second)
 
-var loginIPRateLimit = ratelimit.NewExpiringTokenBucketRateLimit(5, 10*time.Minute)
+var loginIPRateLimit = ratelimit.NewExpiringTokenBucketRateLimit(5, 15*time.Minute)
 
 var createEmailVerificationUserRateLimit = ratelimit.NewTokenBucketRateLimit(3, 5*time.Minute)
 
@@ -86,6 +86,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// TODO: delete expired data
 
 	_, err = db.Exec(schema)
 	if err != nil {
@@ -214,7 +216,7 @@ const (
 	ExpectedErrorWeakPassword            = "WEAK_PASSWORD"
 	ExpectedErrorPasswordTooLarge        = "PASSWORD_TOO_LARGE"
 	ExpectedErrorEmailAlreadyUsed        = "EMAIL_ALREADY_USED"
-	ExpectedErrorAccountNotExists        = "ACCOUNT_NOT_EXISTS"
+	ExpectedErrorUserNotExists           = "USER_NOT_EXISTS"
 	ExpectedErrorIncorrectPassword       = "INCORRECT_PASSWORD"
 	ExpectedErrorIncorrectCode           = "INCORRECT_CODE"
 	ExpectedErrorEmailNotVerified        = "EMAIL_NOT_VERIFIED"
