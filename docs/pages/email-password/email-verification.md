@@ -78,7 +78,7 @@ async function handleVerifyEmailRequest(
 }
 ```
 
-Like in the sign up process, use `Faroe.createUserEmailVerificationRequest()` to create a new email verification request and link it to the current user.
+Like in the sign up process, use `Faroe.createUserEmailVerificationRequest()` to create a new email verification request and link it to the current user. This method has rate limiting built-in to prevent DoS attacks targetting your email servers. However, consider adding some kind of bot and spam protection.
 
 ```ts
 import { FaroeError } from "@faroe/sdk";

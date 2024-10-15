@@ -66,7 +66,7 @@ async function handleUpdatePasswordRequest(
 
     // Invalidate all sessions belonging to the user and create a new session.
     await invalidateAllUserSessions(user.id);
-    const session = createSession(user.id, null);
+    const session = await createSession(user.id, null);
 
     // ...
 

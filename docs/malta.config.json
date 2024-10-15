@@ -10,16 +10,25 @@
             "pages": [["Getting started", "/faroe-server/getting-started"]]
         },
         {
-            "title": "Guides",
+            "title": "Email and password",
             "pages": [
-                ["Setting up your project", "/guides/setup"],
-                ["Sign up", "/guides/signup"],
-                ["Sign in", "/guides/login"],
-                ["Email verification", "/guides/email-verification"],
-                ["Update email address", "/guides/update-email"],
-                ["Update password", "/guides/update-password"],
-                ["Password reset", "/guides/password-reset"],
-                ["Two-factor authentication", "/guides/2fa"]
+                ["Setting up your project", "/email-password/setup"],
+                ["Sign up", "/email-password/signup"],
+                ["Sign in", "/email-password/login"],
+                ["Email verification", "/email-password/email-verification"],
+                ["Update email address", "/email-password/update-email"],
+                ["Update password", "/email-password/update-password"],
+                ["Password reset", "/email-password/password-reset"],
+                ["Implementation checklist", "/email-password/checklist"]
+            ]
+        },
+        {
+            "title": "Two-factor authentication",
+            "pages": [
+                ["Setting up your project", "/2fa/setup"],
+                ["Authenticator apps", "/2fa/totp"],
+                ["Account recovery", "/2fa/account-recovery"],
+                ["Implementation checklist", "/2fa/checklist"]
             ]
         },
         {

@@ -77,7 +77,7 @@ async function handleSignUpRequest(
     await sendEmail(faroeUser.email, emailContent);
 
     // Create a session and link the verification request
-    const session = createSession(user.id, faroeEmailVerificationRequest.id);
+    const session = await createSession(user.id, faroeEmailVerificationRequest.id);
 
     // ...
 }

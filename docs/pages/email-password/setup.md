@@ -7,7 +7,7 @@ title: "Setting up your project"
 For JavaScript projects, install the SDK and initialize it with server url, and if defined, the secret
 
 ```
-npm install @faror/sdk
+npm install @faroe/sdk
 ```
 
 ```ts

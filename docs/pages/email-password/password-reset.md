@@ -157,6 +157,7 @@ async function handleResetPasswordRequest(
     }
 
     let password: string;
+
     // ...
 
     if (!verifyPasswordInput(password)) {

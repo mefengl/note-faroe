@@ -55,8 +55,8 @@ async function handleLoginRequest(
         return;
     }
 
-    const user = getUserFromFaroeId(faroeUser.id);
-    const session = createSession(user.id, null);
+    const user = await getUserFromFaroeId(faroeUser.id);
+    const session = await createSession(user.id, null);
 
     // ...
 }
