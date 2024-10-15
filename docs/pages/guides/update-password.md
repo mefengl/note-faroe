@@ -4,6 +4,8 @@ title: "Update password"
 
 # Update password
 
+*This page uses the JavaScript SDK*.
+
 Use `Faroe.updateUserPassword()` to update the user's password using their current password. We recommend doing some basic input validation with `verifyPasswordInput()`. If successful, invalidate all existing sessions belonging to the user.
 
 ```ts

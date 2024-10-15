@@ -4,6 +4,8 @@ title: "Email verification"
 
 # Email verification
 
+*This page uses the JavaScript SDK*.
+
 Ask the user for the email verification code sent to their inbox.
 
 Get the email verification request linked to the current session and use `Faroe.verifyUserEmail()` to verify the user's email. If successful, set the `email_verified` field of your application's user to `true` and unlink the verification request from the session.

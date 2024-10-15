@@ -4,6 +4,8 @@ title: "Update email address"
 
 # Update email address
 
+*This page uses the JavaScript SDK*.
+
 The email verification requests used to verify the user's email can also be used to verify new email addresses.
 
 ```ts
