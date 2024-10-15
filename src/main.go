@@ -188,10 +188,7 @@ func serveCommand() {
 	router.POST("/password-reset", handleCreatePasswordResetRequestRequest)
 	router.GET("/password-reset/:request_id", handleGetPasswordResetRequestRequest)
 	router.DELETE("/password-reset/:request_id", handleDeleteEmailVerificationRequestRequest)
-	router.GET("/password-reset/:request_id/user", handleGetPasswordResetRequestUserRequest)
 	router.POST("/password-reset/:request_id/verify-email", handleVerifyPasswordResetRequestEmailRequest)
-	router.POST("/password-reset/:request_id/verify-2fa/totp", handleVerifyPasswordResetRequest2FAWithTOTPRequest)
-	router.POST("/password-reset/:request_id/reset-2fa", handleResetPasswordResetRequest2FAWithRecoveryCodeRequest)
 	router.POST("/reset-password", handleResetPasswordRequest)
 
 	fmt.Printf("Starting server in port %d...\n", port)

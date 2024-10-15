@@ -100,10 +100,6 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 		writeUnsupportedMediaTypeErrorResponse(w)
 		return
 	}
-	if !verifyJSONAcceptHeader(r) {
-		writeNotAcceptableErrorResponse(w)
-		return
-	}
 
 	userId := params.ByName("user_id")
 	userExists, err := checkUserExists(userId)
@@ -161,7 +157,7 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequestId)
 		return
 	}
-	if !verifyEmailVerificationCodeLimitCounter.Consume(verificationRequest.Email) {
+	if !verifyEmailVerificationCodeLimitCounter.Consume(verificationRequest.Id) {
 		logMessageWithClientIP("INFO", "VERIFY_EMAIL_VERIFICATION_REQUEST", "FAIL_COUNTER_LIMIT_REJECTED", clientIP, "")
 		err = deleteEmailVerificationRequest(verificationRequest.Id)
 		if err != nil {
@@ -186,16 +182,11 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 	}
 	logMessageWithClientIP("INFO", "VERIFY_EMAIL", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s request_id=%s email=\"%s\"", userId, verificationRequest.Id, strings.ReplaceAll(verifiedEmail, "\"", "\\\"")))
 
-	verifyEmailVerificationCodeLimitCounter.Delete(verificationRequest.Email)
+	verifyEmailVerificationCodeLimitCounter.Delete(verificationRequest.Id)
 
-	user, err := getUser(verificationRequest.UserId)
-	if err != nil {
-		log.Println(err)
-		writeUnExpectedErrorResponse(w)
-		return
-	}
-	w.WriteHeader(200)
-	w.Write([]byte(user.EncodeToJSON()))
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(204)
+	w.Write([]byte(encodeEmailToJSON(verificationRequest.Email)))
 }
 
 func handleDeleteEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -380,5 +371,11 @@ type EmailVerificationRequest struct {
 func (r *EmailVerificationRequest) EncodeToJSON() string {
 	escapedEmail := strings.ReplaceAll(r.Email, "\"", "\\\"")
 	encoded := fmt.Sprintf("{\"id\":\"%s\",\"user_id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"expires_at\":%d,\"code\":\"%s\"}", r.Id, r.UserId, r.CreatedAt.Unix(), escapedEmail, r.ExpiresAt.Unix(), r.Code)
+	return encoded
+}
+
+func encodeEmailToJSON(email string) string {
+	escapedEmail := strings.ReplaceAll(email, "\"", "\\\"")
+	encoded := fmt.Sprintf("{\"email\":\"%s\"}", escapedEmail)
 	return encoded
 }

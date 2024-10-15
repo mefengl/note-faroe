@@ -2,7 +2,6 @@ CREATE TABLE IF NOT EXISTS user (
     id TEXT NOT NULL PRIMARY KEY,
     created_at INTEGER NOT NULL,
     email TEXT NOT NULL UNIQUE,
-    email_verified INTEGER NOT NULL DEFAULT 0,
     password_hash TEXT NOT NULL,
     recovery_code TEXT NOT NULL
 ) STRICT;
@@ -27,8 +26,7 @@ CREATE TABLE IF NOT EXISTS password_reset_request (
     expires_at INTEGER NOT NULL,
     email TEXT NOT NULL,
     code_hash TEXT NOT NULL,
-    email_verified INTEGER NOT NULL DEFAULT 0,
-    two_factor_verified INTEGER NOT NULL DEFAULT 0
+    email_verified INTEGER NOT NULL DEFAULT 0
 ) STRICT;
 
 CREATE INDEX IF NOT EXISTS password_reset_request_user_id_index ON password_reset_request(user_id);
