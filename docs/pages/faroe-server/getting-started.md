@@ -16,7 +16,19 @@ Install the latest version of Faroe:
 You can immediately start the server on port 3000 with `faroe server`:
 
 ```
-./faroe serve --port 3000
+./faroe serve
+
+./faroe serve --port=4000
 ```
 
 This will create a `faroe_data` folder in the root that contains the SQLite database. Remember to add this to `.gitignore`.
+
+For production apps, generate a secret with the `generate-secret` command and pass it when starting the sever.
+
+```
+./faroe generate-secret
+```
+
+```
+./faroe serve --secret=SECRET
+```

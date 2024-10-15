@@ -22,7 +22,7 @@ All error responses have a 4xx or 5xx status and includes a JSON object with an 
 
 ```json
 {
-    "error": "INVALID_EMAIL"
+    "error": "INVALID_DATA"
 }
 ```
 
@@ -85,6 +85,4 @@ All endpoints that hashes passwords with Argon2id are rate limited based on IP a
 - [GET /password-reset/\[request_id\]](/api-reference/rest/endpoints/get_password-reset_requestid): Get a password reset request.
 - [DELETE /password-reset/\[request_id\]](/api-reference/rest/endpoints/delete_password-reset_requestid): Delete a password reset request.
 - [POST /password-reset/\[request_id\]/verify-email](/api-reference/rest/endpoints/post_password-reset_requestid_verify-email): Verify a reset request's email.
-- [POST /password-reset/\[request_id\]/verify-2fa/totp](/api-reference/rest/endpoints/post_password-reset_requestid_verify-2fa_totp): Verify the TOTP code of a reset request's user.
-- [POST /password-reset/\[request_id\]/reset-2fa](/api-reference/rest/endpoints/post_password-reset_requestid_reset-2fa): Reset the second factors of a reset request's user with a recovery code.
 - [POST /reset-password](/api-reference/rest/endpoints/post_reset-password): Reset the user's password with a verified reset request.

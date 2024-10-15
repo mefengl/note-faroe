@@ -4,7 +4,7 @@ title: "POST /reset-password"
 
 # POST /reset-password
 
-Resets a user's password with a password reset request. The password reset request must be marked as email-verified and, if the user has a second factor, it must be marked as 2FA-verfied.
+Resets a user's password with a password reset request. The password reset request must be marked as email-verified.
 
 On validation, it will mark the user's email as verified and invalidate all password reset requests linked to the user.
 
@@ -28,12 +28,12 @@ All fields are required.
 
 ## Succesful response
 
-Returns the [user model](/api-reference/rest/models/user) of the user. This endpoint can verify user emails.
+No response body (204).
 
 ## Error codess
 
-- [400] `SECOND_FACTOR_NOT_VERIFIED`: 2FA required.
 - [400] `INVALID_DATA`: Invalid request data.
+- [400] `EMAIL_NOT_VERIFIED`: Reset request email not verified.
 - [400] `WEAK_PASSWORD`: The password is too weak.
 - [400] `TOO_MANY_REQUESTS`: Exceeded rate limit.
 - [400] `INVALID_REQUEST_ID`: Invalid reset request ID.

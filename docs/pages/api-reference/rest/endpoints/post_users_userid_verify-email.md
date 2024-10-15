@@ -8,8 +8,6 @@ Verifies and updates a user's email with an email verification request code. Upo
 
 The verification request is immediately invalidated after the 5th failed attempt.
 
-We recommend using the returned user data to update the user email of your app's database.
-
 ```
 POST https://your-domain.com/users/USER_ID/verify-email
 ```
@@ -39,7 +37,13 @@ All fields are required.
 
 ## Successful response
 
-Returns the [user model](/api-reference/rest/models/user) of the email-verified user.
+Return the verified email.
+
+```ts
+{
+    "email": string
+}
+```
 
 ## Error codes
 

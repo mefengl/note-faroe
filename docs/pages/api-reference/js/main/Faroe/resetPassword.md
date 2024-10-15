@@ -6,17 +6,14 @@ title: "Faroe.resetPassword()"
 
 Mapped to [POST /reset-password](/api-reference/rest/endpoints/post_reset-password).
 
-Resets a user's password with a password reset request. The password reset request must be marked as email-verified and, if the user has a second factor, it must be marked as 2FA-verfied.
+Resets a user's password with a password reset request. The password reset request must be marked as email-verified.
 
 On validation, it will mark the user's email as verified, invalidate all password reset requests linked to the user, and return the reset request's user.
-
-*This method can verify user emails.*
 
 ## Definition
 
 ```ts
-//$ FaroeUser=/api-reference/js/main/FaroeUser
-async function resetPassword(requestId: string, password: string): Promise<$$FaroeUser>
+async function resetPassword(requestId: string, password: string): Promise<void>
 ```
 
 ### Parameters

@@ -4,7 +4,7 @@ title: "Faroe.verifyPasswordResetRequestEmail()"
 
 # Faroe.verifyPasswordResetRequestEmail()
 
-Mapped to [POST /password-reset/\[request_id\]/verify-email](/api-reference/rest/endpoints/post_password-reset_requestid_verify-email).
+Mapped to
 
 Verifies the email linked to a password reset request with a verification code.
 
@@ -14,19 +14,21 @@ The reset request is immediately invalidated after the 5th failed attempt.
 
 ```ts
 async function verifyPasswordResetRequestEmail(
+    requestId: string,
     code: string,
-    clientIP: string | null
+    clientIP: string
 ): Promise<void>
 ```
 
 ### Parameters
 
-- `code`: The email verification code for the password reset request.
+- `requestId`
+- `code`
 - `clientIP`
 
 ## Error codes
 
-- [400] `INCORRECT_CODE`: The one-time code is incorrect.
-- [400] `TOO_MANY_REQUESTS`: Exceeded rate limit.
-- [404] `NOT_FOUND`: The password reset request does not exist or has expired.
-- [500] `UNKNOWN_ERROR`
+- `INCORRECT_CODE`: The one-time code is incorrect.
+- `TOO_MANY_REQUESTS`: Exceeded rate limit.
+- `NOT_FOUND`: The password reset request does not exist or has expired.
+- `UNKNOWN_ERROR`

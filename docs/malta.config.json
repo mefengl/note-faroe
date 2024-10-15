@@ -7,17 +7,17 @@
     "sidebar": [
         {
             "title": "Faroe server",
-            "pages": [
-                ["Getting started", "/faroe-server/getting-started"],
-                ["Overview", "/faroe-server/overview"]
-            ]
+            "pages": [["Getting started", "/faroe-server/getting-started"]]
         },
         {
             "title": "Guides",
             "pages": [
+                ["Setting up your project", "/guides/setup"],
                 ["Sign up", "/guides/signup"],
                 ["Sign in", "/guides/login"],
                 ["Email verification", "/guides/email-verification"],
+                ["Update email address", "/guides/update-email"],
+                ["Update password", "/guides/update-password"],
                 ["Password reset", "/guides/password-reset"],
                 ["Two-factor authentication", "/guides/2fa"]
             ]

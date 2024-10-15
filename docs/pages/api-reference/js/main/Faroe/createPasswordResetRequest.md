@@ -27,7 +27,7 @@ async function createPasswordResetRequest(
 
 ## Error codes
 
-- `INVALID_EMAIL`: Malformed email address.
+- `INVALID_DATA`: Malformed email address.
 - `USER_NOT_EXISTS`: A user linked to the email does not exist.
 - `TOO_MANY_REQUESTS`: Exceeded rate limit.
 - `UNKNOWN_ERROR`
