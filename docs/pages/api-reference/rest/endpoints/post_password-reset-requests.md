@@ -1,15 +1,15 @@
 ---
-title: "POST /password-reset"
+title: "POST /password-reset-requests"
 ---
 
-# POST /password-reset
+# POST /password-reset-requests
 
 Creates a new password reset request for a user. This can only be called 3 times in a 15 minute window per user.
 
 Send the created reset request's code to the email address.
 
 ```
-POST https://your-domain.com/password-reset
+POST https://your-domain.com/password-reset-requests
 ```
 
 ## Request body
@@ -34,7 +34,7 @@ All fields are required.
 
 ## Succesful response
 
-Returns the [password reset request model](/api-reference/rest/models/password-reset-request) of the created request and a verification code. The code is only available here.
+Returns the [password reset request model](/api-reference/rest/models/password-reset-requests-request) of the created request and a verification code. The code is only available here.
 
 ```ts
 {

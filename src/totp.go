@@ -94,10 +94,6 @@ func handleRegisterTOTPRequest(w http.ResponseWriter, r *http.Request, params ht
 	}
 
 	recoveryCode, err := getUserRecoveryCode(userId)
-	if errors.Is(err, ErrRecordNotFound) {
-		writeNotFoundErrorResponse(w)
-		return
-	}
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)

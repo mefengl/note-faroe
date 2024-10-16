@@ -223,12 +223,7 @@ func handleVerifyPasswordResetRequestEmailRequest(w http.ResponseWriter, r *http
 		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
 		return
 	}
-	err = setPasswordResetRequestAsEmailVerified(resetRequest.Id)
-	if err != nil {
-		log.Println(err)
-		writeUnExpectedErrorResponse(w)
-		return
-	}
+
 	w.WriteHeader(204)
 }
 
@@ -309,10 +304,6 @@ func handleResetPasswordRequest(w http.ResponseWriter, r *http.Request, _ httpro
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequestId)
 		return
 	}
-	if !resetRequest.EmailVerified {
-		writeExpectedErrorResponse(w, ExpectedErrorEmailNotVerified)
-		return
-	}
 
 	validResetRequest, err := resetUserPasswordWithPasswordResetRequest(resetRequest.Id, passwordHash)
 	if err != nil {
@@ -340,13 +331,12 @@ func createPasswordResetRequest(userId string, email string, codeHash string) (P
 		return PasswordResetRequest{}, err
 	}
 	request := PasswordResetRequest{
-		Id:            id,
-		UserId:        userId,
-		CreatedAt:     now,
-		ExpiresAt:     expiresAt,
-		Email:         email,
-		CodeHash:      codeHash,
-		EmailVerified: false,
+		Id:        id,
+		UserId:    userId,
+		CreatedAt: now,
+		ExpiresAt: expiresAt,
+		Email:     email,
+		CodeHash:  codeHash,
 	}
 	return request, nil
 }
@@ -354,9 +344,8 @@ func createPasswordResetRequest(userId string, email string, codeHash string) (P
 func getPasswordResetRequest(requestId string) (PasswordResetRequest, error) {
 	var request PasswordResetRequest
 	var createdAtUnix, expiresAtUnix int64
-	var emailVerifiedInt int
-	row := db.QueryRow("SELECT id, user_id, created_at, email, code_hash, expires_at, email_verified FROM password_reset_request WHERE id = ?", requestId)
-	err := row.Scan(&request.Id, &request.UserId, &createdAtUnix, &request.Email, &request.CodeHash, &expiresAtUnix, &emailVerifiedInt)
+	row := db.QueryRow("SELECT id, user_id, created_at, email, code_hash, expires_at, FROM password_reset_request WHERE id = ?", requestId)
+	err := row.Scan(&request.Id, &request.UserId, &createdAtUnix, &request.Email, &request.CodeHash, &expiresAtUnix)
 	if errors.Is(err, sql.ErrNoRows) {
 		return PasswordResetRequest{}, ErrRecordNotFound
 	}
@@ -365,7 +354,6 @@ func getPasswordResetRequest(requestId string) (PasswordResetRequest, error) {
 	}
 	request.CreatedAt = time.Unix(createdAtUnix, 0)
 	request.ExpiresAt = time.Unix(expiresAtUnix, 0)
-	request.EmailVerified = emailVerifiedInt == 1
 	return request, nil
 }
 
@@ -399,18 +387,8 @@ func resetUserPasswordWithPasswordResetRequest(requestId string, passwordHash st
 		tx.Rollback()
 		return false, err
 	}
-	_, err = db.Exec("UPDATE user SET email_verified = 1 WHERE id = ? AND email = ?", passwordHash, userId, email)
-	if err != nil {
-		tx.Rollback()
-		return false, err
-	}
 	tx.Commit()
 	return true, nil
-}
-
-func setPasswordResetRequestAsEmailVerified(requestId string) error {
-	_, err := db.Exec("UPDATE password_reset_request SET email_verified = 1 WHERE id = ?", requestId)
-	return err
 }
 
 func setPasswordResetRequestAsTwoFactorVerified(requestId string) error {
@@ -424,21 +402,20 @@ func deletePasswordResetRequest(requestId string) error {
 }
 
 type PasswordResetRequest struct {
-	Id            string
-	UserId        string
-	CreatedAt     time.Time
-	ExpiresAt     time.Time
-	Email         string
-	CodeHash      string
-	EmailVerified bool
+	Id        string
+	UserId    string
+	CreatedAt time.Time
+	ExpiresAt time.Time
+	Email     string
+	CodeHash  string
 }
 
 func (r *PasswordResetRequest) EncodeToJSON() string {
-	encoded := fmt.Sprintf("{\"id\":\"%s\",\"user_id\":\"%s\",\"created_at\":%d,\"expires_at\":%d,\"email_verified\":%t}", r.Id, r.UserId, r.CreatedAt.Unix(), r.ExpiresAt.Unix(), r.EmailVerified)
+	encoded := fmt.Sprintf("{\"id\":\"%s\",\"user_id\":\"%s\",\"created_at\":%d,\"expires_at\":%d}", r.Id, r.UserId, r.CreatedAt.Unix(), r.ExpiresAt.Unix())
 	return encoded
 }
 
 func (r *PasswordResetRequest) EncodeToJSONWithCode(code string) string {
-	encoded := fmt.Sprintf("{\"id\":\"%s\",\"user_id\":\"%s\",\"created_at\":%d,\"expires_at\":%d,\"code\":\"%s\",\"email_verified\":%t}", r.Id, r.UserId, r.CreatedAt.Unix(), r.ExpiresAt.Unix(), code, r.EmailVerified)
+	encoded := fmt.Sprintf("{\"id\":\"%s\",\"user_id\":\"%s\",\"created_at\":%d,\"expires_at\":%d,\"code\":\"%s\"}", r.Id, r.UserId, r.CreatedAt.Unix(), r.ExpiresAt.Unix(), code)
 	return encoded
 }

@@ -4,7 +4,7 @@ title: "Faroe.createEmailVerificationRequest()"
 
 # Faroe.createEmailVerificationRequest()
 
-Mapped to [POST /users/\[user_id\]/email-verification](/api-reference/rest/endpoints/post_users_userid_email-verification).
+Mapped to [POST /users/\[user_id\]/email-verification-requests](/api-reference/rest/endpoints/post_users_userid_email-verification-requests).
 
 Creates a new email verification request for a user. This can only be called 3 times in a 15 minute window per user.
 

@@ -59,7 +59,8 @@ Usage:
 
 faroe serve - Start the Faroe server
 faroe generate-secret - Generate a secure secret
-\n`)
+
+`)
 		return
 	}
 
@@ -172,7 +173,7 @@ func serveCommand() {
 	router.GET("/users", handleGetUsersRequest)
 	router.GET("/users/:user_id", handleGetUserRequest)
 	router.DELETE("/users/:user_id", handleDeleteUserRequest)
-	router.POST("/users/:user_id/password", handleUpdateUserPasswordRequest)
+	router.POST("/users/:user_id/update-password", handleUpdateUserPasswordRequest)
 	router.GET("/users/:user_id/totp", handleGetUserTOTPCredentialRequest)
 	router.POST("/users/:user_id/totp", handleRegisterTOTPRequest)
 	router.GET("/users/:user_id/recovery-code", handleGetUserRecoveryCodeRequest)
@@ -180,15 +181,16 @@ func serveCommand() {
 	router.POST("/users/:user_id/reset-2fa", handleResetUser2FARequest)
 	router.POST("/users/:user_id/regenerate-recovery-code", handleRegenerateUserRecoveryCodeRequest)
 
-	router.POST("/users/:user_id/email-verification", handleCreateEmailVerificationRequestRequest)
-	router.GET("/users/:user_id/email-verification/:request_id", handleGetEmailVerificationRequestRequest)
-	router.DELETE("/users/:user_id/email-verification/:request_id", handleDeleteEmailVerificationRequestRequest)
+	router.POST("/users/:user_id/email-verification", handleCreateUserEmailVerificationRequestRequest)
 	router.POST("/users/:user_id/verify-email", handleVerifyUserEmailRequest)
 
-	router.POST("/password-reset", handleCreatePasswordResetRequestRequest)
-	router.GET("/password-reset/:request_id", handleGetPasswordResetRequestRequest)
-	router.DELETE("/password-reset/:request_id", handleDeleteEmailVerificationRequestRequest)
-	router.POST("/password-reset/:request_id/verify-email", handleVerifyPasswordResetRequestEmailRequest)
+	router.GET("/users/email-verification-request/:request_id", handleGetEmailVerificationRequestRequest)
+	router.DELETE("/users/email-verification-request/:request_id", handleDeleteEmailVerificationRequestRequest)
+
+	router.POST("/password-reset-request", handleCreatePasswordResetRequestRequest)
+	router.GET("/password-reset-request/:request_id", handleGetPasswordResetRequestRequest)
+	router.DELETE("/password-reset-request/:request_id", handleDeleteEmailVerificationRequestRequest)
+	router.POST("/password-reset-request/:request_id/verify-email", handleVerifyPasswordResetRequestEmailRequest)
 	router.POST("/reset-password", handleResetPasswordRequest)
 
 	fmt.Printf("Starting server in port %d...\n", port)
@@ -269,6 +271,7 @@ const (
 	ExpectedErrorSecondFactorNotVerified = "SECOND_FACTOR_NOT_VERIFIED"
 	ExpectedErrorSecondFactorNotAllowed  = "SECOND_FACTOR_NOT_ALLOWED"
 	ExpectedErrorInvalidRequestId        = "INVALID_REQUEST_ID"
+	ExpectedErrorNotAllowed              = "NOT_ALLOWED"
 )
 
 var ErrRecordNotFound = errors.New("record not found")

@@ -279,14 +279,18 @@ func handleResetUser2FARequest(w http.ResponseWriter, r *http.Request, params ht
 	}
 
 	userId := params.ByName("user_id")
-	userExists, err := checkUserExists(userId)
-	if !userExists {
+	user, err := getUser(userId)
+	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
 	}
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
+		return
+	}
+	if !user.Registered2FA() {
+		writeExpectedErrorResponse(w, ExpectedErrorNotAllowed)
 		return
 	}
 
@@ -342,14 +346,18 @@ func handleRegenerateUserRecoveryCodeRequest(w http.ResponseWriter, r *http.Requ
 	}
 
 	userId := params.ByName("user_id")
-	userExists, err := checkUserExists(userId)
-	if !userExists {
+	user, err := getUser(userId)
+	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
 	}
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
+		return
+	}
+	if !user.Registered2FA() {
+		writeExpectedErrorResponse(w, ExpectedErrorNotAllowed)
 		return
 	}
 
@@ -489,9 +497,9 @@ func checkEmailAvailability(email string) (bool, error) {
 func getUser(userId string) (User, error) {
 	var user User
 	var createdAtUnix int64
-	var emailVerified, registeredTOTP int
-	row := db.QueryRow("SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, user.email_verified, IIF(totp_credential.id IS NOT NULL, 1, 0) FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id WHERE user.id = ?", userId)
-	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &emailVerified, &registeredTOTP)
+	var registeredTOTPInt int
+	row := db.QueryRow("SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(totp_credential.id IS NOT NULL, 1, 0) FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id WHERE user.id = ?", userId)
+	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &registeredTOTPInt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrRecordNotFound
 	}
@@ -499,8 +507,7 @@ func getUser(userId string) (User, error) {
 		return User{}, err
 	}
 	user.CreatedAt = time.Unix(createdAtUnix, 0)
-	user.EmailVerified = emailVerified == 1
-	user.RegisteredTOTP = registeredTOTP == 1
+	user.RegisteredTOTP = registeredTOTPInt == 1
 	return user, nil
 }
 
@@ -538,7 +545,7 @@ func getUsers(sortBy UserSortBy, sortOrder SortOrder, count, page int) ([]User, 
 		return nil, errors.New("invalid 'sortOrder' value")
 	}
 
-	query := fmt.Sprintf(`SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, user.email_verified, IIF(totp_credential.id IS NOT NULL, 1, 0)
+	query := fmt.Sprintf(`SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(totp_credential.id IS NOT NULL, 1, 0)
 		FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id
 		ORDER BY %s %s LIMIT ? OFFSET ?`, orderBySQL, orderSQL)
 
@@ -551,14 +558,13 @@ func getUsers(sortBy UserSortBy, sortOrder SortOrder, count, page int) ([]User, 
 	for rows.Next() {
 		var user User
 		var createdAtUnix int64
-		var emailVerified, registeredTOTP int
-		err = rows.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &emailVerified, &registeredTOTP)
+		var registeredTOTPInt int
+		err = rows.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &registeredTOTPInt)
 		if err != nil {
 			return nil, err
 		}
 		user.CreatedAt = time.Unix(createdAtUnix, 0)
-		user.EmailVerified = emailVerified == 1
-		user.RegisteredTOTP = registeredTOTP == 1
+		user.RegisteredTOTP = registeredTOTPInt == 1
 		users = append(users, user)
 	}
 	return users, nil
@@ -576,9 +582,9 @@ func checkUserExists(userId string) (bool, error) {
 func getUserFromEmail(email string) (User, error) {
 	var user User
 	var createdAtUnix int64
-	var emailVerifiedInt, registeredTOTPInt int
-	row := db.QueryRow("SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, user.email_verified, IIF(totp_credential.id IS NOT NULL, 1, 0) FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id WHERE user.email = ?", email)
-	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &emailVerifiedInt, &registeredTOTPInt)
+	var registeredTOTPInt int
+	row := db.QueryRow("SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(totp_credential.id IS NOT NULL, 1, 0) FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id WHERE user.email = ?", email)
+	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &registeredTOTPInt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrRecordNotFound
 	}
@@ -586,7 +592,6 @@ func getUserFromEmail(email string) (User, error) {
 		return User{}, err
 	}
 	user.CreatedAt = time.Unix(createdAtUnix, 0)
-	user.EmailVerified = emailVerifiedInt == 1
 	user.RegisteredTOTP = registeredTOTPInt == 1
 	return user, nil
 }
@@ -644,6 +649,10 @@ func resetUser2FAWithRecoveryCode(userId string, recoveryCode string) (string, b
 		return "", false, err
 	}
 	_, err = tx.Exec("DELETE FROM totp_credential WHERE user_id = ?", userId)
+	if err != nil {
+		return "", false, err
+	}
+	_, err = tx.Exec("UPDATE session SET two_factor_verified = 0 WHERE user_id = ?", userId)
 	if err != nil {
 		return "", false, err
 	}
@@ -707,7 +716,6 @@ type User struct {
 	Email          string
 	PasswordHash   string
 	RecoveryCode   string
-	EmailVerified  bool
 	RegisteredTOTP bool
 }
 
@@ -717,7 +725,7 @@ func (u *User) Registered2FA() bool {
 
 func (u *User) EncodeToJSON() string {
 	escapedEmail := strings.ReplaceAll(u.Email, "\"", "\\\"")
-	encoded := fmt.Sprintf("{\"id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"email_verified\":%t,\"registered_totp\":%t}", u.Id, u.CreatedAt.Unix(), escapedEmail, u.EmailVerified, u.RegisteredTOTP)
+	encoded := fmt.Sprintf("{\"id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"registered_totp\":%t}", u.Id, u.CreatedAt.Unix(), escapedEmail, u.RegisteredTOTP)
 	return encoded
 }
 

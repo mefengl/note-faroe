@@ -4,7 +4,7 @@ title: "Faroe"
 
 # Faroe
 
-Faroe is an open source, self-hosted, and modular identity provider specifically for email and password authentication. It exposes various API endpoints including:
+Faroe is an open source, self-hosted, and modular authentication backend designed for email and password authentication. It exposes various API endpoints including:
 
 - Registering users with email and password
 - Authenticating users with email and password

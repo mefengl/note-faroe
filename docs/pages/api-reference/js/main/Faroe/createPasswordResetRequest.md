@@ -4,7 +4,7 @@ title: "Faroe.createPasswordResetRequest()"
 
 # Faroe.createPasswordResetRequest()
 
-Mapped to [POST /password-reset](/api-reference/rest/endpoints/post_password-reset).
+Mapped to [POST /password-reset-requests](/api-reference/rest/endpoints/post_password-reset-requests).
 
 Creates a new password reset request for a user. This can only be called 3 times in a 15 minute window per user.
 

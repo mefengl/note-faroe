@@ -1,15 +1,15 @@
 ---
-title: "POST /users/[user_id]/email-verification"
+title: "POST /users/[user_id]/email-verification-requests"
 ---
 
-# POST /users/[user_id]/email-verification
+# POST /users/[user_id]/email-verification-requests
 
 Creates a new email verification request for a user. This can only be called 3 times in a 15 minute window per user.
 
 Send the created verification request's code to the email address.
 
 ```
-POST https://your-domain.com/users/USER_ID/email-verification
+POST https://your-domain.com/users/USER_ID/email-verification-requests
 ```
 
 ## Request body

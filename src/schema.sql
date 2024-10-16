@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS user (
     recovery_code TEXT NOT NULL
 ) STRICT;
 
-CREATE INDEX IF NOT EXISTS email_index ON user(email);
+CREATE INDEX IF NOT EXISTS user_email_index ON user(email);
 
 CREATE TABLE IF NOT EXISTS email_verification_request (
     id TEXT NOT NULL PRIMARY KEY,
@@ -25,8 +25,7 @@ CREATE TABLE IF NOT EXISTS password_reset_request (
     created_at INTEGER NOT NULL,
     expires_at INTEGER NOT NULL,
     email TEXT NOT NULL,
-    code_hash TEXT NOT NULL,
-    email_verified INTEGER NOT NULL DEFAULT 0
+    code_hash TEXT NOT NULL
 ) STRICT;
 
 CREATE INDEX IF NOT EXISTS password_reset_request_user_id_index ON password_reset_request(user_id);

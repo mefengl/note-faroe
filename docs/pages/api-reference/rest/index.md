@@ -64,16 +64,16 @@ All endpoints that hashes passwords with Argon2id are rate limited based on IP a
 
 #### Email verification
 
-- [POST /users/\[user_id\]/email-verification](/api-reference/rest/endpoints/post_users_userid_email-verification): Create a new user email verification request.
-- [GET /users/\[user_id\]/email-verification/\[request_id\]](/api-reference/rest/endpoints/get_users_userid_email-verification_requestid): Get an email verification request.
-- [DELETE /users/\[user_id\]/email-verification/\[request_id\]](/api-reference/rest/endpoints/delete_users_userid_email-verification_requestid): Delete an email verification request.
+- [POST /users/\[user_id\]/email-verification-requests](/api-reference/rest/endpoints/post_users_userid_email-verification-requests): Create a new user email verification request.
+- [GET /email-verification-requests/\[request_id\]](/api-reference/rest/endpoints/get_email-verification-requests_requestid): Get an email verification request.
+- [DELETE /email-verification-requests/\[request_id\]](/api-reference/rest/endpoints/delete_email-verification-requests_requestid): Delete an email verification request.
 - [POST /users/\[user_id\]/verify-email](/api-reference/rest/endpoints/post_users_userid_verify-email): Update a user's email by verifying their email verification request code.
 
 #### Two-factor authentication
 
 - [POST /users/\[user_id\/totp](/api-reference/rest/endpoints/post_users_userid_totp): Register a TOTP credential.
 - [GET /users/\[user_id\]/totp](/api-reference/rest/endpoints/get_users_userid_totp): Get a user's TOTP credential.
-- [DELETE /users/\[user_id\]/totp](/api-reference/rest/endpoints/delete_users_userid_totp): Deletes a user's TOTP credential.
+- [DELETE /users/\[user_id\]/totp](/api-reference/rest/endpoints/delete_users_userid_totp): Delete a user's TOTP credential.
 - [POST /users/\[user_id\]/verify-2fa/totp](/api-reference/rest/endpoints/post_users_userid_verify-2fa_totp): Verify a user's TOTP code.
 - [GET /users/\[user_id\]/recovery-code](/api-reference/rest/endpoints/get_users_userid_recovery-code): Get a user's recovery code.
 - [POST /users/\[user_id\]/regenerate-recovery-code](/api-reference/rest/endpoints/post_users_userid_regenerate-recovery-code): Generate a new user recovery code.
@@ -81,8 +81,8 @@ All endpoints that hashes passwords with Argon2id are rate limited based on IP a
 
 ### Password reset
 
-- [POST /password-reset](/api-reference/rest/endpoints/post_password-reset): Create a new password reset request from the user's email.
-- [GET /password-reset/\[request_id\]](/api-reference/rest/endpoints/get_password-reset_requestid): Get a password reset request.
-- [DELETE /password-reset/\[request_id\]](/api-reference/rest/endpoints/delete_password-reset_requestid): Delete a password reset request.
-- [POST /password-reset/\[request_id\]/verify-email](/api-reference/rest/endpoints/post_password-reset_requestid_verify-email): Verify a reset request's email.
+- [POST /password-reset-requests](/api-reference/rest/endpoints/post_password-reset-requests): Create a new password reset request from a user.
+- [GET /password-reset-requests/\[request_id\]](/api-reference/rest/endpoints/get_password-reset-requests_requestid): Get a password reset request.
+- [DELETE /password-reset-requests/\[request_id\]](/api-reference/rest/endpoints/delete_password-reset-requests_requestid): Delete a password reset request.
+- [POST /password-reset-requests/\[request_id\]/verify-email](/api-reference/rest/endpoints/post_password-reset-requests_requestid_verify-email): Verify a reset request's email.
 - [POST /reset-password](/api-reference/rest/endpoints/post_reset-password): Reset the user's password with a verified reset request.

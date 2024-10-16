@@ -114,3 +114,20 @@ async function handleVerifyEmailRequest(
 
 }
 ```
+
+For an improved user experience, you can use `Farore.getEmailVerificationRequest()` to check whether a request is still valid. Optionally, you can store the request expiration alongside your session.
+
+```ts
+if (session.faroeEmailVerificationRequestId === null) {
+    response.writeHeader(403);
+    response.write("Not allowed.");
+    return;
+}
+const verificationRequest = await faroe.getEmailVerificationRequest(session.faroeEmailVerificationRequestId);
+if (verificationRequest === null) {
+    // Expired request.
+    response.writeHeader(403);
+    response.write("Not allowed.");
+    return;
+}
+```

@@ -1,15 +1,15 @@
 ---
-title: "POST /password-reset/[request_id]/verify-email"
+title: "POST /password-reset-requests/[request_id]/verify-email"
 ---
 
-# POST /password-reset/[request_id]/verify-email
+# POST /password-reset-requests/[request_id]/verify-email
 
 Verifies the email linked to a password reset request with a verification code.
 
 The reset request is immediately invalidated after the 5th failed attempt.
 
 ```
-POST https://your-domain.com/password-reset/REQUEST_ID/verify-email
+POST https://your-domain.com/password-reset-requests/REQUEST_ID/verify-email
 ```
 
 ## Request body

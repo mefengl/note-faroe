@@ -15,7 +15,7 @@ import (
 	"github.com/mattn/go-sqlite3"
 )
 
-func handleCreateEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func handleCreateUserEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
 
 	if !verifySecret(r) {
@@ -136,7 +136,7 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 		return
 	}
 
-	verificationRequest, err := getUserEmailVerificationRequest(userId, *data.RequestId)
+	verificationRequest, err := getEmailVerificationRequest(*data.RequestId)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequestId)
 		return
@@ -144,6 +144,10 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
+		return
+	}
+	if verificationRequest.UserId != userId {
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequestId)
 		return
 	}
 	// If now is or after expiration
@@ -196,10 +200,9 @@ func handleDeleteEmailVerificationRequestRequest(w http.ResponseWriter, r *http.
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
-	userId := params.ByName("user_id")
 	verificationRequestId := params.ByName("request_id")
-	userExists, err := checkUserExists(userId)
-	if !userExists {
+	verificationRequest, err := getEmailVerificationRequest(verificationRequestId)
+	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
 	}
@@ -209,13 +212,13 @@ func handleDeleteEmailVerificationRequestRequest(w http.ResponseWriter, r *http.
 		return
 	}
 
-	err = deleteUserEmailVerificationRequest(userId, verificationRequestId)
+	err = deleteEmailVerificationRequest(verificationRequest.Id)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
 		return
 	}
-	logMessageWithClientIP("INFO", "DELETE_EMAIL_VERIFICATION_REQUEST", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s request_id=%s", userId, verificationRequestId))
+	logMessageWithClientIP("INFO", "DELETE_EMAIL_VERIFICATION_REQUEST", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s request_id=%s", verificationRequest.UserId, verificationRequest.Id))
 	w.WriteHeader(204)
 }
 
@@ -231,9 +234,8 @@ func handleGetEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	userId := params.ByName("user_id")
 	verificationRequestId := params.ByName("request_id")
-	verificationRequest, err := getUserEmailVerificationRequest(userId, verificationRequestId)
+	verificationRequest, err := getEmailVerificationRequest(verificationRequestId)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -254,7 +256,7 @@ func handleGetEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Req
 		writeNotFoundErrorResponse(w)
 		return
 	}
-	logMessageWithClientIP("INFO", "GET_EMAIL_VERIFICATION_REQUEST", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s request_id=%s", userId, verificationRequestId))
+	logMessageWithClientIP("INFO", "GET_EMAIL_VERIFICATION_REQUEST", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s request_id=%s", verificationRequest.UserId, verificationRequest.Id))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
@@ -287,10 +289,10 @@ func createEmailVerificationRequest(userId string, email string) (EmailVerificat
 	return request, nil
 }
 
-func getUserEmailVerificationRequest(userId string, requestId string) (EmailVerificationRequest, error) {
+func getEmailVerificationRequest(requestId string) (EmailVerificationRequest, error) {
 	var verificationRequest EmailVerificationRequest
 	var createdAtUnix, expiresAtUnix int64
-	row := db.QueryRow("SELECT id, user_id, created_at, email, code, expires_at FROM email_verification_request WHERE id = ? AND user_id = ?", requestId, userId)
+	row := db.QueryRow("SELECT id, user_id, created_at, email, code, expires_at FROM email_verification_request WHERE id = ?", requestId)
 	err := row.Scan(&verificationRequest.Id, &verificationRequest.UserId, &createdAtUnix, &verificationRequest.Email, &verificationRequest.Code, &expiresAtUnix)
 	if errors.Is(err, sql.ErrNoRows) {
 		return EmailVerificationRequest{}, ErrRecordNotFound
@@ -305,13 +307,8 @@ func deleteUserEmailVerificationRequests(userId string) error {
 	return err
 }
 
-func deleteUserEmailVerificationRequest(userId string, requestId string) error {
-	_, err := db.Exec("DELETE FROM email_verification_request WHERE id = ? AND user_id = ?", requestId, userId)
-	return err
-}
-
-func deleteEmailVerificationRequest(userId string) error {
-	_, err := db.Exec("DELETE FROM email_verification_request WHERE user_id = ?", userId)
+func deleteEmailVerificationRequest(requestId string) error {
+	_, err := db.Exec("DELETE FROM email_verification_request WHERE id = ?", requestId)
 	return err
 }
 
@@ -335,7 +332,7 @@ func validateEmailVerificationRequest(userId string, requestId string, code stri
 		tx.Rollback()
 		return false, "", err
 	}
-	_, err = tx.Exec("UPDATE user SET email = ?, email_verified = 1 WHERE id = ?", email, userId)
+	_, err = tx.Exec("UPDATE user SET email = ? WHERE id = ?", email, userId)
 	if err != nil {
 		tx.Rollback()
 		return false, "", err

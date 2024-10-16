@@ -4,7 +4,7 @@ title: "Faroe.deletePasswordResetRequest()"
 
 # Faroe.deletePasswordResetRequest()
 
-Mapped to [DELETE /password-reset/\[request_id\]](/api-reference/rest/endpoints/delete_password-reset_requestid).
+Mapped to [DELETE /password-reset-requests/\[request_id\]](/api-reference/rest/endpoints/delete_password-reset-requests_requestid).
 
 Deletes a passwod reset request. Deleting a non-existent request will not result in an error.
 
