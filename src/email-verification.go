@@ -8,11 +8,9 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/mattn/go-sqlite3"
 )
 
 func handleCreateUserEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -20,10 +18,6 @@ func handleCreateUserEmailVerificationRequestRequest(w http.ResponseWriter, r *h
 
 	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
-		return
-	}
-	if !verifyJSONContentTypeHeader(r) {
-		writeUnsupportedMediaTypeErrorResponse(w)
 		return
 	}
 	if !verifyJSONAcceptHeader(r) {
@@ -43,41 +37,14 @@ func handleCreateUserEmailVerificationRequestRequest(w http.ResponseWriter, r *h
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
-		return
-	}
-	var data struct {
-		Email *string `json:"email"`
-	}
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
-		return
-	}
-	if data.Email == nil {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
-		return
-	}
-	email := *data.Email
-	if !verifyEmailInput(email) {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
-		return
-	}
-
 	if !createEmailVerificationUserRateLimit.Consume(userId, 1) {
 		logMessageWithClientIP("INFO", "CREATE_EMAIL_VERIFICATION_REQUEST", "PASSWORD_HASHING_LIMIT_REJECTED", clientIP, fmt.Sprintf("user_id=%s", userId))
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 
-	verificationRequest, err := createEmailVerificationRequest(userId, email)
+	verificationRequest, err := createEmailVerificationRequest(userId)
 	if err != nil {
-		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
-			writeExpectedErrorResponse(w, ExpectedErrorEmailAlreadyUsed)
-			return
-		}
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
 		return
@@ -102,14 +69,28 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 	}
 
 	userId := params.ByName("user_id")
-	userExists, err := checkUserExists(userId)
-	if !userExists {
-		writeNotFoundErrorResponse(w)
+	verificationRequest, err := getUserEmailVerificationRequest(userId)
+	if errors.Is(err, ErrRecordNotFound) {
+		createEmailVerificationUserRateLimit.AddToken(userId, 1)
+		writeExpectedErrorResponse(w, ExpectedErrorNotAllowed)
 		return
 	}
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
+		return
+	}
+
+	// If now is or after expiration
+	if time.Now().Compare(verificationRequest.ExpiresAt) >= 0 {
+		err = deleteEmailVerificationRequest(verificationRequest.Id)
+		if err != nil {
+			log.Println(err)
+			writeUnExpectedErrorResponse(w)
+			return
+		}
+		createEmailVerificationUserRateLimit.AddToken(userId, 1)
+		writeExpectedErrorResponse(w, ExpectedErrorNotAllowed)
 		return
 	}
 
@@ -119,15 +100,10 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 		return
 	}
 	var data struct {
-		RequestId *string `json:"request_id"`
-		Code      *string `json:"code"`
+		Code *string `json:"code"`
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
-		return
-	}
-	if data.RequestId == nil {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
@@ -136,32 +112,7 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 		return
 	}
 
-	verificationRequest, err := getEmailVerificationRequest(*data.RequestId)
-	if errors.Is(err, ErrRecordNotFound) {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequestId)
-		return
-	}
-	if err != nil {
-		log.Println(err)
-		writeUnExpectedErrorResponse(w)
-		return
-	}
-	if verificationRequest.UserId != userId {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequestId)
-		return
-	}
-	// If now is or after expiration
-	if time.Now().Compare(verificationRequest.ExpiresAt) >= 0 {
-		err = deleteEmailVerificationRequest(verificationRequest.Id)
-		if err != nil {
-			log.Println(err)
-			writeUnExpectedErrorResponse(w)
-			return
-		}
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequestId)
-		return
-	}
-	if !verifyEmailVerificationCodeLimitCounter.Consume(verificationRequest.Id) {
+	if !verifyUserEmailRateLimit.Consume(userId, 1) {
 		logMessageWithClientIP("INFO", "VERIFY_EMAIL_VERIFICATION_REQUEST", "FAIL_COUNTER_LIMIT_REJECTED", clientIP, "")
 		err = deleteEmailVerificationRequest(verificationRequest.Id)
 		if err != nil {
@@ -169,39 +120,37 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 			writeUnExpectedErrorResponse(w)
 			return
 		}
-		logMessageWithClientIP("INFO", "VERIFY_EMAIL", "EMAIL_VERIFICATION_LIMIT_REJECTED", clientIP, fmt.Sprintf("user_id=%s request_id=%s", userId, verificationRequest.Id))
+		logMessageWithClientIP("INFO", "VERIFY_EMAIL", "EMAIL_VERIFICATION_LIMIT_REJECTED", clientIP, fmt.Sprintf("user_id=%s request_id=%s", verificationRequest.UserId, verificationRequest.Id))
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
-	validCode, verifiedEmail, err := validateEmailVerificationRequest(userId, verificationRequest.Id, *data.Code)
+	validCode, err := validateUserEmailVerificationRequest(userId, *data.Code)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
 		return
 	}
 	if !validCode {
-		logMessageWithClientIP("INFO", "VERIFY_EMAIL", "INVALID_CODE", clientIP, fmt.Sprintf("user_id=%s", userId))
+		logMessageWithClientIP("INFO", "VERIFY_EMAIL", "INVALID_CODE", clientIP, fmt.Sprintf("user_id=%s", verificationRequest.UserId))
 		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
 		return
 	}
-	logMessageWithClientIP("INFO", "VERIFY_EMAIL", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s request_id=%s email=\"%s\"", userId, verificationRequest.Id, strings.ReplaceAll(verifiedEmail, "\"", "\\\"")))
-
-	verifyEmailVerificationCodeLimitCounter.Delete(verificationRequest.Id)
+	verifyUserEmailRateLimit.Reset(verificationRequest.UserId)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(204)
-	w.Write([]byte(encodeEmailToJSON(verificationRequest.Email)))
 }
 
-func handleDeleteEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func handleDeleteUserEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
 
 	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
-	verificationRequestId := params.ByName("request_id")
-	verificationRequest, err := getEmailVerificationRequest(verificationRequestId)
+
+	userId := params.ByName("user_id")
+	verificationRequest, err := getUserEmailVerificationRequest(userId)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -222,7 +171,7 @@ func handleDeleteEmailVerificationRequestRequest(w http.ResponseWriter, r *http.
 	w.WriteHeader(204)
 }
 
-func handleGetEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func handleGetUserEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
 
 	if !verifySecret(r) {
@@ -234,8 +183,8 @@ func handleGetEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	verificationRequestId := params.ByName("request_id")
-	verificationRequest, err := getEmailVerificationRequest(verificationRequestId)
+	userId := params.ByName("user_id")
+	verificationRequest, err := getUserEmailVerificationRequest(userId)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -245,6 +194,7 @@ func handleGetEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Req
 		writeUnExpectedErrorResponse(w)
 		return
 	}
+
 	// If now is or after expiration
 	if time.Now().Compare(verificationRequest.ExpiresAt) >= 0 {
 		err = deleteEmailVerificationRequest(verificationRequest.Id)
@@ -253,9 +203,10 @@ func handleGetEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Req
 			writeUnExpectedErrorResponse(w)
 			return
 		}
-		writeNotFoundErrorResponse(w)
+		writeExpectedErrorResponse(w, ExpectedErrorNotAllowed)
 		return
 	}
+
 	logMessageWithClientIP("INFO", "GET_EMAIL_VERIFICATION_REQUEST", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s request_id=%s", verificationRequest.UserId, verificationRequest.Id))
 
 	w.Header().Set("Content-Type", "application/json")
@@ -263,7 +214,7 @@ func handleGetEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Req
 	w.Write([]byte(verificationRequest.EncodeToJSON()))
 }
 
-func createEmailVerificationRequest(userId string, email string) (EmailVerificationRequest, error) {
+func createEmailVerificationRequest(userId string) (EmailVerificationRequest, error) {
 	now := time.Now()
 	id, err := generateId()
 	if err != nil {
@@ -274,7 +225,8 @@ func createEmailVerificationRequest(userId string, email string) (EmailVerificat
 	if err != nil {
 		return EmailVerificationRequest{}, nil
 	}
-	_, err = db.Exec("INSERT INTO email_verification_request (id, user_id, created_at, expires_at, email, code) VALUES (?, ?, ?, ?, ?, ?)", id, now.Unix(), userId, expiresAt.Unix(), email, code)
+	_, err = db.Exec(`INSERT INTO email_verification_request (id, user_id, created_at, expires_at, code) VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT (user_id) DO UPDATE SET id = ?, created_at = ?, code = ? WHERE user_id = ?`, id, userId, now.Unix(), expiresAt.Unix(), code, id, now.Unix(), code, userId)
 	if err != nil {
 		return EmailVerificationRequest{}, err
 	}
@@ -283,17 +235,16 @@ func createEmailVerificationRequest(userId string, email string) (EmailVerificat
 		UserId:    userId,
 		CreatedAt: now,
 		ExpiresAt: expiresAt,
-		Email:     email,
 		Code:      code,
 	}
 	return request, nil
 }
 
-func getEmailVerificationRequest(requestId string) (EmailVerificationRequest, error) {
+func getUserEmailVerificationRequest(userId string) (EmailVerificationRequest, error) {
 	var verificationRequest EmailVerificationRequest
 	var createdAtUnix, expiresAtUnix int64
-	row := db.QueryRow("SELECT id, user_id, created_at, email, code, expires_at FROM email_verification_request WHERE id = ?", requestId)
-	err := row.Scan(&verificationRequest.Id, &verificationRequest.UserId, &createdAtUnix, &verificationRequest.Email, &verificationRequest.Code, &expiresAtUnix)
+	row := db.QueryRow("SELECT id, user_id, created_at, expires_at, code FROM email_verification_request WHERE user_id = ?", userId)
+	err := row.Scan(&verificationRequest.Id, &verificationRequest.UserId, &createdAtUnix, &expiresAtUnix, &verificationRequest.Code)
 	if errors.Is(err, sql.ErrNoRows) {
 		return EmailVerificationRequest{}, ErrRecordNotFound
 	}
@@ -312,67 +263,27 @@ func deleteEmailVerificationRequest(requestId string) error {
 	return err
 }
 
-func validateEmailVerificationRequest(userId string, requestId string, code string) (bool, string, error) {
-	tx, err := db.Begin()
+func validateUserEmailVerificationRequest(userId string, code string) (bool, error) {
+	result, err := db.Exec("DELETE FROM email_verification_request WHERE user_id = ? AND code = ? AND expires_at > ?", userId, code, time.Now().Unix())
 	if err != nil {
-		return false, "", err
+		return false, err
 	}
-	row := tx.QueryRow("DELETE FROM email_verification_request WHERE id = ? AND user_id = ? AND code = ? AND expires_at > ? RETURNING email", requestId, userId, code, time.Now().Unix())
-	var email string
-	err = row.Scan(&email)
-	if errors.Is(err, sql.ErrNoRows) {
-		err = tx.Commit()
-		if err != nil {
-			tx.Rollback()
-			return false, "", err
-		}
-		return false, "", nil
-	}
+	affected, err := result.RowsAffected()
 	if err != nil {
-		tx.Rollback()
-		return false, "", err
+		return false, err
 	}
-	_, err = tx.Exec("UPDATE user SET email = ? WHERE id = ?", email, userId)
-	if err != nil {
-		tx.Rollback()
-		return false, "", err
-	}
-	_, err = tx.Exec("DELETE FROM password_reset_request WHERE user_id = ?", userId)
-	if err != nil {
-		tx.Rollback()
-		return false, "", err
-	}
-	_, err = tx.Exec("DELETE FROM email_verification_request WHERE email = ?", email)
-	if err != nil {
-		tx.Rollback()
-		return false, "", err
-	}
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
-		return false, "", err
-	}
-	tx.Commit()
-	return true, email, nil
+	return affected > 0, nil
 }
 
 type EmailVerificationRequest struct {
 	Id        string
 	UserId    string
 	CreatedAt time.Time
-	Email     string
 	Code      string
 	ExpiresAt time.Time
 }
 
 func (r *EmailVerificationRequest) EncodeToJSON() string {
-	escapedEmail := strings.ReplaceAll(r.Email, "\"", "\\\"")
-	encoded := fmt.Sprintf("{\"id\":\"%s\",\"user_id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"expires_at\":%d,\"code\":\"%s\"}", r.Id, r.UserId, r.CreatedAt.Unix(), escapedEmail, r.ExpiresAt.Unix(), r.Code)
-	return encoded
-}
-
-func encodeEmailToJSON(email string) string {
-	escapedEmail := strings.ReplaceAll(email, "\"", "\\\"")
-	encoded := fmt.Sprintf("{\"email\":\"%s\"}", escapedEmail)
+	encoded := fmt.Sprintf("{\"id\":\"%s\",\"user_id\":\"%s\",\"created_at\":%d,\"expires_at\":%d,\"code\":\"%s\"}", r.Id, r.UserId, r.CreatedAt.Unix(), r.ExpiresAt.Unix(), r.Code)
 	return encoded
 }

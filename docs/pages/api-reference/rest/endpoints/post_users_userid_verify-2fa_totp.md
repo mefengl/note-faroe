@@ -22,7 +22,6 @@ All fields are required.
 
 - `code`: The TOTP code.
 
-
 ## Successful response
 
 No response body (204).
@@ -30,7 +29,7 @@ No response body (204).
 ## Error codes
 
 - [400] `INVALID_DATA`: Invalid request data.
-- [400] `SECOND_FACTOR_NOT_ALLOWED`: The user does not have a TOTP credential registered.
+- [400] `NOT_ALLOWED`: The user does not have a TOTP credential registered.
 - [400] `TOO_MANY_REQUESTS`: Rate limit exceeded.
 - [400] `INCORRECT_CODE`: Incorrect TOTP code.
 - [404] `NOT_FOUND`: The user does not exist.

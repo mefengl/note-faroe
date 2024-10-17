@@ -1,21 +1,22 @@
 ---
-title: "FaroeEmailVerificationRequest"
+title: "FaroeEmailUpdateRequest"
 ---
 
-# FaroeEmailVerificationRequest
+# FaroeEmailUpdateRequest
 
-Mapped to the [email verification request model](/api-reference/rest/models/email-verification-request).
+Mapped to the [email update request model](/api-reference/rest/models/email-update-request).
 
-Represents an email verification request.
+Represents an email update request.
 
 ## Definition
 
 ```ts
-interface FaroeEmailVerificationRequest {
+interface FaroeEmailUpdateRequest {
 	id: string;
 	userId: string;
 	createdAt: Date;
 	expiresAt: Date;
+	email: string;
 	code: string;
 }
 ```
@@ -26,4 +27,5 @@ interface FaroeEmailVerificationRequest {
 - `userId`: A 24-character long user ID.
 - `created`: A timestamp representing when the request was created.
 - `expiresAt`: A timestamp representing when the request will expire.
+- `email`: An email that is 255 or less characters.
 - `code`: An 8-character alphanumeric one-time code.

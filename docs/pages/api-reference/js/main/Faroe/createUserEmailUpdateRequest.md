@@ -1,0 +1,33 @@
+---
+title: "Faroe.createUserEmailUpdateRequest()"
+---
+
+# Faroe.createUserEmailUpdateRequest()
+
+Mapped to [POST /users/\[user_id\]/email-update-requests](/api-reference/rest/endpoints/post_users_userid_email-update-requests).
+
+Creates a new email verification request for a user. This can only be called 3 times in a 15 minute window per user.
+
+## Definition
+
+```ts
+//$ $$FaroeEmailUpdateRequest=/api-reference/js/main/$$FaroeEmailUpdateRequest
+async function createUserEmailUpdateRequest(
+    userId: string,
+    email: string,
+	clientIP: string | null
+): Promise<$$FaroeEmailUpdateRequest>
+```
+
+### Parameters
+
+- `userId`
+- `email`: A valid email address.
+- `clientIP`
+
+## Error codes
+
+- `INVALID_DATA`: Invalid email address.
+- `TOO_MANY_REQUESTS`: Exceeded rate limit.
+- `NOT_FOUND`: The user does not exist.
+- `UNKNOWN_ERROR`

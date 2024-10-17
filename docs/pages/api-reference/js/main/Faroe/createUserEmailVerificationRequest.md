@@ -1,29 +1,27 @@
 ---
-title: "Faroe.createEmailVerificationRequest()"
+title: "Faroe.createUserEmailVerificationRequest()"
 ---
 
-# Faroe.createEmailVerificationRequest()
+# Faroe.createUserEmailVerificationRequest()
 
-Mapped to [POST /users/\[user_id\]/email-verification-requests](/api-reference/rest/endpoints/post_users_userid_email-verification-requests).
+Mapped to [POST /users/\[user_id\]/email-verification-request](/api-reference/rest/endpoints/post_users_userid_email-verification-request).
 
 Creates a new email verification request for a user. This can only be called 3 times in a 15 minute window per user.
-
-Send the created verification request's code to the email address.
 
 ## Definition
 
 ```ts
 //$ FaroeEamilVerificationRequest=/api-reference/js/main/FaroeEamilVerificationRequest
-async function createEmailVerificationRequest(
+async function createUserEmailVerificationRequest(
     userId: string,
-	email: string,
 	clientIP: string | null
-): Promise<$$FaroeEamilVerificationRequest>
+): Promise<$$FaroeEmailVerificationRequest>
 ```
 
 ### Parameters
 
-- `email`: A valid email address.
+- `userId`
+- `clientIP`
 
 ## Error codes
 

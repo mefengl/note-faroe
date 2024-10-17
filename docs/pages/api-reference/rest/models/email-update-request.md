@@ -1,8 +1,8 @@
 ---
-title: "Email verification request model"
+title: "Email update request model"
 ---
 
-# Email verificationn request model
+# Email update request model
 
 ```ts
 {
@@ -18,16 +18,18 @@ title: "Email verification request model"
 - `user_id`: A 24-character long user ID.
 - `created_at`: A 64-bit integer as an UNIX timestamp representing when the request was created.
 - `expires_at`: A 64-bit integer as an UNIX timestamp representing when the request will expire.
+- `email`: An email that is 255 or less characters.
 - `code`: An 8-character alphanumeric one-time code.
 
 ## Example
 
 ```json
 {
-    "id": "9sf9qcf3ctvwqwf9wdzw3fmj",
-    "user_id": "da7qg28mnk98nbyzwij5hsh7",
+    "id": "dvd742g6mpmaebbjxq72kwsr",
+    "user_id": "7six6i2igxd5ct4dccjk4qtg",
     "created_at": 1728803704,
     "expires_at": 1728804304,
-    "code": "9TW45AZU"
+    "email": "cat@example.com",
+    "code": "VQ9REYBU"
 }
 ```

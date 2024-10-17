@@ -26,7 +26,7 @@ async function handleVerifyEmailRequest(
         return;
     }
 
-    if (session.faroeEmailVerificationRequestId === null) {
+    if (user.emailVerified) {
         response.writeHeader(403);
         response.write("Not allowed.");
         return;
@@ -39,17 +39,17 @@ async function handleVerifyEmailRequest(
     try {
         await faroe.verifyUserEmail(
             user.faroeId,
-            session.faroeEmailVerificationRequestId,
             code,
             clientIP
         );
     } catch (e) {
-        if (e instanceof FaroeError && e.code === "INVALID_REQUEST_ID") {
-            // Unlink verification request from session.
-            await deleteSessionEmailVerificationRequestId(session.id);
+        if (e instanceof FaroeError && e.code === "INVALID_REQUEST") {
+            const emailVerificationRequest = await faroe.createUserEmailVerificationRequest(faroeUser.id, clientIP);
+            const emailContent = `Your verification code is ${emailVerificationRequest.code}.`;
+            await sendEmail(faroeUser.email, emailContent);
 
             response.writeHeader(400);
-            response.write("Please restart the process.");
+            response.write("Your verification code was expired. We sent a new one to your inbox.");
             return;
         }
         if (e instanceof FaroeError && e.code === "INCORRECT_CODE") {
@@ -78,7 +78,7 @@ async function handleVerifyEmailRequest(
 }
 ```
 
-Like in the sign up process, use `Faroe.createUserEmailVerificationRequest()` to create a new email verification request and link it to the current user. This method has rate limiting built-in to prevent DoS attacks targetting your email servers. However, consider adding some kind of bot and spam protection.
+Like in the sign up process, use `Faroe.createUserEmailVerificationRequest()` to create a new email verification request. This method has rate limiting built-in to prevent DoS attacks targetting your email servers. However, consider adding some kind of bot and spam protection.
 
 ```ts
 import { FaroeError } from "@faroe/sdk";
@@ -118,7 +118,6 @@ async function handleResendEmailVerificationCodeRequest(
     try {
         emailVerificationRequest = await faroe.createUserEmailVerificationRequest(
             faroeUser.id,
-            email,
             clientIP
         );
     } catch (e) {

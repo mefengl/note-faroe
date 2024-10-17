@@ -169,7 +169,7 @@ async function handleResetPasswordRequest(
     try {
         await faroe.resetPassword(session.faroeRequestId, password, clientIP);
     } catch (e) {
-        if (e instanceof FaroeError && e.code === "INVALID_REQUEST_ID") {
+        if (e instanceof FaroeError && e.code === "INVALID_REQUEST") {
             response.writeHeader(400);
             response.write("Please restart the process.");
             return;

@@ -52,6 +52,13 @@ func (rl *TokenBucketRateLimit) Consume(key string, cost int) bool {
 	return true
 }
 
+func (rl *TokenBucketRateLimit) AddToken(key string, token int) {
+	rl.mu.Lock()
+	count := int(math.Min(float64(rl.storage[key].count+token), float64(rl.max)))
+	rl.storage[key] = refillingTokenBucket{count, time.Now().UnixMilli()}
+	rl.mu.Unlock()
+}
+
 func (rl *TokenBucketRateLimit) Reset(key string) {
 	rl.mu.Lock()
 	delete(rl.storage, key)

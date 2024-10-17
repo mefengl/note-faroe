@@ -27,7 +27,7 @@ func verifyJSONContentTypeHeader(r *http.Request) bool {
 	if err != nil {
 		return false
 	}
-	return mediatype == "application/json"
+	return mediatype == "application/json" || mediatype == "text/plain"
 }
 
 func verifyJSONAcceptHeader(r *http.Request) bool {
@@ -40,7 +40,7 @@ func verifyJSONAcceptHeader(r *http.Request) bool {
 		entry = strings.TrimSpace(entry)
 		parts := strings.Split(entry, ";")
 		mediaType := strings.TrimSpace(parts[0])
-		if mediaType == "*/*" || mediaType == "application/*" || mediaType == "application/json" {
+		if mediaType == "*/*" || mediaType == "application/*" || mediaType == "application/json" || mediaType == "text/plain" {
 			return true
 		}
 	}

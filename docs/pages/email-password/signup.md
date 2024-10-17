@@ -63,11 +63,7 @@ async function handleSignUpRequest(
         return;
     }
 
-    const emailVerificationRequest = await faroe.createUserEmailVerificationRequest(
-        faroeUser.id,
-        faroeUser.email,
-        null
-    );
+    const emailVerificationRequest = await faroe.createUserEmailVerificationRequest(faroeUser.id, clientIP);
 
     const user = await createUser(faroeUser.id, email, {
         emailVerified: false

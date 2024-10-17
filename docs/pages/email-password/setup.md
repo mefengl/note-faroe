@@ -31,14 +31,14 @@ CREATE TABLE user (
 );
 ```
 
-Next, you'll need to implement sessions for managing the state of authenticated users. How you implement them is up to you but create an optional field for the Faroe email verification request ID. For JavaScript projects, consider following the tutorial from [Lucia]().
+Next, you'll need to implement sessions for managing the state of authenticated users. How you implement them is up to you but create an optional field for the Faroe email update request ID. For JavaScript projects, consider following the tutorial from [Lucia](https://lucia-auth.com).
 
 ```sql
 CREATE TABLE session (
     id TEXT NOT NULL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES user(id),
     expires_at INTEGER NOT NULL,
-    faore_email_verification_id TEXT
+    faroe_email_update_request_id TEXT
 );
 ```
 

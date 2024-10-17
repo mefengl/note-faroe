@@ -130,7 +130,7 @@ func handleVerifyTOTPRequest(w http.ResponseWriter, r *http.Request, params http
 
 	credential, err := getUserTOTPCredential(userId)
 	if errors.Is(err, ErrRecordNotFound) {
-		writeExpectedErrorResponse(w, ExpectedErrorSecondFactorNotAllowed)
+		writeExpectedErrorResponse(w, ExpectedErrorNotAllowed)
 		return
 	}
 	if err != nil {

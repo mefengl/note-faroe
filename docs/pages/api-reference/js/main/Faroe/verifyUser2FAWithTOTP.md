@@ -24,7 +24,7 @@ async function verifyUser2FAWithTOTP(
 
 ## Error codes
 
-- `SECOND_FACTOR_NOT_ALLOWED`: The user does not have a TOTP credential registered.
+- `NOT_ALLOWED`: The user does not have a TOTP credential registered.
 - `TOO_MANY_REQUESTS`: Rate limit exceeded.
 - `INCORRECT_CODE`: Incorrect TOTP code.
 - `NOT_FOUND`: The user does not exist.

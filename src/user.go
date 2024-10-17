@@ -461,6 +461,21 @@ func handleGetUserRecoveryCodeRequest(w http.ResponseWriter, r *http.Request, pa
 	w.Write([]byte(encodeRecoveryCodeToJSON(recoveryCode)))
 }
 
+func handleDeleteUsersRequest(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	if !verifySecret(r) {
+		writeNotAuthenticatedErrorResponse(w)
+		return
+	}
+
+	err := deleteUsers()
+	if err != nil {
+		log.Println(err)
+		writeUnExpectedErrorResponse(w)
+		return
+	}
+	w.WriteHeader(204)
+}
+
 func createUser(email string, passwordHash string) (User, error) {
 	now := time.Now()
 	id, err := generateId()
@@ -497,9 +512,9 @@ func checkEmailAvailability(email string) (bool, error) {
 func getUser(userId string) (User, error) {
 	var user User
 	var createdAtUnix int64
-	var registeredTOTPInt int
+	var totpRegisteredInt int
 	row := db.QueryRow("SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(totp_credential.id IS NOT NULL, 1, 0) FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id WHERE user.id = ?", userId)
-	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &registeredTOTPInt)
+	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &totpRegisteredInt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrRecordNotFound
 	}
@@ -507,7 +522,7 @@ func getUser(userId string) (User, error) {
 		return User{}, err
 	}
 	user.CreatedAt = time.Unix(createdAtUnix, 0)
-	user.RegisteredTOTP = registeredTOTPInt == 1
+	user.TOTPRegistered = totpRegisteredInt == 1
 	return user, nil
 }
 
@@ -558,16 +573,46 @@ func getUsers(sortBy UserSortBy, sortOrder SortOrder, count, page int) ([]User, 
 	for rows.Next() {
 		var user User
 		var createdAtUnix int64
-		var registeredTOTPInt int
-		err = rows.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &registeredTOTPInt)
+		var totpRegisteredInt int
+		err = rows.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &totpRegisteredInt)
 		if err != nil {
 			return nil, err
 		}
 		user.CreatedAt = time.Unix(createdAtUnix, 0)
-		user.RegisteredTOTP = registeredTOTPInt == 1
+		user.TOTPRegistered = totpRegisteredInt == 1
 		users = append(users, user)
 	}
 	return users, nil
+}
+
+func deleteUsers() error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	_, err = tx.Exec("DELETE FROM totp_credential")
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("DELETE FROM email_verification_request")
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("DELETE FROM email_update_request")
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("DELETE FROM password_reset_request")
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("DELETE FROM user")
+	if err != nil {
+		return err
+	}
+	err = tx.Commit()
+	return err
 }
 
 func checkUserExists(userId string) (bool, error) {
@@ -582,9 +627,9 @@ func checkUserExists(userId string) (bool, error) {
 func getUserFromEmail(email string) (User, error) {
 	var user User
 	var createdAtUnix int64
-	var registeredTOTPInt int
+	var totpRegisteredInt int
 	row := db.QueryRow("SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(totp_credential.id IS NOT NULL, 1, 0) FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id WHERE user.email = ?", email)
-	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &registeredTOTPInt)
+	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &totpRegisteredInt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrRecordNotFound
 	}
@@ -592,7 +637,7 @@ func getUserFromEmail(email string) (User, error) {
 		return User{}, err
 	}
 	user.CreatedAt = time.Unix(createdAtUnix, 0)
-	user.RegisteredTOTP = registeredTOTPInt == 1
+	user.TOTPRegistered = totpRegisteredInt == 1
 	return user, nil
 }
 
@@ -607,6 +652,10 @@ func deleteUser(userId string) error {
 		return err
 	}
 	_, err = tx.Exec("DELETE FROM email_verification_request WHERE user_id = ?", userId)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("DELETE FROM email_update_request WHERE user_id = ?", userId)
 	if err != nil {
 		return err
 	}
@@ -657,7 +706,10 @@ func resetUser2FAWithRecoveryCode(userId string, recoveryCode string) (string, b
 		return "", false, err
 	}
 
-	// TODO: Should existing password reset requests be invalidated?
+	_, err = tx.Exec("DELETE FROM password_reset_request WHERE user_id = ?", userId)
+	if err != nil {
+		return "", false, err
+	}
 
 	err = tx.Commit()
 	if err != nil {
@@ -716,16 +768,16 @@ type User struct {
 	Email          string
 	PasswordHash   string
 	RecoveryCode   string
-	RegisteredTOTP bool
+	TOTPRegistered bool
 }
 
 func (u *User) Registered2FA() bool {
-	return u.RegisteredTOTP
+	return u.TOTPRegistered
 }
 
 func (u *User) EncodeToJSON() string {
 	escapedEmail := strings.ReplaceAll(u.Email, "\"", "\\\"")
-	encoded := fmt.Sprintf("{\"id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"registered_totp\":%t}", u.Id, u.CreatedAt.Unix(), escapedEmail, u.RegisteredTOTP)
+	encoded := fmt.Sprintf("{\"id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"totp_registered\":%t}", u.Id, u.CreatedAt.Unix(), escapedEmail, u.TOTPRegistered)
 	return encoded
 }
 

@@ -17,6 +17,7 @@ title: "@faroe/sdk"
 
 ## Interfaces
 
+- [`FaroeEmailUpdateRequest`](/api-reference/js/main/FaroeEmailUpdateRequest)
 - [`FaroeEmailVerificationRequest`](/api-reference/js/main/FaroeEmailVerificationRequest)
 - [`FaroePasswordResetRequest`](/api-reference/js/main/FaroePasswordResetRequest)
 - [`FaroeTOTPCredential`](/api-reference/js/main/FaroeTOTPCredential)

@@ -64,10 +64,17 @@ All endpoints that hashes passwords with Argon2id are rate limited based on IP a
 
 #### Email verification
 
-- [POST /users/\[user_id\]/email-verification-requests](/api-reference/rest/endpoints/post_users_userid_email-verification-requests): Create a new user email verification request.
-- [GET /email-verification-requests/\[request_id\]](/api-reference/rest/endpoints/get_email-verification-requests_requestid): Get an email verification request.
-- [DELETE /email-verification-requests/\[request_id\]](/api-reference/rest/endpoints/delete_email-verification-requests_requestid): Delete an email verification request.
-- [POST /users/\[user_id\]/verify-email](/api-reference/rest/endpoints/post_users_userid_verify-email): Update a user's email by verifying their email verification request code.
+- [POST /users/\[user_id\]/email-verification-request](/api-reference/rest/endpoints/post_users_userid_email-verification-request): Create a new user email verification request.
+- [GET /users/\[user_id\]/email-verification-request](/api-reference/rest/endpoints/get_users_userid_email-verification-request): Get a user's email verification request.
+- [DELETE /users/\[user_id\]/email-verification-request](/api-reference/rest/endpoints/delete_users_userid_email-verification-request): Delete a user's email verification request.
+- [POST /users/\[user_id\]/verify-email](/api-reference/rest/endpoints/post_users_userid_verify-email): Verify their email verification request code.
+
+#### Email update
+
+- [POST /users/\[user_id\]/email-update-requests](/api-reference/rest/endpoints/post_users_userid_email-update-requests): Create a new user email update request.
+- [GET /email-update-requests/\[request_id\]](/api-reference/rest/endpoints/get_email-update-requests_requestid): Get an email update request.
+- [DELETE /email-update-requests/\[request_id\]](/api-reference/rest/endpoints/delete_email-update-requests_requestid): Delete an email update request.
+- [POST /update-email](/api-reference/rest/endpoints/post_update-email): Update a user's email by verifying their email update request code.
 
 #### Two-factor authentication
 

@@ -10,6 +10,16 @@ CREATE INDEX IF NOT EXISTS user_email_index ON user(email);
 
 CREATE TABLE IF NOT EXISTS email_verification_request (
     id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL UNIQUE REFERENCES user(id),
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL,
+    code TEXT NOT NULL
+) STRICT;
+
+CREATE INDEX IF NOT EXISTS email_verification_request_user_id_index ON email_verification_request(user_id);
+
+CREATE TABLE IF NOT EXISTS email_update_request (
+    id TEXT NOT NULL PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES user(id),
     created_at INTEGER NOT NULL,
     expires_at INTEGER NOT NULL,
@@ -17,14 +27,13 @@ CREATE TABLE IF NOT EXISTS email_verification_request (
     code TEXT NOT NULL
 ) STRICT;
 
-CREATE INDEX IF NOT EXISTS email_verification_request_user_id_index ON email_verification_request(user_id);
+CREATE INDEX IF NOT EXISTS email_update_request_user_id_index ON email_update_request(user_id);
 
 CREATE TABLE IF NOT EXISTS password_reset_request (
     id TEXT NOT NULL PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES user(id),
     created_at INTEGER NOT NULL,
     expires_at INTEGER NOT NULL,
-    email TEXT NOT NULL,
     code_hash TEXT NOT NULL
 ) STRICT;
 

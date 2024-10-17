@@ -92,7 +92,7 @@ func handleCreatePasswordResetRequestRequest(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	resetRequest, err := createPasswordResetRequest(user.Id, user.Email, codeHash)
+	resetRequest, err := createPasswordResetRequest(user.Id, codeHash)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
@@ -286,7 +286,7 @@ func handleResetPasswordRequest(w http.ResponseWriter, r *http.Request, _ httpro
 	resetRequest, err := getPasswordResetRequest(resetRequestId)
 	log.Println(err)
 	if errors.Is(err, ErrRecordNotFound) {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequestId)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequest)
 		return
 	}
 	if err != nil {
@@ -301,7 +301,7 @@ func handleResetPasswordRequest(w http.ResponseWriter, r *http.Request, _ httpro
 			writeUnExpectedErrorResponse(w)
 			return
 		}
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequestId)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequest)
 		return
 	}
 
@@ -312,21 +312,64 @@ func handleResetPasswordRequest(w http.ResponseWriter, r *http.Request, _ httpro
 		return
 	}
 	if !validResetRequest {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequestId)
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequest)
 		return
 	}
 
 	w.WriteHeader(204)
 }
 
-func createPasswordResetRequest(userId string, email string, codeHash string) (PasswordResetRequest, error) {
+func handleDeletePasswordResetRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifySecret(r) {
+		writeNotAuthenticatedErrorResponse(w)
+		return
+	}
+	if !verifyJSONAcceptHeader(r) {
+		writeNotAcceptableErrorResponse(w)
+		return
+	}
+
+	resetRequestId := params.ByName("request_id")
+	resetRequest, err := getPasswordResetRequest(resetRequestId)
+	if errors.Is(err, ErrRecordNotFound) {
+		writeNotFoundErrorResponse(w)
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		writeUnExpectedErrorResponse(w)
+		return
+	}
+	// If now is or after expiration
+	if time.Now().Compare(resetRequest.ExpiresAt) >= 0 {
+		err = deletePasswordResetRequest(resetRequest.Id)
+		if err != nil {
+			log.Println(err)
+			writeUnExpectedErrorResponse(w)
+			return
+		}
+		writeNotFoundErrorResponse(w)
+		return
+	}
+
+	err = deletePasswordResetRequest(resetRequest.Id)
+	if err != nil {
+		log.Println(err)
+		writeUnExpectedErrorResponse(w)
+		return
+	}
+
+	w.WriteHeader(204)
+}
+
+func createPasswordResetRequest(userId string, codeHash string) (PasswordResetRequest, error) {
 	now := time.Now()
 	id, err := generateId()
 	if err != nil {
 		return PasswordResetRequest{}, nil
 	}
 	expiresAt := now.Add(10 * time.Minute)
-	_, err = db.Exec("INSERT INTO password_reset_request (id, user_id, created_at, expires_at, email, code_hash) VALUES (?, ?, ?, ?, ?, ?)", id, userId, now.Unix(), expiresAt.Unix(), email, codeHash)
+	_, err = db.Exec("INSERT INTO password_reset_request (id, user_id, created_at, expires_at, code_hash) VALUES (?, ?, ?, ?, ?)", id, userId, now.Unix(), expiresAt.Unix(), codeHash)
 	if err != nil {
 		return PasswordResetRequest{}, err
 	}
@@ -335,7 +378,6 @@ func createPasswordResetRequest(userId string, email string, codeHash string) (P
 		UserId:    userId,
 		CreatedAt: now,
 		ExpiresAt: expiresAt,
-		Email:     email,
 		CodeHash:  codeHash,
 	}
 	return request, nil
@@ -344,8 +386,8 @@ func createPasswordResetRequest(userId string, email string, codeHash string) (P
 func getPasswordResetRequest(requestId string) (PasswordResetRequest, error) {
 	var request PasswordResetRequest
 	var createdAtUnix, expiresAtUnix int64
-	row := db.QueryRow("SELECT id, user_id, created_at, email, code_hash, expires_at, FROM password_reset_request WHERE id = ?", requestId)
-	err := row.Scan(&request.Id, &request.UserId, &createdAtUnix, &request.Email, &request.CodeHash, &expiresAtUnix)
+	row := db.QueryRow("SELECT id, user_id, created_at, code_hash, expires_at FROM password_reset_request WHERE id = ?", requestId)
+	err := row.Scan(&request.Id, &request.UserId, &createdAtUnix, &request.CodeHash, &expiresAtUnix)
 	if errors.Is(err, sql.ErrNoRows) {
 		return PasswordResetRequest{}, ErrRecordNotFound
 	}
@@ -363,8 +405,7 @@ func resetUserPasswordWithPasswordResetRequest(requestId string, passwordHash st
 		return false, err
 	}
 	var userId string
-	var email string
-	err = db.QueryRow("DELETE FROM password_reset_request WHERE id = ? AND expires_at > ? RETURNING user_id, email", requestId, time.Now().Unix()).Scan(&userId, &email)
+	err = db.QueryRow("DELETE FROM password_reset_request WHERE id = ? AND expires_at > ? RETURNING user_id", requestId, time.Now().Unix()).Scan(&userId)
 	if errors.Is(err, sql.ErrNoRows) {
 		err = tx.Commit()
 		if err != nil {
@@ -406,7 +447,6 @@ type PasswordResetRequest struct {
 	UserId    string
 	CreatedAt time.Time
 	ExpiresAt time.Time
-	Email     string
 	CodeHash  string
 }
 
