@@ -44,7 +44,10 @@ async function handleVerifyEmailRequest(
         );
     } catch (e) {
         if (e instanceof FaroeError && e.code === "INVALID_REQUEST") {
-            const emailVerificationRequest = await faroe.createUserEmailVerificationRequest(faroeUser.id, clientIP);
+            const emailVerificationRequest = await faroe.createUserEmailVerificationRequest(
+                faroeUser.id,
+                clientIP
+            );
             const emailContent = `Your verification code is ${emailVerificationRequest.code}.`;
             await sendEmail(faroeUser.email, emailContent);
 
