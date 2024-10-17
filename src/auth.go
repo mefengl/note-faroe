@@ -4,11 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"faroe/argon2id"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
-	"strings"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -56,7 +54,6 @@ func handleAuthenticateWithPasswordRequest(w http.ResponseWriter, r *http.Reques
 	email, password := *data.Email, *data.Password
 	user, err := getUserFromEmail(email)
 	if errors.Is(err, ErrRecordNotFound) {
-		logMessageWithClientIP("INFO", "LOGIN_ATTEMPT", "INVALID_EMAIL", clientIP, fmt.Sprintf("email_input=\"%s\"", strings.ReplaceAll(email, "\"", "\\\"")))
 		writeExpectedErrorResponse(w, ExpectedErrorUserNotExists)
 		return
 	}
@@ -66,12 +63,10 @@ func handleAuthenticateWithPasswordRequest(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if clientIP != "" && !passwordHashingIPRateLimit.Consume(clientIP, 1) {
-		logMessageWithClientIP("INFO", "AUTHENTICATE_WITH_PASSWORD", "PASSWORD_HASHING_LIMIT_REJECTED", clientIP, "")
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 	if clientIP != "" && !loginIPRateLimit.Consume(clientIP, 1) {
-		logMessageWithClientIP("INFO", "AUTHENTICATE_WITH_PASSWORD", "LOGIN_LIMIT_REJECTED", clientIP, "")
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -82,14 +77,12 @@ func handleAuthenticateWithPasswordRequest(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if !validPassword {
-		logMessageWithClientIP("INFO", "LOGIN_ATTEMPT", "INCORRECT_PASSWORD", clientIP, fmt.Sprintf("email=\"%s\" user_id=%s", strings.ReplaceAll(email, "\"", "\\\""), user.Id))
 		writeExpectedErrorResponse(w, ExpectedErrorIncorrectPassword)
 		return
 	}
 	if clientIP != "" {
 		loginIPRateLimit.AddToken(clientIP, 1)
 	}
-	logMessageWithClientIP("INFO", "LOGIN_ATTEMPT", "SUCCESS", clientIP, fmt.Sprintf("email=\"%s\" user_id=%s", strings.ReplaceAll(email, "\"", "\\\""), user.Id))
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	w.Write([]byte(user.EncodeToJSON()))

@@ -15,8 +15,6 @@ import (
 )
 
 func handleCreateUserEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	clientIP := r.Header.Get("X-Client-IP")
-
 	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -72,7 +70,6 @@ func handleCreateUserEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Re
 	}
 
 	if !createEmailVerificationUserRateLimit.Consume(userId, 1) {
-		logMessageWithClientIP("INFO", "CREATE_EMAIL_VERIFICATION_REQUEST", "PASSWORD_HASHING_LIMIT_REJECTED", clientIP, fmt.Sprintf("user_id=%s", userId))
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -83,7 +80,6 @@ func handleCreateUserEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Re
 		writeUnExpectedErrorResponse(w)
 		return
 	}
-	logMessageWithClientIP("INFO", "CREATE_EMAIL_VERIFICATION_REQUEST", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s", userId))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
@@ -91,8 +87,6 @@ func handleCreateUserEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Re
 }
 
 func handleUpdateEmailRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	clientIP := r.Header.Get("X-Client-IP")
-
 	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -152,29 +146,25 @@ func handleUpdateEmailRequest(w http.ResponseWriter, r *http.Request, params htt
 		return
 	}
 	if !verifyEmailUpdateVerificationCodeLimitCounter.Consume(updateRequest.Id) {
-		logMessageWithClientIP("INFO", "VERIFY_EMAIL_VERIFICATION_REQUEST", "FAIL_COUNTER_LIMIT_REJECTED", clientIP, "")
 		err = deleteEmailUpdateRequest(updateRequest.Id)
 		if err != nil {
 			log.Println(err)
 			writeUnExpectedErrorResponse(w)
 			return
 		}
-		logMessageWithClientIP("INFO", "VERIFY_EMAIL", "EMAIL_VERIFICATION_LIMIT_REJECTED", clientIP, fmt.Sprintf("user_id=%s request_id=%s", updateRequest.UserId, updateRequest.Id))
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
-	validCode, verifiedEmail, err := validateEmailUpdateRequest(updateRequest.Id, *data.Code)
+	validCode, err := validateEmailUpdateRequest(updateRequest.Id, *data.Code)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
 		return
 	}
 	if !validCode {
-		logMessageWithClientIP("INFO", "VERIFY_EMAIL", "INVALID_CODE", clientIP, fmt.Sprintf("user_id=%s", updateRequest.UserId))
 		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
 		return
 	}
-	logMessageWithClientIP("INFO", "VERIFY_EMAIL", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s request_id=%s email=\"%s\"", updateRequest.UserId, updateRequest.Id, strings.ReplaceAll(verifiedEmail, "\"", "\\\"")))
 
 	verifyEmailUpdateVerificationCodeLimitCounter.Delete(updateRequest.Id)
 
@@ -184,8 +174,6 @@ func handleUpdateEmailRequest(w http.ResponseWriter, r *http.Request, params htt
 }
 
 func handleDeleteEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	clientIP := r.Header.Get("X-Client-IP")
-
 	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -208,13 +196,11 @@ func handleDeleteEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Reques
 		writeUnExpectedErrorResponse(w)
 		return
 	}
-	logMessageWithClientIP("INFO", "DELETE_EMAIL_VERIFICATION_REQUEST", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s request_id=%s", updateRequest.UserId, updateRequest.Id))
+
 	w.WriteHeader(204)
 }
 
 func handleGetEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	clientIP := r.Header.Get("X-Client-IP")
-
 	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -246,7 +232,6 @@ func handleGetEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Request, 
 		writeNotFoundErrorResponse(w)
 		return
 	}
-	logMessageWithClientIP("INFO", "GET_EMAIL_VERIFICATION_REQUEST", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s request_id=%s", updateRequest.UserId, updateRequest.Id))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
@@ -302,10 +287,10 @@ func deleteEmailUpdateRequest(requestId string) error {
 	return err
 }
 
-func validateEmailUpdateRequest(requestId string, code string) (bool, string, error) {
+func validateEmailUpdateRequest(requestId string, code string) (bool, error) {
 	tx, err := db.Begin()
 	if err != nil {
-		return false, "", err
+		return false, err
 	}
 	row := tx.QueryRow("DELETE FROM email_update_request WHERE id = ? AND code = ? AND expires_at > ? RETURNING user_id, email", requestId, code, time.Now().Unix())
 	var userId, email string
@@ -314,36 +299,36 @@ func validateEmailUpdateRequest(requestId string, code string) (bool, string, er
 		err = tx.Commit()
 		if err != nil {
 			tx.Rollback()
-			return false, "", err
+			return false, err
 		}
-		return false, "", nil
+		return false, nil
 	}
 	if err != nil {
 		tx.Rollback()
-		return false, "", err
+		return false, err
 	}
 	_, err = tx.Exec("UPDATE user SET email = ? WHERE id = ?", email, userId)
 	if err != nil {
 		tx.Rollback()
-		return false, "", err
+		return false, err
 	}
 	_, err = tx.Exec("DELETE FROM password_reset_request WHERE user_id = ?", userId)
 	if err != nil {
 		tx.Rollback()
-		return false, "", err
+		return false, err
 	}
 	_, err = tx.Exec("DELETE FROM email_update_request WHERE email = ?", email)
 	if err != nil {
 		tx.Rollback()
-		return false, "", err
+		return false, err
 	}
 	err = tx.Commit()
 	if err != nil {
 		tx.Rollback()
-		return false, "", err
+		return false, err
 	}
 	tx.Commit()
-	return true, email, nil
+	return true, nil
 }
 
 type EmailUpdateRequest struct {

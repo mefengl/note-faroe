@@ -239,13 +239,6 @@ func writeNotAuthenticatedErrorResponse(w http.ResponseWriter) {
 	w.Write([]byte("{\"error\":\"NOT_AUTHENTICATED\"}"))
 }
 
-func logMessageWithClientIP(level string, action string, result string, clientIP string, attributes string) {
-	if clientIP == "" {
-		clientIP = "-"
-	}
-	log.Printf("%s %s %s client_ip=%s %s\n", level, action, result, clientIP, attributes)
-}
-
 func generateId() (string, error) {
 	bytes := make([]byte, 15)
 	_, err := rand.Read(bytes)

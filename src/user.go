@@ -92,7 +92,6 @@ func handleCreateUserRequest(w http.ResponseWriter, r *http.Request, _ httproute
 	}
 
 	if clientIP != "" && !passwordHashingIPRateLimit.Consume(clientIP, 1) {
-		logMessageWithClientIP("INFO", "CREATE_USER", "PASSWORD_HASHING_LIMIT_REJECTED", clientIP, fmt.Sprintf("email_input=\"%s\"", strings.ReplaceAll(email, "\"", "\\\"")))
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -112,7 +111,6 @@ func handleCreateUserRequest(w http.ResponseWriter, r *http.Request, _ httproute
 		writeUnExpectedErrorResponse(w)
 		return
 	}
-	logMessageWithClientIP("INFO", "CREATE_USER", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s email=\"%s\"", user.Id, strings.ReplaceAll(user.Email, "\"", "\\\"")))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
@@ -227,7 +225,6 @@ func handleUpdateUserPasswordRequest(w http.ResponseWriter, r *http.Request, par
 	}
 
 	if !passwordHashingIPRateLimit.Consume(clientIP, 1) {
-		logMessageWithClientIP("INFO", "UPDATE)USER_PASSWORD", "PASSWORD_HASHING_LIMIT_REJECTED", clientIP, fmt.Sprintf("user_id=\"%s\"", user.Id))
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -264,7 +261,6 @@ func handleUpdateUserPasswordRequest(w http.ResponseWriter, r *http.Request, par
 }
 
 func handleResetUser2FARequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	clientIP := r.Header.Get("X-Client-IP")
 	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -314,7 +310,6 @@ func handleResetUser2FARequest(w http.ResponseWriter, r *http.Request, params ht
 	}
 
 	if !recoveryCodeUserRateLimit.Consume(userId, 1) {
-		logMessageWithClientIP("INFO", "RESET_2FA", "RECOVERY_CODE_USER_LIMIT_REJECTED", clientIP, fmt.Sprintf("user_id=%s", userId))
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}

@@ -106,7 +106,6 @@ func handleRegisterTOTPRequest(w http.ResponseWriter, r *http.Request, params ht
 }
 
 func handleVerifyTOTPRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	clientIP := r.Header.Get("X-Client-IP")
 	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -158,7 +157,6 @@ func handleVerifyTOTPRequest(w http.ResponseWriter, r *http.Request, params http
 		return
 	}
 	if !totpUserRateLimit.Consume(userId, 1) {
-		logMessageWithClientIP("INFO", "VERIFY_2FA_TOTP", "TOTP_USER_LIMIT_REJECTED", clientIP, fmt.Sprintf("user_id=%s", userId))
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}

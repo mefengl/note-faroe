@@ -9,7 +9,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -58,7 +57,6 @@ func handleCreatePasswordResetRequestRequest(w http.ResponseWriter, r *http.Requ
 
 	user, err := getUserFromEmail(email)
 	if errors.Is(err, ErrRecordNotFound) {
-		logMessageWithClientIP("INFO", "CREATE_PASSWORD_RESET_REQUEST", "INVALID_EMAIL", clientIP, fmt.Sprintf("email_input=\"%s\"", strings.ReplaceAll(email, "\"", "\\\"")))
 		writeExpectedErrorResponse(w, ExpectedErrorUserNotExists)
 		return
 	}
@@ -68,12 +66,10 @@ func handleCreatePasswordResetRequestRequest(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	if clientIP != "" && !passwordHashingIPRateLimit.Consume(clientIP, 1) {
-		logMessageWithClientIP("INFO", "CREATE_PASSWORD_RESET_REQUEST", "PASSWORD_HASHING_LIMIT_REJECTED", clientIP, fmt.Sprintf("email_input=\"%s\"", strings.ReplaceAll(email, "\"", "\\\"")))
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 	if clientIP != "" && !createPasswordResetIPRateLimit.Consume(clientIP, 1) {
-		logMessageWithClientIP("INFO", "CREATE_PASSWORD_RESET_REQUEST", "CREATE_PASSWORD_RESET_REQUEST_LIMIT_REJECTED", clientIP, fmt.Sprintf("email_input=\"%s\"", strings.ReplaceAll(email, "\"", "\\\"")))
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -99,16 +95,12 @@ func handleCreatePasswordResetRequestRequest(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	logMessageWithClientIP("INFO", "CREATE_PASSWORD_RESET_REQUEST", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s email=\"%s\" request_id=%s", user.Id, strings.ReplaceAll(user.Email, "\"", "\\\""), resetRequest.Id))
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	w.Write([]byte(resetRequest.EncodeToJSONWithCode(code)))
 }
 
 func handleGetPasswordResetRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	clientIP := r.Header.Get("X-Client-IP")
-
 	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -140,7 +132,6 @@ func handleGetPasswordResetRequestRequest(w http.ResponseWriter, r *http.Request
 		writeNotFoundErrorResponse(w)
 		return
 	}
-	logMessageWithClientIP("INFO", "GET_PASSWORD_RESET_REQUEST", "SUCCESS", clientIP, fmt.Sprintf("request_id=%s user_id=%s", resetRequest.Id, resetRequest.UserId))
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	w.Write([]byte(resetRequest.EncodeToJSON()))
@@ -198,12 +189,10 @@ func handleVerifyPasswordResetRequestEmailRequest(w http.ResponseWriter, r *http
 		return
 	}
 	if clientIP != "" && !passwordHashingIPRateLimit.Consume(clientIP, 1) {
-		logMessageWithClientIP("INFO", "VERIFY_PASSWORD_RESET_REQUEST_EMAIL", "PASSWORD_HASHING_LIMIT_REJECTED", clientIP, "")
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 	if !verifyPasswordResetCodeLimitCounter.Consume(resetRequest.Id) {
-		logMessageWithClientIP("INFO", "VERIFY_PASSWORD_RESET_REQUEST_EMAIL", "FAIL_COUNTER_LIMIT_REJECTED", clientIP, "")
 		err = deletePasswordResetRequest(resetRequest.Id)
 		if err != nil {
 			log.Println(err)

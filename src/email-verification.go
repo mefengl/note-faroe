@@ -14,8 +14,6 @@ import (
 )
 
 func handleCreateUserEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	clientIP := r.Header.Get("X-Client-IP")
-
 	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -38,7 +36,6 @@ func handleCreateUserEmailVerificationRequestRequest(w http.ResponseWriter, r *h
 	}
 
 	if !createEmailVerificationUserRateLimit.Consume(userId, 1) {
-		logMessageWithClientIP("INFO", "CREATE_EMAIL_VERIFICATION_REQUEST", "PASSWORD_HASHING_LIMIT_REJECTED", clientIP, fmt.Sprintf("user_id=%s", userId))
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -49,7 +46,6 @@ func handleCreateUserEmailVerificationRequestRequest(w http.ResponseWriter, r *h
 		writeUnExpectedErrorResponse(w)
 		return
 	}
-	logMessageWithClientIP("INFO", "CREATE_EMAIL_VERIFICATION_REQUEST", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s", userId))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
@@ -57,8 +53,6 @@ func handleCreateUserEmailVerificationRequestRequest(w http.ResponseWriter, r *h
 }
 
 func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	clientIP := r.Header.Get("X-Client-IP")
-
 	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -113,14 +107,12 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 	}
 
 	if !verifyUserEmailRateLimit.Consume(userId, 1) {
-		logMessageWithClientIP("INFO", "VERIFY_EMAIL_VERIFICATION_REQUEST", "FAIL_COUNTER_LIMIT_REJECTED", clientIP, "")
 		err = deleteEmailVerificationRequest(verificationRequest.Id)
 		if err != nil {
 			log.Println(err)
 			writeUnExpectedErrorResponse(w)
 			return
 		}
-		logMessageWithClientIP("INFO", "VERIFY_EMAIL", "EMAIL_VERIFICATION_LIMIT_REJECTED", clientIP, fmt.Sprintf("user_id=%s request_id=%s", verificationRequest.UserId, verificationRequest.Id))
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -131,7 +123,6 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 		return
 	}
 	if !validCode {
-		logMessageWithClientIP("INFO", "VERIFY_EMAIL", "INVALID_CODE", clientIP, fmt.Sprintf("user_id=%s", verificationRequest.UserId))
 		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
 		return
 	}
@@ -142,8 +133,6 @@ func handleVerifyUserEmailRequest(w http.ResponseWriter, r *http.Request, params
 }
 
 func handleDeleteUserEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	clientIP := r.Header.Get("X-Client-IP")
-
 	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -167,13 +156,10 @@ func handleDeleteUserEmailVerificationRequestRequest(w http.ResponseWriter, r *h
 		writeUnExpectedErrorResponse(w)
 		return
 	}
-	logMessageWithClientIP("INFO", "DELETE_EMAIL_VERIFICATION_REQUEST", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s request_id=%s", verificationRequest.UserId, verificationRequest.Id))
 	w.WriteHeader(204)
 }
 
 func handleGetUserEmailVerificationRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	clientIP := r.Header.Get("X-Client-IP")
-
 	if !verifySecret(r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -206,8 +192,6 @@ func handleGetUserEmailVerificationRequestRequest(w http.ResponseWriter, r *http
 		writeExpectedErrorResponse(w, ExpectedErrorNotAllowed)
 		return
 	}
-
-	logMessageWithClientIP("INFO", "GET_EMAIL_VERIFICATION_REQUEST", "SUCCESS", clientIP, fmt.Sprintf("user_id=%s request_id=%s", verificationRequest.UserId, verificationRequest.Id))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
