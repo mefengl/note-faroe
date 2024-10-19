@@ -22,28 +22,6 @@ import (
 
 const version = "0.1.0"
 
-var secret []byte
-
-var db *sql.DB
-
-var passwordHashingIPRateLimit = ratelimit.NewTokenBucketRateLimit(5, 10*time.Second)
-
-var loginIPRateLimit = ratelimit.NewExpiringTokenBucketRateLimit(5, 15*time.Minute)
-
-var createEmailVerificationUserRateLimit = ratelimit.NewTokenBucketRateLimit(3, 5*time.Minute)
-
-var verifyUserEmailRateLimit = ratelimit.NewExpiringTokenBucketRateLimit(5, 15*time.Minute)
-
-var verifyEmailUpdateVerificationCodeLimitCounter = ratelimit.NewLimitCounter(5)
-
-var createPasswordResetIPRateLimit = ratelimit.NewTokenBucketRateLimit(3, 5*time.Minute)
-
-var verifyPasswordResetCodeLimitCounter = ratelimit.NewLimitCounter(5)
-
-var totpUserRateLimit = ratelimit.NewExpiringTokenBucketRateLimit(5, 15*time.Minute)
-
-var recoveryCodeUserRateLimit = ratelimit.NewExpiringTokenBucketRateLimit(5, 15*time.Minute)
-
 //go:embed schema.sql
 var schema string
 
@@ -97,28 +75,14 @@ func serveCommand() {
 	flag.StringVar(&secretString, "secret", "", "Server secret")
 	flag.Parse()
 
-	secret = []byte(secretString)
-
-	go func() {
-		for range time.Tick(10 * 24 * time.Hour) {
-			passwordHashingIPRateLimit.Clear()
-			loginIPRateLimit.Clear()
-			createEmailVerificationUserRateLimit.Clear()
-			verifyUserEmailRateLimit.Clear()
-			verifyEmailUpdateVerificationCodeLimitCounter.Clear()
-			createPasswordResetIPRateLimit.Clear()
-			verifyPasswordResetCodeLimitCounter.Clear()
-			totpUserRateLimit.Clear()
-			log.Println("SYSTEM RESET_MEMORY_STORAGE")
-		}
-	}()
+	secret := []byte(secretString)
 
 	err := os.MkdirAll("faroe_data", os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	db, err = sql.Open("sqlite3", "./faroe_data/sqlite.db?_journal_mode=WAL")
+	db, err := sql.Open("sqlite3", "./faroe_data/sqlite.db?_journal_mode=WAL")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -130,7 +94,7 @@ func serveCommand() {
 
 	go func() {
 		for range time.Tick(10 * 24 * time.Hour) {
-			err := cleanUpDatabase()
+			err := cleanUpDatabase(db)
 			if err != nil {
 				log.Println(err)
 			}
@@ -148,57 +112,49 @@ func serveCommand() {
 		// }
 	}()
 
-	router := &httprouter.Router{
-		NotFound: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !verifySecret(r) {
-				writeNotAuthenticatedErrorResponse(w)
-			} else {
-				writeNotFoundErrorResponse(w)
-			}
-		}),
+	passwordHashingIPRateLimit := ratelimit.NewTokenBucketRateLimit(5, 10*time.Second)
+	loginIPRateLimit := ratelimit.NewExpiringTokenBucketRateLimit(5, 15*time.Minute)
+	createEmailVerificationUserRateLimit := ratelimit.NewTokenBucketRateLimit(3, 5*time.Minute)
+	verifyUserEmailRateLimit := ratelimit.NewExpiringTokenBucketRateLimit(5, 15*time.Minute)
+	verifyEmailUpdateVerificationCodeLimitCounter := ratelimit.NewLimitCounter(5)
+	createPasswordResetIPRateLimit := ratelimit.NewTokenBucketRateLimit(3, 5*time.Minute)
+	verifyPasswordResetCodeLimitCounter := ratelimit.NewLimitCounter(5)
+	totpUserRateLimit := ratelimit.NewExpiringTokenBucketRateLimit(5, 15*time.Minute)
+	recoveryCodeUserRateLimit := ratelimit.NewExpiringTokenBucketRateLimit(5, 15*time.Minute)
+
+	go func() {
+		for range time.Tick(10 * 24 * time.Hour) {
+			passwordHashingIPRateLimit.Clear()
+			loginIPRateLimit.Clear()
+			createEmailVerificationUserRateLimit.Clear()
+			verifyUserEmailRateLimit.Clear()
+			verifyEmailUpdateVerificationCodeLimitCounter.Clear()
+			createPasswordResetIPRateLimit.Clear()
+			verifyPasswordResetCodeLimitCounter.Clear()
+			totpUserRateLimit.Clear()
+			recoveryCodeUserRateLimit.Clear()
+			log.Println("SYSTEM RESET_MEMORY_STORAGE")
+		}
+	}()
+
+	env := &Environment{
+		db:                                   db,
+		secret:                               secret,
+		passwordHashingIPRateLimit:           passwordHashingIPRateLimit,
+		loginIPRateLimit:                     loginIPRateLimit,
+		createEmailVerificationUserRateLimit: createEmailVerificationUserRateLimit,
+		verifyUserEmailRateLimit:             verifyUserEmailRateLimit,
+		verifyEmailUpdateVerificationCodeLimitCounter: verifyEmailUpdateVerificationCodeLimitCounter,
+		createPasswordResetIPRateLimit:                createPasswordResetIPRateLimit,
+		verifyPasswordResetCodeLimitCounter:           verifyPasswordResetCodeLimitCounter,
+		totpUserRateLimit:                             totpUserRateLimit,
+		recoveryCodeUserRateLimit:                     recoveryCodeUserRateLimit,
 	}
 
-	router.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		if !verifySecret(r) {
-			writeNotAuthenticatedErrorResponse(w)
-			return
-		}
-		w.Write([]byte(fmt.Sprintf("Faroe version %s\n\nRead the documentation: https://faroe.dev\n", version)))
-	})
-
-	router.POST("/authenticate/password", handleAuthenticateWithPasswordRequest)
-
-	router.POST("/users", handleCreateUserRequest)
-	router.GET("/users", handleGetUsersRequest)
-	router.DELETE("/users", handleDeleteUsersRequest)
-	router.GET("/users/:user_id", handleGetUserRequest)
-	router.DELETE("/users/:user_id", handleDeleteUserRequest)
-	router.POST("/users/:user_id/update-password", handleUpdateUserPasswordRequest)
-	router.GET("/users/:user_id/totp", handleGetUserTOTPCredentialRequest)
-	router.POST("/users/:user_id/totp", handleRegisterTOTPRequest)
-	router.DELETE("/users/:user_id/totp", handleDeleteUserTOTPCredentialRequest)
-	router.GET("/users/:user_id/recovery-code", handleGetUserRecoveryCodeRequest)
-	router.POST("/users/:user_id/verify-2fa/totp", handleVerifyTOTPRequest)
-	router.POST("/users/:user_id/reset-2fa", handleResetUser2FARequest)
-	router.POST("/users/:user_id/regenerate-recovery-code", handleRegenerateUserRecoveryCodeRequest)
-	router.POST("/users/:user_id/email-verification-request", handleCreateUserEmailVerificationRequestRequest)
-	router.GET("/users/:user_id/email-verification-request", handleGetUserEmailVerificationRequestRequest)
-	router.DELETE("/users/:user_id/email-verification-request", handleDeleteUserEmailVerificationRequestRequest)
-	router.POST("/users/:user_id/verify-email", handleVerifyUserEmailRequest)
-	router.POST("/users/:user_id/email-update-requests", handleCreateUserEmailUpdateRequestRequest)
-
-	router.GET("/email-update-requests/:request_id", handleGetEmailUpdateRequestRequest)
-	router.DELETE("/email-update-requests/:request_id", handleDeleteEmailUpdateRequestRequest)
-	router.POST("/update-email", handleUpdateEmailRequest)
-
-	router.POST("/password-reset-requests", handleCreatePasswordResetRequestRequest)
-	router.GET("/password-reset-requests/:request_id", handleGetPasswordResetRequestRequest)
-	router.DELETE("/password-reset-requests/:request_id", handleDeletePasswordResetRequestRequest)
-	router.POST("/password-reset-requests/:request_id/verify-email", handleVerifyPasswordResetRequestEmailRequest)
-	router.POST("/reset-password", handleResetPasswordRequest)
-
+	app := CreateApp(env)
 	fmt.Printf("Starting server in port %d...\n", port)
-	err = http.ListenAndServe(fmt.Sprintf(":%d", port), router)
+	err = http.ListenAndServe(fmt.Sprintf(":%d", port), app)
+
 	log.Println(err)
 }
 
@@ -206,7 +162,7 @@ func writeExpectedErrorResponse(w http.ResponseWriter, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(400)
 	escapedMessage := strings.ReplaceAll(string(message), "\"", "\\\"")
-	w.Write([]byte(fmt.Sprintf("{\"error\": \"%s\"}", escapedMessage)))
+	w.Write([]byte(fmt.Sprintf("{\"error\":\"%s\"}", escapedMessage)))
 }
 
 func writeUnExpectedErrorResponse(w http.ResponseWriter) {
@@ -270,3 +226,94 @@ const (
 )
 
 var ErrRecordNotFound = errors.New("record not found")
+
+func NewRouter(env *Environment, defaultHandle RouteHandle) Router {
+	router := Router{
+		r: &httprouter.Router{
+			NotFound: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				defaultHandle(env, w, r, httprouter.Params{})
+			}),
+		},
+		env: env,
+	}
+	return router
+}
+
+type Router struct {
+	r   *httprouter.Router
+	env *Environment
+}
+
+func (router *Router) Handle(method string, path string, handle RouteHandle) {
+	router.r.Handle(method, path, func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+		handle(router.env, w, r, params)
+	})
+}
+
+func (router *Router) Handler() http.Handler {
+	return router.r
+}
+
+type RouteHandle = func(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params)
+
+type Environment struct {
+	db                                            *sql.DB
+	secret                                        []byte
+	passwordHashingIPRateLimit                    ratelimit.TokenBucketRateLimit
+	loginIPRateLimit                              ratelimit.ExpiringTokenBucketRateLimit
+	createEmailVerificationUserRateLimit          ratelimit.TokenBucketRateLimit
+	verifyUserEmailRateLimit                      ratelimit.ExpiringTokenBucketRateLimit
+	verifyEmailUpdateVerificationCodeLimitCounter ratelimit.LimitCounter
+	createPasswordResetIPRateLimit                ratelimit.TokenBucketRateLimit
+	verifyPasswordResetCodeLimitCounter           ratelimit.LimitCounter
+	totpUserRateLimit                             ratelimit.ExpiringTokenBucketRateLimit
+	recoveryCodeUserRateLimit                     ratelimit.ExpiringTokenBucketRateLimit
+}
+
+func CreateApp(env *Environment) http.Handler {
+	router := NewRouter(env, func(env *Environment, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		if !verifyRequestSecret(env.secret, r) {
+			writeNotAuthenticatedErrorResponse(w)
+		} else {
+			writeNotFoundErrorResponse(w)
+		}
+	})
+
+	router.Handle("GET", "/", func(env *Environment, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		if !verifyRequestSecret(env.secret, r) {
+			writeNotAuthenticatedErrorResponse(w)
+			return
+		}
+		w.Write([]byte(fmt.Sprintf("Faroe version %s\n\nRead the documentation: https://faroe.dev\n", version)))
+	})
+
+	router.Handle("POST", "/authenticate/password", handleAuthenticateWithPasswordRequest)
+	router.Handle("POST", "/users", handleCreateUserRequest)
+	router.Handle("GET", "/users", handleGetUsersRequest)
+	router.Handle("DELETE", "/users", handleDeleteUsersRequest)
+	router.Handle("GET", "/users/:user_id", handleGetUserRequest)
+	router.Handle("DELETE", "/users/:user_id", handleDeleteUserRequest)
+	router.Handle("POST", "/users/:user_id/update-password", handleUpdateUserPasswordRequest)
+	router.Handle("GET", "/users/:user_id/totp", handleGetUserTOTPCredentialRequest)
+	router.Handle("POST", "/users/:user_id/totp", handleRegisterTOTPRequest)
+	router.Handle("DELETE", "/users/:user_id/totp", handleDeleteUserTOTPCredentialRequest)
+	router.Handle("GET", "/users/:user_id/recovery-code", handleGetUserRecoveryCodeRequest)
+	router.Handle("POST", "/users/:user_id/verify-2fa/totp", handleVerifyTOTPRequest)
+	router.Handle("POST", "/users/:user_id/reset-2fa", handleResetUser2FARequest)
+	router.Handle("POST", "/users/:user_id/regenerate-recovery-code", handleRegenerateUserRecoveryCodeRequest)
+	router.Handle("POST", "/users/:user_id/email-verification-request", handleCreateUserEmailVerificationRequestRequest)
+	router.Handle("GET", "/users/:user_id/email-verification-request", handleGetUserEmailVerificationRequestRequest)
+	router.Handle("DELETE", "/users/:user_id/email-verification-request", handleDeleteUserEmailVerificationRequestRequest)
+	router.Handle("POST", "/users/:user_id/verify-email", handleVerifyUserEmailRequest)
+	router.Handle("POST", "/users/:user_id/email-update-requests", handleCreateUserEmailUpdateRequestRequest)
+	router.Handle("GET", "/email-update-requests/:request_id", handleGetEmailUpdateRequestRequest)
+	router.Handle("DELETE", "/email-update-requests/:request_id", handleDeleteEmailUpdateRequestRequest)
+	router.Handle("POST", "/update-email", handleUpdateEmailRequest)
+	router.Handle("POST", "/password-reset-requests", handleCreatePasswordResetRequestRequest)
+	router.Handle("GET", "/password-reset-requests/:request_id", handleGetPasswordResetRequestRequest)
+	router.Handle("DELETE", "/password-reset-requests/:request_id", handleDeletePasswordResetRequestRequest)
+	router.Handle("POST", "/password-reset-requests/:request_id/verify-email", handleVerifyPasswordResetRequestEmailRequest)
+	router.Handle("POST", "/reset-password", handleResetPasswordRequest)
+
+	return router.Handler()
+}

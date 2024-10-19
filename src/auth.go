@@ -11,9 +11,9 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func handleAuthenticateWithPasswordRequest(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func handleAuthenticateWithPasswordRequest(env *Environment, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
-	if !verifySecret(r) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -52,7 +52,12 @@ func handleAuthenticateWithPasswordRequest(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	email, password := *data.Email, *data.Password
-	user, err := getUserFromEmail(email)
+	if !verifyEmailInput(email) {
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
+		return
+	}
+
+	user, err := getUserFromEmail(env.db, r.Context(), email)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeExpectedErrorResponse(w, ExpectedErrorUserNotExists)
 		return
@@ -62,11 +67,11 @@ func handleAuthenticateWithPasswordRequest(w http.ResponseWriter, r *http.Reques
 		writeUnExpectedErrorResponse(w)
 		return
 	}
-	if clientIP != "" && !passwordHashingIPRateLimit.Consume(clientIP, 1) {
+	if clientIP != "" && !env.passwordHashingIPRateLimit.Consume(clientIP, 1) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
-	if clientIP != "" && !loginIPRateLimit.Consume(clientIP, 1) {
+	if clientIP != "" && !env.loginIPRateLimit.Consume(clientIP, 1) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -80,9 +85,7 @@ func handleAuthenticateWithPasswordRequest(w http.ResponseWriter, r *http.Reques
 		writeExpectedErrorResponse(w, ExpectedErrorIncorrectPassword)
 		return
 	}
-	if clientIP != "" {
-		loginIPRateLimit.AddToken(clientIP, 1)
-	}
+	env.loginIPRateLimit.AddToken(clientIP, 1)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	w.Write([]byte(user.EncodeToJSON()))

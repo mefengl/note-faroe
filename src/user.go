@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"crypto/sha1"
 	"database/sql"
 	"encoding/hex"
@@ -21,9 +22,9 @@ import (
 	"github.com/mattn/go-sqlite3"
 )
 
-func handleCreateUserRequest(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func handleCreateUserRequest(env *Environment, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
-	if !verifySecret(r) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -65,7 +66,7 @@ func handleCreateUserRequest(w http.ResponseWriter, r *http.Request, _ httproute
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	emailAvailable, err := checkEmailAvailability(email)
+	emailAvailable, err := checkEmailAvailability(env.db, r.Context(), email)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
@@ -91,7 +92,7 @@ func handleCreateUserRequest(w http.ResponseWriter, r *http.Request, _ httproute
 		return
 	}
 
-	if clientIP != "" && !passwordHashingIPRateLimit.Consume(clientIP, 1) {
+	if clientIP != "" && !env.passwordHashingIPRateLimit.Consume(clientIP, 1) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -101,7 +102,26 @@ func handleCreateUserRequest(w http.ResponseWriter, r *http.Request, _ httproute
 		writeUnExpectedErrorResponse(w)
 		return
 	}
-	user, err := createUser(email, passwordHash)
+	userId, err := generateId()
+	if err != nil {
+		log.Println(err)
+		writeUnExpectedErrorResponse(w)
+		return
+	}
+	recoveryCode, err := generateSecureCode()
+	if err != nil {
+		log.Println(err)
+		writeUnExpectedErrorResponse(w)
+		return
+	}
+	user := User{
+		Id:           userId,
+		CreatedAt:    time.Unix(time.Now().Unix(), 0),
+		Email:        email,
+		PasswordHash: passwordHash,
+		RecoveryCode: recoveryCode,
+	}
+	err = createUser(env.db, r.Context(), user)
 	if err != nil {
 		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
 			writeExpectedErrorResponse(w, ExpectedErrorEmailAlreadyUsed)
@@ -117,8 +137,8 @@ func handleCreateUserRequest(w http.ResponseWriter, r *http.Request, _ httproute
 	w.Write([]byte(user.EncodeToJSON()))
 }
 
-func handleGetUserRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifySecret(r) {
+func handleGetUserRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -128,7 +148,7 @@ func handleGetUserRequest(w http.ResponseWriter, r *http.Request, params httprou
 	}
 
 	userId := params.ByName("user_id")
-	user, err := getUser(userId)
+	user, err := getUser(env.db, r.Context(), userId)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -144,13 +164,13 @@ func handleGetUserRequest(w http.ResponseWriter, r *http.Request, params httprou
 	w.Write([]byte(user.EncodeToJSON()))
 }
 
-func handleDeleteUserRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifySecret(r) {
+func handleDeleteUserRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
 	userId := params.ByName("user_id")
-	userExists, err := checkUserExists(userId)
+	userExists, err := checkUserExists(env.db, r.Context(), userId)
 	if !userExists {
 		writeNotFoundErrorResponse(w)
 		return
@@ -161,7 +181,7 @@ func handleDeleteUserRequest(w http.ResponseWriter, r *http.Request, params http
 		return
 	}
 
-	err = deleteUser(userId)
+	err = deleteUser(env.db, r.Context(), userId)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
@@ -171,9 +191,9 @@ func handleDeleteUserRequest(w http.ResponseWriter, r *http.Request, params http
 	w.WriteHeader(204)
 }
 
-func handleUpdateUserPasswordRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func handleUpdateUserPasswordRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	clientIP := r.Header.Get("X-Client-IP")
-	if !verifySecret(r) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -183,7 +203,7 @@ func handleUpdateUserPasswordRequest(w http.ResponseWriter, r *http.Request, par
 	}
 
 	userId := params.ByName("user_id")
-	user, err := getUser(userId)
+	user, err := getUser(env.db, r.Context(), userId)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -224,7 +244,7 @@ func handleUpdateUserPasswordRequest(w http.ResponseWriter, r *http.Request, par
 		return
 	}
 
-	if !passwordHashingIPRateLimit.Consume(clientIP, 1) {
+	if !env.passwordHashingIPRateLimit.Consume(clientIP, 1) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -255,13 +275,13 @@ func handleUpdateUserPasswordRequest(w http.ResponseWriter, r *http.Request, par
 		writeUnExpectedErrorResponse(w)
 		return
 	}
-	updateUserPassword(userId, newPasswordHash)
+	updateUserPassword(env.db, r.Context(), userId, newPasswordHash)
 
 	w.WriteHeader(204)
 }
 
-func handleResetUser2FARequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifySecret(r) {
+func handleResetUser2FARequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -275,7 +295,7 @@ func handleResetUser2FARequest(w http.ResponseWriter, r *http.Request, params ht
 	}
 
 	userId := params.ByName("user_id")
-	user, err := getUser(userId)
+	user, err := getUser(env.db, r.Context(), userId)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -309,11 +329,11 @@ func handleResetUser2FARequest(w http.ResponseWriter, r *http.Request, params ht
 		return
 	}
 
-	if !recoveryCodeUserRateLimit.Consume(userId, 1) {
+	if !env.recoveryCodeUserRateLimit.Consume(userId, 1) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
-	newRecoveryCode, valid, err := resetUser2FAWithRecoveryCode(userId, *data.RecoveryCode)
+	newRecoveryCode, valid, err := resetUser2FAWithRecoveryCode(env.db, r.Context(), userId, *data.RecoveryCode)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
@@ -323,15 +343,16 @@ func handleResetUser2FARequest(w http.ResponseWriter, r *http.Request, params ht
 		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
 		return
 	}
-	recoveryCodeUserRateLimit.Reset(userId)
+
+	env.recoveryCodeUserRateLimit.Reset(userId)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	encodeRecoveryCodeToJSON(newRecoveryCode)
 }
 
-func handleRegenerateUserRecoveryCodeRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifySecret(r) {
+func handleRegenerateUserRecoveryCodeRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -341,7 +362,7 @@ func handleRegenerateUserRecoveryCodeRequest(w http.ResponseWriter, r *http.Requ
 	}
 
 	userId := params.ByName("user_id")
-	user, err := getUser(userId)
+	user, err := getUser(env.db, r.Context(), userId)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -356,7 +377,7 @@ func handleRegenerateUserRecoveryCodeRequest(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	newRecoveryCode, err := regenerateUserRecoveryCode(userId)
+	newRecoveryCode, err := regenerateUserRecoveryCode(env.db, r.Context(), userId)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
@@ -368,8 +389,8 @@ func handleRegenerateUserRecoveryCodeRequest(w http.ResponseWriter, r *http.Requ
 	encodeRecoveryCodeToJSON(newRecoveryCode)
 }
 
-func handleGetUsersRequest(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	if !verifySecret(r) {
+func handleGetUsersRequest(env *Environment, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -407,7 +428,7 @@ func handleGetUsersRequest(w http.ResponseWriter, r *http.Request, _ httprouter.
 	if err != nil || page < 1 {
 		page = 1
 	}
-	users, err := getUsers(sortBy, sortOrder, count, page)
+	users, err := getUsers(env.db, r.Context(), sortBy, sortOrder, count, page)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
@@ -429,8 +450,8 @@ func handleGetUsersRequest(w http.ResponseWriter, r *http.Request, _ httprouter.
 	w.Write([]byte("]"))
 }
 
-func handleGetUserRecoveryCodeRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifySecret(r) {
+func handleGetUserRecoveryCodeRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -440,7 +461,7 @@ func handleGetUserRecoveryCodeRequest(w http.ResponseWriter, r *http.Request, pa
 	}
 
 	userId := params.ByName("user_id")
-	recoveryCode, err := getUserRecoveryCode(userId)
+	recoveryCode, err := getUserRecoveryCode(env.db, r.Context(), userId)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -456,13 +477,13 @@ func handleGetUserRecoveryCodeRequest(w http.ResponseWriter, r *http.Request, pa
 	w.Write([]byte(encodeRecoveryCodeToJSON(recoveryCode)))
 }
 
-func handleDeleteUsersRequest(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	if !verifySecret(r) {
+func handleDeleteUsersRequest(env *Environment, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
 
-	err := deleteUsers()
+	err := deleteUsers(env.db, r.Context())
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
@@ -471,44 +492,25 @@ func handleDeleteUsersRequest(w http.ResponseWriter, r *http.Request, _ httprout
 	w.WriteHeader(204)
 }
 
-func createUser(email string, passwordHash string) (User, error) {
-	now := time.Now()
-	id, err := generateId()
-	if err != nil {
-		return User{}, nil
-	}
-	recoveryCode, err := generateSecureCode()
-	if err != nil {
-		return User{}, nil
-	}
-	_, err = db.Exec("INSERT INTO user (id, created_at, email, password_hash, recovery_code) VALUES (?, ?, ?, ?, ?)", id, now.Unix(), email, passwordHash, recoveryCode)
-	if err != nil {
-		return User{}, err
-	}
-	user := User{
-		Id:           id,
-		CreatedAt:    now,
-		Email:        email,
-		PasswordHash: passwordHash,
-		RecoveryCode: recoveryCode,
-	}
-	return user, nil
+func createUser(db *sql.DB, ctx context.Context, user User) error {
+	_, err := db.ExecContext(ctx, "INSERT INTO user (id, created_at, email, password_hash, recovery_code) VALUES (?, ?, ?, ?, ?)", user.Id, user.CreatedAt.Unix(), user.Email, user.PasswordHash, user.RecoveryCode)
+	return err
 }
 
-func checkEmailAvailability(email string) (bool, error) {
+func checkEmailAvailability(db *sql.DB, ctx context.Context, email string) (bool, error) {
 	var count int
-	err := db.QueryRow("SELECT count(*) FROM user WHERE email = ?", email).Scan(&count)
+	err := db.QueryRowContext(ctx, "SELECT count(*) FROM user WHERE email = ?", email).Scan(&count)
 	if err != nil {
 		return false, err
 	}
 	return count < 1, nil
 }
 
-func getUser(userId string) (User, error) {
+func getUser(db *sql.DB, ctx context.Context, userId string) (User, error) {
 	var user User
 	var createdAtUnix int64
 	var totpRegisteredInt int
-	row := db.QueryRow("SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(totp_credential.id IS NOT NULL, 1, 0) FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id WHERE user.id = ?", userId)
+	row := db.QueryRowContext(ctx, "SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(totp_credential.id IS NOT NULL, 1, 0) FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id WHERE user.id = ?", userId)
 	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &totpRegisteredInt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrRecordNotFound
@@ -521,9 +523,9 @@ func getUser(userId string) (User, error) {
 	return user, nil
 }
 
-func getUserRecoveryCode(userId string) (string, error) {
+func getUserRecoveryCode(db *sql.DB, ctx context.Context, userId string) (string, error) {
 	var recoveryCode string
-	row := db.QueryRow("SELECT recovery_code FROM user WHERE id = ?", userId)
+	row := db.QueryRowContext(ctx, "SELECT recovery_code FROM user WHERE id = ?", userId)
 	err := row.Scan(&recoveryCode)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", ErrRecordNotFound
@@ -534,7 +536,7 @@ func getUserRecoveryCode(userId string) (string, error) {
 	return recoveryCode, nil
 }
 
-func getUsers(sortBy UserSortBy, sortOrder SortOrder, count, page int) ([]User, error) {
+func getUsers(db *sql.DB, ctx context.Context, sortBy UserSortBy, sortOrder SortOrder, count, page int) ([]User, error) {
 	var orderBySQL, orderSQL string
 
 	if sortBy == UserSortByCreatedAt {
@@ -560,7 +562,7 @@ func getUsers(sortBy UserSortBy, sortOrder SortOrder, count, page int) ([]User, 
 		ORDER BY %s %s LIMIT ? OFFSET ?`, orderBySQL, orderSQL)
 
 	var users []User
-	rows, err := db.Query(query, count, count*(page-1))
+	rows, err := db.QueryContext(ctx, query, count, count*(page-1))
 	if err != nil {
 		return nil, err
 	}
@@ -580,8 +582,8 @@ func getUsers(sortBy UserSortBy, sortOrder SortOrder, count, page int) ([]User, 
 	return users, nil
 }
 
-func deleteUsers() error {
-	tx, err := db.Begin()
+func deleteUsers(db *sql.DB, ctx context.Context) error {
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -610,20 +612,20 @@ func deleteUsers() error {
 	return err
 }
 
-func checkUserExists(userId string) (bool, error) {
+func checkUserExists(db *sql.DB, ctx context.Context, userId string) (bool, error) {
 	var count int
-	err := db.QueryRow("SELECT count(*) FROM user WHERE id = ?", userId).Scan(&count)
+	err := db.QueryRowContext(ctx, "SELECT count(*) FROM user WHERE id = ?", userId).Scan(&count)
 	if err != nil {
 		return false, err
 	}
 	return count > 0, nil
 }
 
-func getUserFromEmail(email string) (User, error) {
+func getUserFromEmail(db *sql.DB, ctx context.Context, email string) (User, error) {
 	var user User
 	var createdAtUnix int64
 	var totpRegisteredInt int
-	row := db.QueryRow("SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(totp_credential.id IS NOT NULL, 1, 0) FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id WHERE user.email = ?", email)
+	row := db.QueryRowContext(ctx, "SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(totp_credential.id IS NOT NULL, 1, 0) FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id WHERE user.email = ?", email)
 	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &totpRegisteredInt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrRecordNotFound
@@ -636,8 +638,8 @@ func getUserFromEmail(email string) (User, error) {
 	return user, nil
 }
 
-func deleteUser(userId string) error {
-	tx, err := db.Begin()
+func deleteUser(db *sql.DB, ctx context.Context, userId string) error {
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -666,17 +668,17 @@ func deleteUser(userId string) error {
 	return err
 }
 
-func updateUserPassword(userId string, passwordHash string) error {
-	_, err := db.Exec("UPDATE user SET password_hash = ? WHERE id = ?", passwordHash, userId)
+func updateUserPassword(db *sql.DB, ctx context.Context, userId string, passwordHash string) error {
+	_, err := db.ExecContext(ctx, "UPDATE user SET password_hash = ? WHERE id = ?", passwordHash, userId)
 	return err
 }
 
-func resetUser2FAWithRecoveryCode(userId string, recoveryCode string) (string, bool, error) {
+func resetUser2FAWithRecoveryCode(db *sql.DB, ctx context.Context, userId string, recoveryCode string) (string, bool, error) {
 	newRecoveryCode, err := generateSecureCode()
 	if err != nil {
 		return "", false, err
 	}
-	tx, err := db.Begin()
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return "", false, err
 	}
@@ -713,12 +715,12 @@ func resetUser2FAWithRecoveryCode(userId string, recoveryCode string) (string, b
 	return newRecoveryCode, true, nil
 }
 
-func regenerateUserRecoveryCode(userId string) (string, error) {
+func regenerateUserRecoveryCode(db *sql.DB, ctx context.Context, userId string) (string, error) {
 	newRecoveryCode, err := generateSecureCode()
 	if err != nil {
 		return "", err
 	}
-	_, err = db.Exec("UPDATE user SET recovery_code = ? WHERE id = ?", newRecoveryCode, userId)
+	_, err = db.ExecContext(ctx, "UPDATE user SET recovery_code = ? WHERE id = ?", newRecoveryCode, userId)
 	if err != nil {
 		return "", err
 	}

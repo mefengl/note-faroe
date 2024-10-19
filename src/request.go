@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func verifySecret(r *http.Request) bool {
+func verifyRequestSecret(secret []byte, r *http.Request) bool {
 	if len(secret) == 0 {
 		return true
 	}

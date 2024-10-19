@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
@@ -15,8 +16,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func handleRegisterTOTPRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifySecret(r) {
+func handleRegisterTOTPRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -26,7 +27,7 @@ func handleRegisterTOTPRequest(w http.ResponseWriter, r *http.Request, params ht
 	}
 
 	userId := params.ByName("user_id")
-	userExists, err := checkUserExists(userId)
+	userExists, err := checkUserExists(env.db, r.Context(), userId)
 	if !userExists {
 		writeNotFoundErrorResponse(w)
 		return
@@ -82,7 +83,7 @@ func handleRegisterTOTPRequest(w http.ResponseWriter, r *http.Request, params ht
 		return
 	}
 
-	err = registerUserTOTPCredential(userId, key)
+	err = registerUserTOTPCredential(env.db, r.Context(), userId, key)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -93,7 +94,7 @@ func handleRegisterTOTPRequest(w http.ResponseWriter, r *http.Request, params ht
 		return
 	}
 
-	recoveryCode, err := getUserRecoveryCode(userId)
+	recoveryCode, err := getUserRecoveryCode(env.db, r.Context(), userId)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
@@ -105,8 +106,8 @@ func handleRegisterTOTPRequest(w http.ResponseWriter, r *http.Request, params ht
 	w.Write([]byte(encodeRecoveryCodeToJSON(recoveryCode)))
 }
 
-func handleVerifyTOTPRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifySecret(r) {
+func handleVerifyTOTPRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -116,7 +117,7 @@ func handleVerifyTOTPRequest(w http.ResponseWriter, r *http.Request, params http
 	}
 
 	userId := params.ByName("user_id")
-	userExists, err := checkUserExists(userId)
+	userExists, err := checkUserExists(env.db, r.Context(), userId)
 	if !userExists {
 		writeNotFoundErrorResponse(w)
 		return
@@ -127,7 +128,7 @@ func handleVerifyTOTPRequest(w http.ResponseWriter, r *http.Request, params http
 		return
 	}
 
-	credential, err := getUserTOTPCredential(userId)
+	credential, err := getUserTOTPCredential(env.db, r.Context(), userId)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeExpectedErrorResponse(w, ExpectedErrorNotAllowed)
 		return
@@ -156,7 +157,7 @@ func handleVerifyTOTPRequest(w http.ResponseWriter, r *http.Request, params http
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	if !totpUserRateLimit.Consume(userId, 1) {
+	if !env.totpUserRateLimit.Consume(userId, 1) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -165,18 +166,19 @@ func handleVerifyTOTPRequest(w http.ResponseWriter, r *http.Request, params http
 		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
 		return
 	}
-	totpUserRateLimit.Reset(userId)
+	env.totpUserRateLimit.Reset(userId)
+
 	w.WriteHeader(204)
 }
 
-func handleDeleteUserTOTPCredentialRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifySecret(r) {
+func handleDeleteUserTOTPCredentialRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
 
 	userId := params.ByName("user_id")
-	userExists, err := checkUserExists(userId)
+	userExists, err := checkUserExists(env.db, r.Context(), userId)
 	if !userExists {
 		writeNotFoundErrorResponse(w)
 		return
@@ -187,7 +189,7 @@ func handleDeleteUserTOTPCredentialRequest(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = deleteUserTOTPCredential(userId)
+	err = deleteUserTOTPCredential(env.db, r.Context(), userId)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
@@ -197,8 +199,8 @@ func handleDeleteUserTOTPCredentialRequest(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(204)
 }
 
-func handleGetUserTOTPCredentialRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifySecret(r) {
+func handleGetUserTOTPCredentialRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -207,7 +209,7 @@ func handleGetUserTOTPCredentialRequest(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	userId := params.ByName("user_id")
-	credential, err := getUserTOTPCredential(userId)
+	credential, err := getUserTOTPCredential(env.db, r.Context(), userId)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -217,10 +219,10 @@ func handleGetUserTOTPCredentialRequest(w http.ResponseWriter, r *http.Request, 
 	w.Write([]byte(credential.EncodeToJSON()))
 }
 
-func getUserTOTPCredential(userId string) (TOTPCredential, error) {
+func getUserTOTPCredential(db *sql.DB, ctx context.Context, userId string) (TOTPCredential, error) {
 	var credential TOTPCredential
 	var createdAtUnix int64
-	row := db.QueryRow("SELECT id, user_id, created_at, key FROM totp_credential WHERE user_id = ?", userId)
+	row := db.QueryRowContext(ctx, "SELECT id, user_id, created_at, key FROM totp_credential WHERE user_id = ?", userId)
 	err := row.Scan(&credential.Id, &credential.UserId, &createdAtUnix, &credential.Key)
 	if errors.Is(err, sql.ErrNoRows) {
 		return TOTPCredential{}, ErrRecordNotFound
@@ -229,13 +231,13 @@ func getUserTOTPCredential(userId string) (TOTPCredential, error) {
 	return credential, nil
 }
 
-func registerUserTOTPCredential(userId string, key []byte) error {
+func registerUserTOTPCredential(db *sql.DB, ctx context.Context, userId string, key []byte) error {
 	now := time.Now()
 	id, err := generateId()
 	if err != nil {
 		return nil
 	}
-	result, err := db.Exec(`INSERT INTO totp_credential (id, user_id, created_at, key) VALUES (?, ?, ?, ?)
+	result, err := db.ExecContext(ctx, `INSERT INTO totp_credential (id, user_id, created_at, key) VALUES (?, ?, ?, ?)
 		ON CONFLICT (user_id) DO UPDATE SET created_at = ?, key = ? WHERE user_id = ?`, id, userId, now.Unix(), key, now.Unix(), key, userId)
 	if err != nil {
 		return err
@@ -250,8 +252,8 @@ func registerUserTOTPCredential(userId string, key []byte) error {
 	return nil
 }
 
-func deleteUserTOTPCredential(userId string) error {
-	_, err := db.Exec("DELETE FROM totp_credential WHERE user_id = ?", userId)
+func deleteUserTOTPCredential(db *sql.DB, ctx context.Context, userId string) error {
+	_, err := db.ExecContext(ctx, "DELETE FROM totp_credential WHERE user_id = ?", userId)
 	return err
 }
 

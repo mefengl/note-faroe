@@ -1,13 +1,14 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"io"
 	"os"
 	"time"
 )
 
-func backupDatabase() error {
+func backupDatabase(db *sql.DB) error {
 	_, err := db.Exec("BEGIN IMMEDIATE")
 	if err != nil {
 		return err
@@ -36,7 +37,7 @@ func backupDatabase() error {
 	return err
 }
 
-func cleanUpDatabase() error {
+func cleanUpDatabase(db *sql.DB) error {
 	_, err := db.Exec("DELETE FROM email_verification_request WHERE expires_at <= ?", time.Now().Unix())
 	if err != nil {
 		return err

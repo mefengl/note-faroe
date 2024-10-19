@@ -14,7 +14,7 @@ Use `Faroe.getUserRecoveryCode()` to get the user's recovery code. The code shou
 const recoveryCode = await faroe.getUserRecoveryCode(faroeUserId);
 ```
 
-Use `Faroe.resetUser2FA()` to reset the user's second factors with a recovery code. This will delete the user's TOTP credential and generate a new recovery code. Set the `registered_totp` user attribute to `false`.
+Use `Faroe.resetUser2FA()` to reset the user's second factors with a recovery code. This will delete the user's TOTP credential and generate a new recovery code. Set the `totp_registered` user attribute to `false`.
 
 ```ts
 import { FaroeError } from "@faroe/sdk";
@@ -33,7 +33,7 @@ async function handleReset2FARequest(
         response.write("Not authenticated.");
         return;
     }
-    if (!user.registeredTOTP) {
+    if (!user.totpRegistered) {
         response.writeHeader(403);
         response.write("Not allowed.");
         return;

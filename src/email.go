@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -14,8 +15,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func handleCreateUserEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifySecret(r) {
+func handleCreateUserEmailUpdateRequestRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -29,7 +30,7 @@ func handleCreateUserEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Re
 	}
 
 	userId := params.ByName("user_id")
-	userExists, err := checkUserExists(userId)
+	userExists, err := checkUserExists(env.db, r.Context(), userId)
 	if !userExists {
 		writeNotFoundErrorResponse(w)
 		return
@@ -63,18 +64,18 @@ func handleCreateUserEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	emailAvailable, err := checkEmailAvailability(email)
+	emailAvailable, err := checkEmailAvailability(env.db, r.Context(), email)
 	if !emailAvailable {
 		writeExpectedErrorResponse(w, ExpectedErrorEmailAlreadyUsed)
 		return
 	}
 
-	if !createEmailVerificationUserRateLimit.Consume(userId, 1) {
+	if !env.createEmailVerificationUserRateLimit.Consume(userId, 1) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 
-	updateRequest, err := createEmailUpdateRequest(userId, email)
+	updateRequest, err := createEmailUpdateRequest(env.db, r.Context(), userId, email)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
@@ -86,8 +87,8 @@ func handleCreateUserEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Re
 	w.Write([]byte(updateRequest.EncodeToJSON()))
 }
 
-func handleUpdateEmailRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifySecret(r) {
+func handleUpdateEmailRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -123,7 +124,7 @@ func handleUpdateEmailRequest(w http.ResponseWriter, r *http.Request, params htt
 		return
 	}
 
-	updateRequest, err := getEmailUpdateRequest(*data.RequestId)
+	updateRequest, err := getEmailUpdateRequest(env.db, r.Context(), *data.RequestId)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequest)
 		return
@@ -136,7 +137,7 @@ func handleUpdateEmailRequest(w http.ResponseWriter, r *http.Request, params htt
 
 	// If now is or after expiration
 	if time.Now().Compare(updateRequest.ExpiresAt) >= 0 {
-		err = deleteEmailUpdateRequest(updateRequest.Id)
+		err = deleteEmailUpdateRequest(env.db, r.Context(), updateRequest.Id)
 		if err != nil {
 			log.Println(err)
 			writeUnExpectedErrorResponse(w)
@@ -145,8 +146,8 @@ func handleUpdateEmailRequest(w http.ResponseWriter, r *http.Request, params htt
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequest)
 		return
 	}
-	if !verifyEmailUpdateVerificationCodeLimitCounter.Consume(updateRequest.Id) {
-		err = deleteEmailUpdateRequest(updateRequest.Id)
+	if !env.verifyEmailUpdateVerificationCodeLimitCounter.Consume(updateRequest.Id) {
+		err = deleteEmailUpdateRequest(env.db, r.Context(), updateRequest.Id)
 		if err != nil {
 			log.Println(err)
 			writeUnExpectedErrorResponse(w)
@@ -155,7 +156,7 @@ func handleUpdateEmailRequest(w http.ResponseWriter, r *http.Request, params htt
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
-	validCode, err := validateEmailUpdateRequest(updateRequest.Id, *data.Code)
+	validCode, err := validateEmailUpdateRequest(env.db, r.Context(), updateRequest.Id, *data.Code)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
@@ -166,20 +167,20 @@ func handleUpdateEmailRequest(w http.ResponseWriter, r *http.Request, params htt
 		return
 	}
 
-	verifyEmailUpdateVerificationCodeLimitCounter.Delete(updateRequest.Id)
+	env.verifyEmailUpdateVerificationCodeLimitCounter.Delete(updateRequest.Id)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	w.Write([]byte(encodeEmailToJSON(updateRequest.Email)))
 }
 
-func handleDeleteEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifySecret(r) {
+func handleDeleteEmailUpdateRequestRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
 	updateRequestId := params.ByName("request_id")
-	updateRequest, err := getEmailUpdateRequest(updateRequestId)
+	updateRequest, err := getEmailUpdateRequest(env.db, r.Context(), updateRequestId)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -190,7 +191,7 @@ func handleDeleteEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = deleteEmailUpdateRequest(updateRequest.Id)
+	err = deleteEmailUpdateRequest(env.db, r.Context(), updateRequest.Id)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
@@ -200,8 +201,8 @@ func handleDeleteEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(204)
 }
 
-func handleGetEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifySecret(r) {
+func handleGetEmailUpdateRequestRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
@@ -211,7 +212,7 @@ func handleGetEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Request, 
 	}
 
 	updateRequestId := params.ByName("request_id")
-	updateRequest, err := getEmailUpdateRequest(updateRequestId)
+	updateRequest, err := getEmailUpdateRequest(env.db, r.Context(), updateRequestId)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -223,7 +224,7 @@ func handleGetEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Request, 
 	}
 	// If now is or after expiration
 	if time.Now().Compare(updateRequest.ExpiresAt) >= 0 {
-		err = deleteEmailUpdateRequest(updateRequest.Id)
+		err = deleteEmailUpdateRequest(env.db, r.Context(), updateRequest.Id)
 		if err != nil {
 			log.Println(err)
 			writeUnExpectedErrorResponse(w)
@@ -238,7 +239,7 @@ func handleGetEmailUpdateRequestRequest(w http.ResponseWriter, r *http.Request, 
 	w.Write([]byte(updateRequest.EncodeToJSON()))
 }
 
-func createEmailUpdateRequest(userId string, email string) (EmailUpdateRequest, error) {
+func createEmailUpdateRequest(db *sql.DB, ctx context.Context, userId string, email string) (EmailUpdateRequest, error) {
 	now := time.Now()
 	id, err := generateId()
 	if err != nil {
@@ -249,7 +250,7 @@ func createEmailUpdateRequest(userId string, email string) (EmailUpdateRequest, 
 	if err != nil {
 		return EmailUpdateRequest{}, nil
 	}
-	_, err = db.Exec("INSERT INTO email_update_request (id, user_id, created_at, expires_at, email, code) VALUES (?, ?, ?, ?, ?, ?)", id, userId, now.Unix(), expiresAt.Unix(), email, code)
+	_, err = db.ExecContext(ctx, "INSERT INTO email_update_request (id, user_id, created_at, expires_at, email, code) VALUES (?, ?, ?, ?, ?, ?)", id, userId, now.Unix(), expiresAt.Unix(), email, code)
 	if err != nil {
 		return EmailUpdateRequest{}, err
 	}
@@ -264,10 +265,10 @@ func createEmailUpdateRequest(userId string, email string) (EmailUpdateRequest, 
 	return request, nil
 }
 
-func getEmailUpdateRequest(requestId string) (EmailUpdateRequest, error) {
+func getEmailUpdateRequest(db *sql.DB, ctx context.Context, requestId string) (EmailUpdateRequest, error) {
 	var updateRequest EmailUpdateRequest
 	var createdAtUnix, expiresAtUnix int64
-	row := db.QueryRow("SELECT id, user_id, created_at, email, code, expires_at FROM email_update_request WHERE id = ?", requestId)
+	row := db.QueryRowContext(ctx, "SELECT id, user_id, created_at, email, code, expires_at FROM email_update_request WHERE id = ?", requestId)
 	err := row.Scan(&updateRequest.Id, &updateRequest.UserId, &createdAtUnix, &updateRequest.Email, &updateRequest.Code, &expiresAtUnix)
 	if errors.Is(err, sql.ErrNoRows) {
 		return EmailUpdateRequest{}, ErrRecordNotFound
@@ -277,18 +278,18 @@ func getEmailUpdateRequest(requestId string) (EmailUpdateRequest, error) {
 	return updateRequest, nil
 }
 
-func deleteUserEmailUpdateRequests(userId string) error {
-	_, err := db.Exec("DELETE FROM email_update_request WHERE user_id = ?", userId)
+func deleteUserEmailUpdateRequests(db *sql.DB, ctx context.Context, userId string) error {
+	_, err := db.ExecContext(ctx, "DELETE FROM email_update_request WHERE user_id = ?", userId)
 	return err
 }
 
-func deleteEmailUpdateRequest(requestId string) error {
-	_, err := db.Exec("DELETE FROM email_update_request WHERE id = ?", requestId)
+func deleteEmailUpdateRequest(db *sql.DB, ctx context.Context, requestId string) error {
+	_, err := db.ExecContext(ctx, "DELETE FROM email_update_request WHERE id = ?", requestId)
 	return err
 }
 
-func validateEmailUpdateRequest(requestId string, code string) (bool, error) {
-	tx, err := db.Begin()
+func validateEmailUpdateRequest(db *sql.DB, ctx context.Context, requestId string, code string) (bool, error) {
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return false, err
 	}
