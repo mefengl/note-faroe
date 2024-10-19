@@ -422,11 +422,6 @@ func resetUserPasswordWithPasswordResetRequest(db *sql.DB, ctx context.Context, 
 	return true, nil
 }
 
-func setPasswordResetRequestAsTwoFactorVerified(db *sql.DB, ctx context.Context, requestId string) error {
-	_, err := db.ExecContext(ctx, "UPDATE password_reset_request SET two_factor_verified = 1 WHERE id = ?", requestId)
-	return err
-}
-
 func deletePasswordResetRequest(db *sql.DB, ctx context.Context, requestId string) error {
 	_, err := db.ExecContext(ctx, "DELETE FROM password_reset_request WHERE id = ?", requestId)
 	return err

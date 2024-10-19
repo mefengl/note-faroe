@@ -65,6 +65,11 @@ func handleCreateUserEmailUpdateRequestRequest(env *Environment, w http.Response
 	}
 
 	emailAvailable, err := checkEmailAvailability(env.db, r.Context(), email)
+	if err != nil {
+		log.Println(err)
+		writeUnExpectedErrorResponse(w)
+		return
+	}
 	if !emailAvailable {
 		writeExpectedErrorResponse(w, ExpectedErrorEmailAlreadyUsed)
 		return

@@ -239,11 +239,6 @@ func getUserEmailVerificationRequest(db *sql.DB, ctx context.Context, userId str
 	return verificationRequest, nil
 }
 
-func deleteUserEmailVerificationRequests(db *sql.DB, ctx context.Context, userId string) error {
-	_, err := db.ExecContext(ctx, "DELETE FROM email_verification_request WHERE user_id = ?", userId)
-	return err
-}
-
 func deleteEmailVerificationRequest(db *sql.DB, ctx context.Context, requestId string) error {
 	_, err := db.ExecContext(ctx, "DELETE FROM email_verification_request WHERE id = ?", requestId)
 	return err
