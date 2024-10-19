@@ -102,26 +102,8 @@ func handleCreateUserRequest(env *Environment, w http.ResponseWriter, r *http.Re
 		writeUnExpectedErrorResponse(w)
 		return
 	}
-	userId, err := generateId()
-	if err != nil {
-		log.Println(err)
-		writeUnExpectedErrorResponse(w)
-		return
-	}
-	recoveryCode, err := generateSecureCode()
-	if err != nil {
-		log.Println(err)
-		writeUnExpectedErrorResponse(w)
-		return
-	}
-	user := User{
-		Id:           userId,
-		CreatedAt:    time.Unix(time.Now().Unix(), 0),
-		Email:        email,
-		PasswordHash: passwordHash,
-		RecoveryCode: recoveryCode,
-	}
-	err = createUser(env.db, r.Context(), user)
+
+	user, err := createUser(env.db, r.Context(), email, passwordHash)
 	if err != nil {
 		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
 			writeExpectedErrorResponse(w, ExpectedErrorEmailAlreadyUsed)
@@ -492,9 +474,28 @@ func handleDeleteUsersRequest(env *Environment, w http.ResponseWriter, r *http.R
 	w.WriteHeader(204)
 }
 
-func createUser(db *sql.DB, ctx context.Context, user User) error {
-	_, err := db.ExecContext(ctx, "INSERT INTO user (id, created_at, email, password_hash, recovery_code) VALUES (?, ?, ?, ?, ?)", user.Id, user.CreatedAt.Unix(), user.Email, user.PasswordHash, user.RecoveryCode)
-	return err
+func createUser(db *sql.DB, ctx context.Context, email string, passwordHash string) (User, error) {
+	now := time.Now()
+	id, err := generateId()
+	if err != nil {
+		return User{}, nil
+	}
+	recoveryCode, err := generateSecureCode()
+	if err != nil {
+		return User{}, nil
+	}
+	_, err = db.ExecContext(ctx, "INSERT INTO user (id, created_at, email, password_hash, recovery_code) VALUES (?, ?, ?, ?, ?)", id, now.Unix(), email, passwordHash, recoveryCode)
+	if err != nil {
+		return User{}, err
+	}
+	user := User{
+		Id:           id,
+		CreatedAt:    now,
+		Email:        email,
+		PasswordHash: passwordHash,
+		RecoveryCode: recoveryCode,
+	}
+	return user, nil
 }
 
 func checkEmailAvailability(db *sql.DB, ctx context.Context, email string) (bool, error) {
