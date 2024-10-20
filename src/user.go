@@ -77,7 +77,7 @@ func handleCreateUserRequest(env *Environment, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if len(password) > 127 {
+	if password == "" || len(password) > 127 {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
@@ -217,11 +217,11 @@ func handleUpdateUserPasswordRequest(env *Environment, w http.ResponseWriter, r 
 		return
 	}
 	password, newPassword := *data.Password, *data.NewPassword
-	if len(password) < 8 || len(password) > 127 {
+	if password == "" || len(password) > 127 {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	if len(newPassword) < 8 || len(newPassword) > 127 {
+	if newPassword == "" || len(newPassword) > 127 {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
@@ -306,7 +306,7 @@ func handleResetUser2FARequest(env *Environment, w http.ResponseWriter, r *http.
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	if data.RecoveryCode == nil {
+	if data.RecoveryCode == nil || *data.RecoveryCode == "" {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
@@ -484,10 +484,6 @@ func createUser(db *sql.DB, ctx context.Context, email string, passwordHash stri
 	if err != nil {
 		return User{}, nil
 	}
-	_, err = db.ExecContext(ctx, "INSERT INTO user (id, created_at, email, password_hash, recovery_code) VALUES (?, ?, ?, ?, ?)", id, now.Unix(), email, passwordHash, recoveryCode)
-	if err != nil {
-		return User{}, err
-	}
 	user := User{
 		Id:           id,
 		CreatedAt:    now,
@@ -495,7 +491,16 @@ func createUser(db *sql.DB, ctx context.Context, email string, passwordHash stri
 		PasswordHash: passwordHash,
 		RecoveryCode: recoveryCode,
 	}
+	err = insertUser(db, ctx, &user)
+	if err != nil {
+		return User{}, err
+	}
 	return user, nil
+}
+
+func insertUser(db *sql.DB, ctx context.Context, user *User) error {
+	_, err := db.ExecContext(ctx, "INSERT INTO user (id, created_at, email, password_hash, recovery_code) VALUES (?, ?, ?, ?, ?)", user.Id, user.CreatedAt.Unix(), user.Email, user.PasswordHash, user.RecoveryCode)
+	return err
 }
 
 func checkEmailAvailability(db *sql.DB, ctx context.Context, email string) (bool, error) {
@@ -511,7 +516,7 @@ func getUser(db *sql.DB, ctx context.Context, userId string) (User, error) {
 	var user User
 	var createdAtUnix int64
 	var totpRegisteredInt int
-	row := db.QueryRowContext(ctx, "SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(totp_credential.id IS NOT NULL, 1, 0) FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id WHERE user.id = ?", userId)
+	row := db.QueryRowContext(ctx, "SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(user_totp_credential.user_id IS NOT NULL, 1, 0) FROM user LEFT JOIN user_totp_credential ON user.id = user_totp_credential.user_id WHERE user.id = ?", userId)
 	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &totpRegisteredInt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrRecordNotFound
@@ -558,8 +563,8 @@ func getUsers(db *sql.DB, ctx context.Context, sortBy UserSortBy, sortOrder Sort
 		return nil, errors.New("invalid 'sortOrder' value")
 	}
 
-	query := fmt.Sprintf(`SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(totp_credential.id IS NOT NULL, 1, 0)
-		FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id
+	query := fmt.Sprintf(`SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(user_totp_credential.user_id IS NOT NULL, 1, 0)
+		FROM user LEFT JOIN user_totp_credential ON user.id = user_totp_credential.user_id
 		ORDER BY %s %s LIMIT ? OFFSET ?`, orderBySQL, orderSQL)
 
 	var users []User
@@ -589,11 +594,11 @@ func deleteUsers(db *sql.DB, ctx context.Context) error {
 		return err
 	}
 	defer tx.Rollback()
-	_, err = tx.Exec("DELETE FROM totp_credential")
+	_, err = tx.Exec("DELETE FROM user_totp_credential")
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec("DELETE FROM email_verification_request")
+	_, err = tx.Exec("DELETE FROM user_email_verification_request")
 	if err != nil {
 		return err
 	}
@@ -626,7 +631,7 @@ func getUserFromEmail(db *sql.DB, ctx context.Context, email string) (User, erro
 	var user User
 	var createdAtUnix int64
 	var totpRegisteredInt int
-	row := db.QueryRowContext(ctx, "SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(totp_credential.id IS NOT NULL, 1, 0) FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id WHERE user.email = ?", email)
+	row := db.QueryRowContext(ctx, "SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(user_totp_credential.user_id IS NOT NULL, 1, 0) FROM user LEFT JOIN user_totp_credential ON user.id = user_totp_credential.user_id WHERE user.email = ?", email)
 	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &totpRegisteredInt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrRecordNotFound
@@ -645,11 +650,11 @@ func deleteUser(db *sql.DB, ctx context.Context, userId string) error {
 		return err
 	}
 	defer tx.Rollback()
-	_, err = tx.Exec("DELETE FROM totp_credential WHERE user_id = ?", userId)
+	_, err = tx.Exec("DELETE FROM user_totp_credential WHERE user_id = ?", userId)
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec("DELETE FROM email_verification_request WHERE user_id = ?", userId)
+	_, err = tx.Exec("DELETE FROM user_email_verification_request WHERE user_id = ?", userId)
 	if err != nil {
 		return err
 	}
@@ -695,16 +700,7 @@ func resetUser2FAWithRecoveryCode(db *sql.DB, ctx context.Context, userId string
 	if affected < 1 {
 		return "", false, err
 	}
-	_, err = tx.Exec("DELETE FROM totp_credential WHERE user_id = ?", userId)
-	if err != nil {
-		return "", false, err
-	}
-	_, err = tx.Exec("UPDATE session SET two_factor_verified = 0 WHERE user_id = ?", userId)
-	if err != nil {
-		return "", false, err
-	}
-
-	_, err = tx.Exec("DELETE FROM password_reset_request WHERE user_id = ?", userId)
+	_, err = tx.Exec("DELETE FROM user_totp_credential WHERE user_id = ?", userId)
 	if err != nil {
 		return "", false, err
 	}

@@ -12,7 +12,7 @@ GET https://your-domain.com/users/USER_ID/email-verification-reqes
 
 ## Succesful response
 
-Returns the [email verification request model](/api-reference/rest/models/email-verification-request) if the request exists and is valid.
+Returns the [user email verification request model](/api-reference/rest/models/user-email-verification-request) if the request exists and is valid.
 
 ## Error codess
 

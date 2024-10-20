@@ -18,9 +18,9 @@ title: "@faroe/sdk"
 ## Interfaces
 
 - [`FaroeEmailUpdateRequest`](/api-reference/js/main/FaroeEmailUpdateRequest)
-- [`FaroeEmailVerificationRequest`](/api-reference/js/main/FaroeEmailVerificationRequest)
 - [`FaroePasswordResetRequest`](/api-reference/js/main/FaroePasswordResetRequest)
-- [`FaroeTOTPCredential`](/api-reference/js/main/FaroeTOTPCredential)
+- [`FaroeUserEmailVerificationRequest`](/api-reference/js/main/FaroeUserEmailVerificationRequest)
+- [`FaroeUserTOTPCredential`](/api-reference/js/main/FaroeUserTOTPCredential)
 - [`FaroeUser`](/api-reference/js/main/FaroeUser)
 
 ## Enums

@@ -86,7 +86,7 @@ Like in the sign up process, use `Faroe.createUserEmailVerificationRequest()` to
 ```ts
 import { FaroeError } from "@faroe/sdk";
 
-import type { FaroeEmailVerificationRequest } from "@faroe/sdk";
+import type { FaroeUserEmailVerificationRequest } from "@faroe/sdk";
 
 async function handleResendEmailVerificationCodeRequest(
     request: HTTPRequest,
@@ -117,7 +117,7 @@ async function handleResendEmailVerificationCodeRequest(
         return;
     }
 
-    let emailVerificationRequest: FaroeEmailVerificationRequest;
+    let emailVerificationRequest: FaroeUserEmailVerificationRequest;
     try {
         emailVerificationRequest = await faroe.createUserEmailVerificationRequest(
             faroeUser.id,

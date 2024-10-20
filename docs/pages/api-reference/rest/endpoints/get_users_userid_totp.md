@@ -12,7 +12,7 @@ GET https://your-domain.com/users/USER_ID/totp
 
 ## Response body
 
-Returns the [TOTP credential model](/api-reference/rest/models/totp-credential) of the credential if it exists.
+Returns the [user TOTP credential model](/api-reference/rest/models/user-totp-credential) of the credential if it exists.
 
 ## Error codes
 

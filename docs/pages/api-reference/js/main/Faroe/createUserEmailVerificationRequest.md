@@ -11,11 +11,11 @@ Creates a new email verification request for a user. This can only be called 3 t
 ## Definition
 
 ```ts
-//$ FaroeEamilVerificationRequest=/api-reference/js/main/FaroeEamilVerificationRequest
+//$ FaroeUserEmailVerificationRequest=/api-reference/js/main/FaroeUserEmailVerificationRequest
 async function createUserEmailVerificationRequest(
     userId: string,
 	clientIP: string | null
-): Promise<$$FaroeEmailVerificationRequest>
+): Promise<$$FaroeUserEmailVerificationRequest>
 ```
 
 ### Parameters

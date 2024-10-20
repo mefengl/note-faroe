@@ -44,8 +44,8 @@ All endpoints that hashes passwords with Argon2id are rate limited based on IP a
 ## Models
 
 - [User](/api-reference/rest/models/user)
-- [Email verification request](/api-reference/rest/models/email-verification-request)
-- [TOTP credential](/api-reference/rest/models/totp-credential)
+- [User email verification request](/api-reference/rest/models/user-email-verification-request)
+- [User TOTP credential](/api-reference/rest/models/user-totp-credential)
 - [Password reset request](/api-reference/rest/models/password-reset-request)
 
 ## Endpoints

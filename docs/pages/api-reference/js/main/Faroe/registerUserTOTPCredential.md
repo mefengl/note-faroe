@@ -11,12 +11,12 @@ Registers a TOTP (SHA-1, 6 digits, 30 seconds interval) credential to a user.
 ## Definition
 
 ```ts
-//$ FaroeTOTPCredential=/api-reference/js/main/FaroeTOTPCredential
+//$ FaroeUserTOTPCredential=/api-reference/js/main/FaroeUserTOTPCredential
 async function registerUserTOTPCredential(
     userId: string,
     totpKey: Uint8Array,
     code: string
-): Promise<$$FaroeTOTPCredential>
+): Promise<$$FaroeUserTOTPCredential>
 ```
 
 ### Parameters

@@ -38,7 +38,7 @@ func backupDatabase(db *sql.DB) error {
 }
 
 func cleanUpDatabase(db *sql.DB) error {
-	_, err := db.Exec("DELETE FROM email_verification_request WHERE expires_at <= ?", time.Now().Unix())
+	_, err := db.Exec("DELETE FROM user_email_verification_request WHERE expires_at <= ?", time.Now().Unix())
 	if err != nil {
 		return err
 	}

@@ -67,23 +67,17 @@ func handleRegisterTOTPRequest(env *Environment, w http.ResponseWriter, r *http.
 		return
 	}
 
-	if data.Code == nil {
+	if data.Code == nil || *data.Code == "" {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	code := *data.Code
-	if len(code) != 6 {
-		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
-		return
-	}
-
-	validCode := otp.VerifyTOTP(key, 30*time.Second, 6, code)
+	validCode := otp.VerifyTOTPWithGracePeriod(time.Now(), key, 30*time.Second, 6, *data.Code, 10*time.Second)
 	if !validCode {
 		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
 		return
 	}
 
-	err = registerUserTOTPCredential(env.db, r.Context(), userId, key)
+	_, err = registerUserTOTPCredential(env.db, r.Context(), userId, key)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -153,7 +147,7 @@ func handleVerifyTOTPRequest(env *Environment, w http.ResponseWriter, r *http.Re
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	if data.Code == nil {
+	if data.Code == nil || *data.Code == "" {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
@@ -161,7 +155,7 @@ func handleVerifyTOTPRequest(env *Environment, w http.ResponseWriter, r *http.Re
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
-	valid := otp.VerifyTOTP(credential.Key, 30*time.Second, 6, *data.Code)
+	valid := otp.VerifyTOTPWithGracePeriod(time.Now(), credential.Key, 30*time.Second, 6, *data.Code, 10*time.Second)
 	if !valid {
 		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
 		return
@@ -219,52 +213,44 @@ func handleGetUserTOTPCredentialRequest(env *Environment, w http.ResponseWriter,
 	w.Write([]byte(credential.EncodeToJSON()))
 }
 
-func getUserTOTPCredential(db *sql.DB, ctx context.Context, userId string) (TOTPCredential, error) {
-	var credential TOTPCredential
+func getUserTOTPCredential(db *sql.DB, ctx context.Context, userId string) (UserTOTPCredential, error) {
+	var credential UserTOTPCredential
 	var createdAtUnix int64
-	row := db.QueryRowContext(ctx, "SELECT id, user_id, created_at, key FROM totp_credential WHERE user_id = ?", userId)
-	err := row.Scan(&credential.Id, &credential.UserId, &createdAtUnix, &credential.Key)
+	row := db.QueryRowContext(ctx, "SELECT user_id, created_at, key FROM user_totp_credential WHERE user_id = ?", userId)
+	err := row.Scan(&credential.UserId, &createdAtUnix, &credential.Key)
 	if errors.Is(err, sql.ErrNoRows) {
-		return TOTPCredential{}, ErrRecordNotFound
+		return UserTOTPCredential{}, ErrRecordNotFound
 	}
 	credential.CreatedAt = time.Unix(createdAtUnix, 0)
 	return credential, nil
 }
 
-func registerUserTOTPCredential(db *sql.DB, ctx context.Context, userId string, key []byte) error {
-	now := time.Now()
-	id, err := generateId()
+func registerUserTOTPCredential(db *sql.DB, ctx context.Context, userId string, key []byte) (UserTOTPCredential, error) {
+	credential := UserTOTPCredential{
+		UserId:    userId,
+		CreatedAt: time.Unix(time.Now().Unix(), 0),
+		Key:       key,
+	}
+	_, err := db.ExecContext(ctx, `INSERT INTO user_totp_credential (user_id, created_at, key) VALUES (?, ?, ?)
+		ON CONFLICT (user_id) DO UPDATE SET created_at = ?, key = ? WHERE user_id = ?`, credential.UserId, credential.CreatedAt.Unix(), credential.Key, credential.CreatedAt.Unix(), credential.Key, credential.UserId)
 	if err != nil {
-		return nil
+		return UserTOTPCredential{}, err
 	}
-	result, err := db.ExecContext(ctx, `INSERT INTO totp_credential (id, user_id, created_at, key) VALUES (?, ?, ?, ?)
-		ON CONFLICT (user_id) DO UPDATE SET created_at = ?, key = ? WHERE user_id = ?`, id, userId, now.Unix(), key, now.Unix(), key, userId)
-	if err != nil {
-		return err
-	}
-	count, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if count < 1 {
-		return ErrRecordNotFound
-	}
-	return nil
+	return credential, nil
 }
 
 func deleteUserTOTPCredential(db *sql.DB, ctx context.Context, userId string) error {
-	_, err := db.ExecContext(ctx, "DELETE FROM totp_credential WHERE user_id = ?", userId)
+	_, err := db.ExecContext(ctx, "DELETE FROM user_totp_credential WHERE user_id = ?", userId)
 	return err
 }
 
-type TOTPCredential struct {
-	Id        string
+type UserTOTPCredential struct {
 	UserId    string
 	CreatedAt time.Time
 	Key       []byte
 }
 
-func (c *TOTPCredential) EncodeToJSON() string {
-	encoded := fmt.Sprintf("{\"id\":\"%s\",\"user_id\":\"%s\",\"created_at\":%d,\"key\":\"%s\"}", c.Id, c.UserId, c.CreatedAt.Unix(), base64.StdEncoding.EncodeToString(c.Key))
+func (c *UserTOTPCredential) EncodeToJSON() string {
+	encoded := fmt.Sprintf("{\"user_id\":\"%s\",\"created_at\":%d,\"key\":\"%s\"}", c.UserId, c.CreatedAt.Unix(), base64.StdEncoding.EncodeToString(c.Key))
 	return encoded
 }

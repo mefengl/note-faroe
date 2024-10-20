@@ -3,19 +3,51 @@ package otp
 import (
 	"crypto/hmac"
 	"crypto/sha1"
+	"crypto/subtle"
 	"encoding/binary"
 	"math"
 	"strconv"
 	"time"
 )
 
-func GenerateTOTP(key []byte, interval time.Duration, digits int) string {
-	counter := uint64(time.Now().Unix()) / uint64(interval.Seconds())
+func GenerateTOTP(now time.Time, key []byte, interval time.Duration, digits int) string {
+	counter := uint64(now.Unix()) / uint64(interval.Seconds())
 	return GenerateHOTP(key, counter, digits)
 }
 
-func VerifyTOTP(key []byte, interval time.Duration, digits int, otp string) bool {
-	return GenerateTOTP(key, interval, digits) == otp
+func VerifyTOTP(now time.Time, key []byte, interval time.Duration, digits int, otp string) bool {
+	if len(otp) != digits {
+		return false
+	}
+	generated := GenerateTOTP(now, key, interval, digits)
+	valid := subtle.ConstantTimeCompare([]byte(generated), []byte(otp)) == 1
+	return valid
+}
+
+func VerifyTOTPWithGracePeriod(now time.Time, key []byte, interval time.Duration, digits int, otp string, gracePeriod time.Duration) bool {
+	counter1 := uint64(now.Add(-1*gracePeriod).Unix()) / uint64(interval.Seconds())
+	generated := GenerateHOTP(key, counter1, digits)
+	valid := subtle.ConstantTimeCompare([]byte(generated), []byte(otp)) == 1
+	if valid {
+		return true
+	}
+	counter2 := uint64(now.Unix()) / uint64(interval.Seconds())
+	if counter2 != counter1 {
+		generated = GenerateHOTP(key, counter2, digits)
+		valid = subtle.ConstantTimeCompare([]byte(generated), []byte(otp)) == 1
+		if valid {
+			return true
+		}
+	}
+	counter3 := uint64(now.Add(gracePeriod).Unix()) / uint64(interval.Seconds())
+	if counter3 != counter1 && counter3 != counter2 {
+		generated = GenerateHOTP(key, counter3, digits)
+		valid = subtle.ConstantTimeCompare([]byte(generated), []byte(otp)) == 1
+		if valid {
+			return true
+		}
+	}
+	return false
 }
 
 func GenerateHOTP(key []byte, counter uint64, digits int) string {

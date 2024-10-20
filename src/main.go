@@ -316,4 +316,5 @@ func CreateApp(env *Environment) http.Handler {
 	router.Handle("POST", "/reset-password", handleResetPasswordRequest)
 
 	return router.Handler()
+
 }

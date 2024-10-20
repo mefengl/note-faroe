@@ -185,7 +185,7 @@ func handleVerifyPasswordResetRequestEmailRequest(env *Environment, w http.Respo
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	if data.Code == nil {
+	if data.Code == nil || *data.Code == "" {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
@@ -358,19 +358,24 @@ func createPasswordResetRequest(db *sql.DB, ctx context.Context, userId string, 
 	if err != nil {
 		return PasswordResetRequest{}, nil
 	}
-	expiresAt := now.Add(10 * time.Minute)
-	_, err = db.ExecContext(ctx, "INSERT INTO password_reset_request (id, user_id, created_at, expires_at, code_hash) VALUES (?, ?, ?, ?, ?)", id, userId, now.Unix(), expiresAt.Unix(), codeHash)
-	if err != nil {
-		return PasswordResetRequest{}, err
-	}
+
 	request := PasswordResetRequest{
 		Id:        id,
 		UserId:    userId,
 		CreatedAt: now,
-		ExpiresAt: expiresAt,
+		ExpiresAt: now.Add(10 * time.Minute),
 		CodeHash:  codeHash,
 	}
+	err = insertPasswordResetRequest(db, ctx, &request)
+	if err != nil {
+		return PasswordResetRequest{}, err
+	}
 	return request, nil
+}
+
+func insertPasswordResetRequest(db *sql.DB, ctx context.Context, request *PasswordResetRequest) error {
+	_, err := db.ExecContext(ctx, "INSERT INTO password_reset_request (id, user_id, created_at, expires_at, code_hash) VALUES (?, ?, ?, ?, ?)", request.Id, request.UserId, request.CreatedAt.Unix(), request.ExpiresAt.Unix(), request.CodeHash)
+	return err
 }
 
 func getPasswordResetRequest(db *sql.DB, ctx context.Context, requestId string) (PasswordResetRequest, error) {

@@ -1,18 +1,17 @@
 ---
-title: "FaroeEmailVerificationRequest"
+title: "FaroeUserEmailVerificationRequest"
 ---
 
-# FaroeEmailVerificationRequest
+# FaroeUserEmailVerificationRequest
 
-Mapped to the [email verification request model](/api-reference/rest/models/email-verification-request).
+Mapped to the [user email verification request model](/api-reference/rest/models/user-email-verification-request).
 
 Represents an email verification request.
 
 ## Definition
 
 ```ts
-interface FaroeEmailVerificationRequest {
-	id: string;
+interface FaroeUserEmailVerificationRequest {
 	userId: string;
 	createdAt: Date;
 	expiresAt: Date;
@@ -22,7 +21,6 @@ interface FaroeEmailVerificationRequest {
 
 ### Properties
 
-- `id`: A 24-character long unique identifier with 120 bits of entropy.
 - `userId`: A 24-character long user ID.
 - `created`: A timestamp representing when the request was created.
 - `expiresAt`: A timestamp representing when the request will expire.
