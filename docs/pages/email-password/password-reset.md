@@ -128,7 +128,7 @@ async function handleVerifyPasswordResetEmailRequest(
 
 ## Reset password
 
-Use `Faroe.resetPassword()` to reset the user's password using the password reset request. We recommend doing some basic input validation with `verifyPasswordInput()`.
+Use `Faroe.resetUserPassword()` to reset the user's password using the password reset request. We recommend doing some basic input validation with `verifyPasswordInput()`.
 
 **Ensure that the `email_verified` attribute of the password reset session is set to `true`.**
 
@@ -167,7 +167,7 @@ async function handleResetPasswordRequest(
     }
 
     try {
-        await faroe.resetPassword(session.faroeRequestId, password, clientIP);
+        await faroe.resetUserPassword(session.faroeRequestId, password, clientIP);
     } catch (e) {
         if (e instanceof FaroeError && e.code === "INVALID_REQUEST") {
             response.writeHeader(400);

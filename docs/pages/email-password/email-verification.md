@@ -73,9 +73,6 @@ async function handleVerifyEmailRequest(
     // Set email as verified.
     await setUserAsEmailVerified(session.userId);
 
-    // Unlink verification request from session.
-    await deleteSessionEmailVerificationRequestId(session.id);
-
     // ...
 
 }
@@ -137,9 +134,6 @@ async function handleResendEmailVerificationCodeRequest(
     // Send verification code to user's inbox.
     const emailContent = `Your verification code is ${emailVerificationRequest.code}.`;
     await sendEmail(faroeUser.email, emailContent);
-
-    // Link the verification request to the current session.
-    await setSessionEmailVerificationRequestId(session.id, emailVerificationRequest.id);
 
     // ...
 
