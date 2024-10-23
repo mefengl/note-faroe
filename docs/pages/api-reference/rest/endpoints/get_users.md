@@ -30,9 +30,9 @@ All parameters are optional.
 /users?sort_by=created_at&sort_order=descending&count=50&page=2
 ```
 
-## Succesful response
+## Successful response
 
-Returns a JSON array of [user models](/api-reference/rest/models/user). If there are users in the page, it will return an empty array.
+Returns a JSON array of [user models](/api-reference/rest/models/user). If there are no users in the page, it will return an empty array.
 
 ### Example
 
@@ -48,6 +48,6 @@ Returns a JSON array of [user models](/api-reference/rest/models/user). If there
 ]
 ```
 
-## Error codess
+## Error codes
 
 - [500] `UNKNOWN_ERROR`

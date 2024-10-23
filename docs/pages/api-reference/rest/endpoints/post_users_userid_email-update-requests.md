@@ -22,11 +22,11 @@ POST https://your-domain.com/users/USER_ID/email-update-requests
 
 - `email`: A valid email address.
 
-## Succesful response
+## Successful response
 
 Returns the [email update request model](/api-reference/rest/models/email-verification-request) of the created request.
 
-## Error codess
+## Error codes
 
 - [400] `INVALID_DATA`: Invalid request data.
 - [400] `EMAIL_ALREADY_USED`: The email is already used by an existing account.

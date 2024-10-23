@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS user_totp_credential (
 CREATE TABLE IF NOT EXISTS passkey_credential (
     id TEXT NOT NULL,
     user_id TEXT NOT NULL REFERENCES user(id),
+    name TEXT NOT NULL,
     created_at INTEGER NOT NULL,
     cose_algorithm_id INTEGER NOT NULL,
     public_key BLOB NULL
@@ -55,6 +56,7 @@ CREATE INDEX IF NOT EXISTS passkey_credential_user_id_index ON passkey_credentia
 CREATE TABLE IF NOT EXISTS security_key (
     id TEXT NOT NULL,
     user_id TEXT NOT NULL REFERENCES user(id),
+    name TEXT NOT NULL,
     created_at INTEGER NOT NULL,
     cose_algorithm_id INTEGER NOT NULL,
     public_key BLOB NULL

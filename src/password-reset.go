@@ -66,12 +66,19 @@ func handleCreatePasswordResetRequestRequest(env *Environment, w http.ResponseWr
 		writeUnExpectedErrorResponse(w)
 		return
 	}
-	if clientIP != "" && !env.passwordHashingIPRateLimit.Consume(clientIP, 1) {
+	if clientIP != "" && !env.passwordHashingIPRateLimit.Consume(clientIP) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
-	if clientIP != "" && !env.createPasswordResetIPRateLimit.Consume(clientIP, 1) {
+	if clientIP != "" && !env.createPasswordResetIPRateLimit.Consume(clientIP) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
+		return
+	}
+
+	err = deleteExpiredUserPasswordResetRequests(env.db, r.Context(), user.Id)
+	if err != nil {
+		log.Println(err)
+		writeUnExpectedErrorResponse(w)
 		return
 	}
 
@@ -189,7 +196,7 @@ func handleVerifyPasswordResetRequestEmailRequest(env *Environment, w http.Respo
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	if clientIP != "" && !env.passwordHashingIPRateLimit.Consume(clientIP, 1) {
+	if clientIP != "" && !env.passwordHashingIPRateLimit.Consume(clientIP) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -251,7 +258,29 @@ func handleResetPasswordRequest(env *Environment, w http.ResponseWriter, r *http
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	resetRequestId, password := *data.RequestId, *data.Password
+
+	resetRequest, err := getPasswordResetRequest(env.db, r.Context(), *data.RequestId)
+	if errors.Is(err, ErrRecordNotFound) {
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequest)
+		return
+	}
+	if err != nil {
+		writeUnExpectedErrorResponse(w)
+		return
+	}
+	// If now is or after expiration
+	if time.Now().Compare(resetRequest.ExpiresAt) >= 0 {
+		err = deletePasswordResetRequest(env.db, r.Context(), resetRequest.Id)
+		if err != nil {
+			log.Println(err)
+			writeUnExpectedErrorResponse(w)
+			return
+		}
+		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequest)
+		return
+	}
+
+	password := *data.Password
 	if len(password) > 127 {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
@@ -270,28 +299,6 @@ func handleResetPasswordRequest(env *Environment, w http.ResponseWriter, r *http
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
-		return
-	}
-
-	resetRequest, err := getPasswordResetRequest(env.db, r.Context(), resetRequestId)
-	log.Println(err)
-	if errors.Is(err, ErrRecordNotFound) {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequest)
-		return
-	}
-	if err != nil {
-		writeUnExpectedErrorResponse(w)
-		return
-	}
-	// If now is or after expiration
-	if time.Now().Compare(resetRequest.ExpiresAt) >= 0 {
-		err = deletePasswordResetRequest(env.db, r.Context(), resetRequestId)
-		if err != nil {
-			log.Println(err)
-			writeUnExpectedErrorResponse(w)
-			return
-		}
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequest)
 		return
 	}
 
@@ -352,6 +359,89 @@ func handleDeletePasswordResetRequestRequest(env *Environment, w http.ResponseWr
 	w.WriteHeader(204)
 }
 
+func handleGetUserPasswordResetRequestsRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
+		writeNotAuthenticatedErrorResponse(w)
+		return
+	}
+	if !verifyJSONAcceptHeader(r) {
+		writeNotAcceptableErrorResponse(w)
+		return
+	}
+
+	userId := params.ByName("user_id")
+	userExists, err := checkUserExists(env.db, r.Context(), userId)
+	if !userExists {
+		writeNotFoundErrorResponse(w)
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		writeUnExpectedErrorResponse(w)
+		return
+	}
+
+	err = deleteExpiredUserPasswordResetRequests(env.db, r.Context(), userId)
+	if err != nil {
+		log.Println(err)
+		writeUnExpectedErrorResponse(w)
+		return
+	}
+
+	resetRequest, err := getUserPasswordResetRequests(env.db, r.Context(), userId)
+	if err != nil {
+		log.Println(err)
+		writeUnExpectedErrorResponse(w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	if len(resetRequest) == 0 {
+		w.Write([]byte("[]"))
+		return
+	}
+	w.Write([]byte("["))
+	for i, user := range resetRequest {
+		w.Write([]byte(user.EncodeToJSON()))
+		if i != len(resetRequest)-1 {
+			w.Write([]byte(","))
+		}
+	}
+	w.Write([]byte("]"))
+}
+
+func handleDeleteUserPasswordResetRequestsRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
+		writeNotAuthenticatedErrorResponse(w)
+		return
+	}
+	if !verifyJSONAcceptHeader(r) {
+		writeNotAcceptableErrorResponse(w)
+		return
+	}
+
+	userId := params.ByName("user_id")
+	userExists, err := checkUserExists(env.db, r.Context(), userId)
+	if !userExists {
+		writeNotFoundErrorResponse(w)
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		writeUnExpectedErrorResponse(w)
+		return
+	}
+
+	err = deleteUserPasswordResetRequests(env.db, r.Context(), userId)
+	if err != nil {
+		log.Println(err)
+		writeUnExpectedErrorResponse(w)
+		return
+	}
+	w.WriteHeader(204)
+}
+
 func createPasswordResetRequest(db *sql.DB, ctx context.Context, userId string, codeHash string) (PasswordResetRequest, error) {
 	now := time.Now()
 	id, err := generateId()
@@ -394,6 +484,26 @@ func getPasswordResetRequest(db *sql.DB, ctx context.Context, requestId string) 
 	return request, nil
 }
 
+func getUserPasswordResetRequests(db *sql.DB, ctx context.Context, requestId string) ([]PasswordResetRequest, error) {
+	rows, err := db.QueryContext(ctx, "SELECT id, user_id, created_at, code_hash, expires_at FROM password_reset_request WHERE id = ?", requestId)
+	if err != nil {
+		return nil, err
+	}
+	var requests []PasswordResetRequest
+	for rows.Next() {
+		var request PasswordResetRequest
+		var createdAtUnix, expiresAtUnix int64
+		err := rows.Scan(&request.Id, &request.UserId, &createdAtUnix, &request.CodeHash, &expiresAtUnix)
+		if err != nil {
+			return nil, err
+		}
+		request.CreatedAt = time.Unix(createdAtUnix, 0)
+		request.ExpiresAt = time.Unix(expiresAtUnix, 0)
+		requests = append(requests, request)
+	}
+	return requests, nil
+}
+
 func resetUserPasswordWithPasswordResetRequest(db *sql.DB, ctx context.Context, requestId string, passwordHash string) (bool, error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
@@ -429,6 +539,16 @@ func resetUserPasswordWithPasswordResetRequest(db *sql.DB, ctx context.Context, 
 
 func deletePasswordResetRequest(db *sql.DB, ctx context.Context, requestId string) error {
 	_, err := db.ExecContext(ctx, "DELETE FROM password_reset_request WHERE id = ?", requestId)
+	return err
+}
+
+func deleteExpiredUserPasswordResetRequests(db *sql.DB, ctx context.Context, userId string) error {
+	_, err := db.ExecContext(ctx, "DELETE FROM password_reset_request WHERE user_id = ? AND expires_at <= ?", userId, time.Now().Unix())
+	return err
+}
+
+func deleteUserPasswordResetRequests(db *sql.DB, ctx context.Context, userId string) error {
+	_, err := db.ExecContext(ctx, "DELETE FROM password_reset_request WHERE user_id = ?", userId)
 	return err
 }
 

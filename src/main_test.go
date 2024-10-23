@@ -38,3 +38,7 @@ func createEnvironment(db *sql.DB, secret []byte) *Environment {
 	}
 	return env
 }
+
+type ErrorJSON struct {
+	Error string `json:"error"`
+}

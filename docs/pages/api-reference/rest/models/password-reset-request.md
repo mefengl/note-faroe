@@ -9,9 +9,7 @@ title: "Password reset request model"
     "id": string,
     "user_id": string,
     "created_at": number,
-    "expires_at": number,
-    "email_verified": boolean,
-    "twoFactorVerified": boolean
+    "expires_at": number
 }
 ```
 
@@ -19,8 +17,6 @@ title: "Password reset request model"
 - `user_id`: A 24-character long user ID.
 - `created_at`: A 64-bit integer as an UNIX timestamp representing when the request was created.
 - `expires_at`: A 64-bit integer as an UNIX timestamp representing when the request will expire.
-- `email_verified`: `true` if the reset request's email was verified.
-- `totp_registered`: `true` if the second factor of the reset request's user was verified.
 
 ## Example
 
@@ -29,8 +25,6 @@ title: "Password reset request model"
     "id": "cjjhw9ggvv7e9hfc3qjsiegv",
     "user_id": "wz2nyjz4ims4cyuw7eq6tnxy",
     "created_at": 1728804201,
-    "expires_at": 1728804801,
-    "email_verified": true,
-    "twoFactorVerified": false
+    "expires_at": 1728804801
 }
 ```

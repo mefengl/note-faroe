@@ -33,11 +33,11 @@ All fields are required.
 }
 ```
 
-## Succesful response
+## Successful response
 
 No response body (204).
 
-## Error codess
+## Error codes
 
 - [400] `INVALID_DATA`: Invalid request data.
 - [400] `WEAK_PASSWORD`: The password is too weak.

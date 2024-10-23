@@ -67,11 +67,11 @@ func handleAuthenticateWithPasswordRequest(env *Environment, w http.ResponseWrit
 		writeUnExpectedErrorResponse(w)
 		return
 	}
-	if clientIP != "" && !env.passwordHashingIPRateLimit.Consume(clientIP, 1) {
+	if clientIP != "" && !env.passwordHashingIPRateLimit.Consume(clientIP) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
-	if clientIP != "" && !env.loginIPRateLimit.Consume(clientIP, 1) {
+	if clientIP != "" && !env.loginIPRateLimit.Consume(clientIP) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -85,7 +85,6 @@ func handleAuthenticateWithPasswordRequest(env *Environment, w http.ResponseWrit
 		writeExpectedErrorResponse(w, ExpectedErrorIncorrectPassword)
 		return
 	}
-	env.loginIPRateLimit.AddToken(clientIP, 1)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	w.Write([]byte(user.EncodeToJSON()))

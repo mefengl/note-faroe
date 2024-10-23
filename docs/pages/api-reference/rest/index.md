@@ -14,6 +14,14 @@ Set the `Authorization` header to the credential you provided when initializing 
 Authorization: YOUR_CREDENTIAL
 ```
 
+Faroe will return a 401 error response if the request has an invalid credential.
+
+```json
+{
+    "error": "NOT_AUTHENTICATED"
+}
+```
+
 ## Responses
 
 Successful responses will have a 200 status if it includes a response body or 204 status if not.
@@ -72,6 +80,8 @@ All endpoints that hashes passwords with Argon2id are rate limited based on IP a
 #### Email update
 
 - [POST /users/\[user_id\]/email-update-requests](/api-reference/rest/endpoints/post_users_userid_email-update-requests): Create a new user email update request.
+- [GET /users/\[user_id\]/email-update-requests](/api-reference/rest/endpoints/get_users_userid_email-update-requests): Gets a list of a user's email update requests.
+- [DELETE /users/\[user_id\]/email-update-requests](/api-reference/rest/endpoints/delete_users_userid_email-update-requests):  Deletes a user's email update requests.
 - [GET /email-update-requests/\[request_id\]](/api-reference/rest/endpoints/get_email-update-requests_requestid): Get an email update request.
 - [DELETE /email-update-requests/\[request_id\]](/api-reference/rest/endpoints/delete_email-update-requests_requestid): Delete an email update request.
 - [POST /update-email](/api-reference/rest/endpoints/post_update-email): Update a user's email by verifying their email update request code.
@@ -82,7 +92,6 @@ All endpoints that hashes passwords with Argon2id are rate limited based on IP a
 - [GET /users/\[user_id\]/totp](/api-reference/rest/endpoints/get_users_userid_totp): Get a user's TOTP credential.
 - [DELETE /users/\[user_id\]/totp](/api-reference/rest/endpoints/delete_users_userid_totp): Delete a user's TOTP credential.
 - [POST /users/\[user_id\]/verify-2fa/totp](/api-reference/rest/endpoints/post_users_userid_verify-2fa_totp): Verify a user's TOTP code.
-- [GET /users/\[user_id\]/recovery-code](/api-reference/rest/endpoints/get_users_userid_recovery-code): Get a user's recovery code.
 - [POST /users/\[user_id\]/regenerate-recovery-code](/api-reference/rest/endpoints/post_users_userid_regenerate-recovery-code): Generate a new user recovery code.
 - [POST /users/\[user_id\]/reset-2fa](/api-reference/rest/endpoints/post_users_userid_reset-2fa): Reset a user's second factors with a recovery code.
 

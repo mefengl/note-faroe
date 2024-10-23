@@ -10,11 +10,11 @@ Deletes a user.
 DELETE https://your-domain.com/users/USER_ID
 ```
 
-## Succesful response
+## Successful response
 
 No response body (204).
 
-## Error codess
+## Error codes
 
 - [404] `NOT_FOUND`: The user does not exist.
 - [500] `UNKNOWN_ERROR`

@@ -32,7 +32,7 @@ All fields are required.
 }
 ```
 
-## Succesful response
+## Successful response
 
 Returns the [password reset request model](/api-reference/rest/models/password-reset-requests-request) of the created request and a verification code. The code is only available here.
 
@@ -65,7 +65,7 @@ Returns the [password reset request model](/api-reference/rest/models/password-r
 }
 ```
 
-## Error codess
+## Error codes
 
 - [400] `INVALID_DATA`: Invalid request data.
 - [400] `USER_NOT_EXISTS`: A user linked to the email does not exist.

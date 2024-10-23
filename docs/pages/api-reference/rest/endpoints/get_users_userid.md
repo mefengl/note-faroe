@@ -10,11 +10,11 @@ Gets a user.
 GET https://your-domain.com/users/USER_ID
 ```
 
-## Succesful response
+## Successful response
 
 Returns the [user model](/api-reference/rest/models/user) of the user if they exist.
 
-## Error codess
+## Error codes
 
 - [404] `NOT_FOUND`: The user does not exist.
 - [500] `UNKNOWN_ERROR`

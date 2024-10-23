@@ -10,11 +10,11 @@ Deletes a passwod reset request.
 DELETE https://your-domain.com/password-reset-requests/REQUEST_ID
 ```
 
-## Succesful response
+## Successful response
 
 No response body (204).
 
-## Error codess
+## Error codes
 
 - [404] `NOT_FOUND`: The request does not exist or has expired.
 - [500] `UNKNOWN_ERROR`

@@ -24,11 +24,11 @@ All fields are required.
 - `request_id`: A valid password reset request ID.
 - `password`: A valid password. Password strength is determined by checking it aginst past data leaks using the [HaveIBeenPwned API](https://haveibeenpwned.com/API/v3#PwnedPasswords).
 
-## Succesful response
+## Successful response
 
 No response body (204).
 
-## Error codess
+## Error codes
 
 - [400] `INVALID_DATA`: Invalid request data.
 - [400] `WEAK_PASSWORD`: The password is too weak.

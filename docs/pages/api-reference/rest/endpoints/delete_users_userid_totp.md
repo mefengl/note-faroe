@@ -14,7 +14,7 @@ DELETE https://your-domain.com/users/USER_ID/totp
 
 No response body (204).
 
-## Error codess
+## Error codes
 
 - [404] `NOT_FOUND`: The user does not exist or the user does not have a TOTP credential.
 - [500] `UNKNOWN_ERROR`

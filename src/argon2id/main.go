@@ -36,8 +36,10 @@ func Verify(hash string, password string) (bool, error) {
 	if parts[2] != "v=19" {
 		return false, errors.New("unsupported hash")
 	}
-	if parts[3] != "m=19456,t=2,p=1" {
-		return false, errors.New("unsupported hash")
+	var m, t, p int32
+	_, err := fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &m, &t, &p)
+	if err != nil {
+		return false, errors.New("invalid hash")
 	}
 	salt, err := base64.RawStdEncoding.DecodeString(parts[4])
 	if err != nil {
@@ -47,7 +49,7 @@ func Verify(hash string, password string) (bool, error) {
 	if err != nil {
 		return false, errors.New("invalid hash")
 	}
-	key2 := argon2.IDKey([]byte(password), salt, 2, 19456, 1, 32)
+	key2 := argon2.IDKey([]byte(password), salt, 2, 19456, 1, uint32(len(key1)))
 	valid := subtle.ConstantTimeCompare(key1, key2)
 	return valid == 1, nil
 }

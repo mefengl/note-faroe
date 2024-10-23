@@ -77,7 +77,7 @@ func handleRegisterTOTPRequest(env *Environment, w http.ResponseWriter, r *http.
 		return
 	}
 
-	_, err = registerUserTOTPCredential(env.db, r.Context(), userId, key)
+	credential, err := registerUserTOTPCredential(env.db, r.Context(), userId, key)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -88,16 +88,9 @@ func handleRegisterTOTPRequest(env *Environment, w http.ResponseWriter, r *http.
 		return
 	}
 
-	recoveryCode, err := getUserRecoveryCode(env.db, r.Context(), userId)
-	if err != nil {
-		log.Println(err)
-		writeUnExpectedErrorResponse(w)
-		return
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
-	w.Write([]byte(encodeRecoveryCodeToJSON(recoveryCode)))
+	w.Write([]byte(credential.EncodeToJSON()))
 }
 
 func handleVerifyTOTPRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -151,7 +144,7 @@ func handleVerifyTOTPRequest(env *Environment, w http.ResponseWriter, r *http.Re
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	if !env.totpUserRateLimit.Consume(userId, 1) {
+	if !env.totpUserRateLimit.Consume(userId) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -172,8 +165,8 @@ func handleDeleteUserTOTPCredentialRequest(env *Environment, w http.ResponseWrit
 	}
 
 	userId := params.ByName("user_id")
-	userExists, err := checkUserExists(env.db, r.Context(), userId)
-	if !userExists {
+	_, err := getUserTOTPCredential(env.db, r.Context(), userId)
+	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
 	}

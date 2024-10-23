@@ -33,11 +33,11 @@ All fields are required.
 }
 ```
 
-## Succesful response
+## Successful response
 
 Returns the [user model](/api-reference/rest/models/user) of the created user.
 
-## Error codess
+## Error codes
 
 - [400] `INVALID_DATA`: Invalid request data.
 - [400] `USER_NOT_EXISTS`: The user does not exist.

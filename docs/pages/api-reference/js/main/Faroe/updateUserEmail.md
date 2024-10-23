@@ -27,4 +27,5 @@ function updateUserEmail(requestId: string, code: string, clientIP: string): Pro
 - `TOO_MANY_REQUESTS`: Rate limit exceeded.
 - `INCORRECT_CODE`: Incorrect verification code.
 - `INVALID_REQUEST`: Invalid update request ID.
+- `EMAIL_ALREADY_USED`: Email is already used.
 - `UNKNOWN_ERROR`

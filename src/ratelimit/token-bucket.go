@@ -23,7 +23,7 @@ type TokenBucketRateLimit struct {
 	refillIntervalMilliseconds int64
 }
 
-func (rl *TokenBucketRateLimit) Check(key string, cost int) bool {
+func (rl *TokenBucketRateLimit) Check(key string) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 	if _, ok := rl.storage[key]; !ok {
@@ -32,31 +32,39 @@ func (rl *TokenBucketRateLimit) Check(key string, cost int) bool {
 	now := time.Now()
 	refill := int((now.UnixMilli() - rl.storage[key].refilledAtUnixMilliseconds) / rl.refillIntervalMilliseconds)
 	count := int(math.Min(float64(rl.storage[key].count+refill), float64(rl.max)))
-	return count >= cost
+	return count > 0
 }
 
-func (rl *TokenBucketRateLimit) Consume(key string, cost int) bool {
+func (rl *TokenBucketRateLimit) Consume(key string) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 	now := time.Now()
 	if _, ok := rl.storage[key]; !ok {
-		rl.storage[key] = refillingTokenBucket{rl.max - cost, now.UnixMilli()}
+		rl.storage[key] = refillingTokenBucket{rl.max - 1, now.UnixMilli()}
 		return true
 	}
 	refill := int((now.UnixMilli() - rl.storage[key].refilledAtUnixMilliseconds) / rl.refillIntervalMilliseconds)
 	count := int(math.Min(float64(rl.storage[key].count+refill), float64(rl.max)))
-	if count < cost {
+	if count < 1 {
 		return false
 	}
-	rl.storage[key] = refillingTokenBucket{count - cost, now.UnixMilli()}
+	rl.storage[key] = refillingTokenBucket{count - 1, now.UnixMilli()}
 	return true
 }
 
-func (rl *TokenBucketRateLimit) AddToken(key string, token int) {
+func (rl *TokenBucketRateLimit) AddTokenIfEmpty(key string) {
 	rl.mu.Lock()
-	count := int(math.Min(float64(rl.storage[key].count+token), float64(rl.max)))
-	rl.storage[key] = refillingTokenBucket{count, time.Now().UnixMilli()}
-	rl.mu.Unlock()
+	defer rl.mu.Unlock()
+	bucket, ok := rl.storage[key]
+	if !ok {
+		return
+	}
+	now := time.Now()
+	refill := int((now.UnixMilli() - bucket.refilledAtUnixMilliseconds) / rl.refillIntervalMilliseconds)
+	count := int(math.Min(float64(bucket.count+refill), float64(rl.max)))
+	if count < 1 {
+		rl.storage[key] = refillingTokenBucket{1, now.UnixMilli()}
+	}
 }
 
 func (rl *TokenBucketRateLimit) Reset(key string) {
@@ -94,7 +102,7 @@ type ExpiringTokenBucketRateLimit struct {
 	expiresInMilliseconds int64
 }
 
-func (rl *ExpiringTokenBucketRateLimit) Check(key string, cost int) bool {
+func (rl *ExpiringTokenBucketRateLimit) Check(key string) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 	now := time.Now()
@@ -105,33 +113,39 @@ func (rl *ExpiringTokenBucketRateLimit) Check(key string, cost int) bool {
 	if now.UnixMilli() >= expiresAtMilliseconds {
 		return true
 	}
-	return rl.storage[key].count >= cost
+	return rl.storage[key].count > 0
 }
 
-func (rl *ExpiringTokenBucketRateLimit) Consume(key string, cost int) bool {
+func (rl *ExpiringTokenBucketRateLimit) Consume(key string) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 	now := time.Now()
 	if _, ok := rl.storage[key]; !ok {
-		rl.storage[key] = expiringTokenBucket{rl.max - cost, now.UnixMilli()}
+		rl.storage[key] = expiringTokenBucket{rl.max - 1, now.UnixMilli()}
 		return true
 	}
 	expiresAtMilliseconds := rl.storage[key].createdAtUnixMilliseconds + rl.expiresInMilliseconds
 	if now.UnixMilli() >= expiresAtMilliseconds {
-		rl.storage[key] = expiringTokenBucket{rl.max - cost, now.UnixMilli()}
+		rl.storage[key] = expiringTokenBucket{rl.max - 1, now.UnixMilli()}
 		return true
 	}
-	if rl.storage[key].count < cost {
+	if rl.storage[key].count < 1 {
 		return false
 	}
-	rl.storage[key] = expiringTokenBucket{rl.storage[key].count - cost, now.UnixMilli()}
+	rl.storage[key] = expiringTokenBucket{rl.storage[key].count - 1, now.UnixMilli()}
 	return true
 }
 
-func (rl *ExpiringTokenBucketRateLimit) AddToken(key string, token int) {
+func (rl *ExpiringTokenBucketRateLimit) AddTokenIfEmpty(key string) {
 	rl.mu.Lock()
-	count := int(math.Min(float64(rl.storage[key].count+token), float64(rl.max)))
-	rl.storage[key] = expiringTokenBucket{count, time.Now().UnixMilli()}
+	defer rl.mu.Unlock()
+
+	bucket, ok := rl.storage[key]
+	if !ok {
+		return
+	}
+	count := int(math.Max(float64(bucket.count), 1))
+	rl.storage[key] = expiringTokenBucket{count, bucket.createdAtUnixMilliseconds}
 	rl.mu.Unlock()
 }
 

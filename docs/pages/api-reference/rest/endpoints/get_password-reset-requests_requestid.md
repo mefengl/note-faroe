@@ -10,11 +10,11 @@ Gets a password reset request.
 GET https://your-domain.com/password-reset-requests/REQUEST_ID
 ```
 
-## Succesful response
+## Successful response
 
 Returns the [password reset request model](/api-reference/rest/models/password-reset-request) if the request exists and is valid.
 
-## Error codess
+## Error codes
 
 - [404] `NOT_FOUND`: The request does not exist or has expired.
 - [500] `UNKNOWN_ERROR`

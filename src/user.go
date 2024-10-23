@@ -92,7 +92,7 @@ func handleCreateUserRequest(env *Environment, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if clientIP != "" && !env.passwordHashingIPRateLimit.Consume(clientIP, 1) {
+	if clientIP != "" && !env.passwordHashingIPRateLimit.Consume(clientIP) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -226,7 +226,7 @@ func handleUpdateUserPasswordRequest(env *Environment, w http.ResponseWriter, r 
 		return
 	}
 
-	if !env.passwordHashingIPRateLimit.Consume(clientIP, 1) {
+	if !env.passwordHashingIPRateLimit.Consume(clientIP) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -277,8 +277,8 @@ func handleResetUser2FARequest(env *Environment, w http.ResponseWriter, r *http.
 	}
 
 	userId := params.ByName("user_id")
-	user, err := getUser(env.db, r.Context(), userId)
-	if errors.Is(err, ErrRecordNotFound) {
+	userExists, err := checkUserExists(env.db, r.Context(), userId)
+	if !userExists {
 		writeNotFoundErrorResponse(w)
 		return
 	}
@@ -287,11 +287,6 @@ func handleResetUser2FARequest(env *Environment, w http.ResponseWriter, r *http.
 		writeUnExpectedErrorResponse(w)
 		return
 	}
-	if !user.Registered2FA() {
-		writeExpectedErrorResponse(w, ExpectedErrorNotAllowed)
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
@@ -311,7 +306,7 @@ func handleResetUser2FARequest(env *Environment, w http.ResponseWriter, r *http.
 		return
 	}
 
-	if !env.recoveryCodeUserRateLimit.Consume(userId, 1) {
+	if !env.recoveryCodeUserRateLimit.Consume(userId) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -330,7 +325,7 @@ func handleResetUser2FARequest(env *Environment, w http.ResponseWriter, r *http.
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
-	encodeRecoveryCodeToJSON(newRecoveryCode)
+	w.Write([]byte(encodeRecoveryCodeToJSON(newRecoveryCode)))
 }
 
 func handleRegenerateUserRecoveryCodeRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -432,33 +427,6 @@ func handleGetUsersRequest(env *Environment, w http.ResponseWriter, r *http.Requ
 	w.Write([]byte("]"))
 }
 
-func handleGetUserRecoveryCodeRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	if !verifyRequestSecret(env.secret, r) {
-		writeNotAuthenticatedErrorResponse(w)
-		return
-	}
-	if !verifyJSONAcceptHeader(r) {
-		writeNotAcceptableErrorResponse(w)
-		return
-	}
-
-	userId := params.ByName("user_id")
-	recoveryCode, err := getUserRecoveryCode(env.db, r.Context(), userId)
-	if errors.Is(err, ErrRecordNotFound) {
-		writeNotFoundErrorResponse(w)
-		return
-	}
-	if err != nil {
-		log.Println(err)
-		writeUnExpectedErrorResponse(w)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	w.Write([]byte(encodeRecoveryCodeToJSON(recoveryCode)))
-}
-
 func handleDeleteUsersRequest(env *Environment, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
@@ -527,19 +495,6 @@ func getUser(db *sql.DB, ctx context.Context, userId string) (User, error) {
 	user.CreatedAt = time.Unix(createdAtUnix, 0)
 	user.TOTPRegistered = totpRegisteredInt == 1
 	return user, nil
-}
-
-func getUserRecoveryCode(db *sql.DB, ctx context.Context, userId string) (string, error) {
-	var recoveryCode string
-	row := db.QueryRowContext(ctx, "SELECT recovery_code FROM user WHERE id = ?", userId)
-	err := row.Scan(&recoveryCode)
-	if errors.Is(err, sql.ErrNoRows) {
-		return "", ErrRecordNotFound
-	}
-	if err != nil {
-		return "", err
-	}
-	return recoveryCode, nil
 }
 
 func getUsers(db *sql.DB, ctx context.Context, sortBy UserSortBy, sortOrder SortOrder, count, page int) ([]User, error) {
@@ -771,7 +726,7 @@ func (u *User) Registered2FA() bool {
 
 func (u *User) EncodeToJSON() string {
 	escapedEmail := strings.ReplaceAll(u.Email, "\"", "\\\"")
-	encoded := fmt.Sprintf("{\"id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"totp_registered\":%t}", u.Id, u.CreatedAt.Unix(), escapedEmail, u.TOTPRegistered)
+	encoded := fmt.Sprintf("{\"id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"recovery_code\":\"%s\",\"totp_registered\":%t}", u.Id, u.CreatedAt.Unix(), escapedEmail, u.RecoveryCode, u.TOTPRegistered)
 	return encoded
 }
 

@@ -52,10 +52,15 @@ faroe generate-secret - Generate a secure secret
 		return
 	}
 
+	flag.Parse()
 	fmt.Println("Unknown command")
 }
 
 func generateSecretCommand() {
+	// Remove "server" command since Go's flag package stops parsing at first non-flag argument.
+	os.Args = os.Args[1:]
+	flag.Parse()
+
 	bytes := make([]byte, 25)
 	_, err := rand.Read(bytes)
 	if err != nil {
@@ -297,7 +302,6 @@ func CreateApp(env *Environment) http.Handler {
 	router.Handle("GET", "/users/:user_id/totp", handleGetUserTOTPCredentialRequest)
 	router.Handle("POST", "/users/:user_id/totp", handleRegisterTOTPRequest)
 	router.Handle("DELETE", "/users/:user_id/totp", handleDeleteUserTOTPCredentialRequest)
-	router.Handle("GET", "/users/:user_id/recovery-code", handleGetUserRecoveryCodeRequest)
 	router.Handle("POST", "/users/:user_id/verify-2fa/totp", handleVerifyTOTPRequest)
 	router.Handle("POST", "/users/:user_id/reset-2fa", handleResetUser2FARequest)
 	router.Handle("POST", "/users/:user_id/regenerate-recovery-code", handleRegenerateUserRecoveryCodeRequest)
@@ -306,6 +310,8 @@ func CreateApp(env *Environment) http.Handler {
 	router.Handle("DELETE", "/users/:user_id/email-verification-request", handleDeleteUserEmailVerificationRequestRequest)
 	router.Handle("POST", "/users/:user_id/verify-email", handleVerifyUserEmailRequest)
 	router.Handle("POST", "/users/:user_id/email-update-requests", handleCreateUserEmailUpdateRequestRequest)
+	router.Handle("GET", "/users/:user_id/email-update-requests", handleGetUserEmailUpdateRequestsRequest)
+	router.Handle("DELETE", "/users/:user_id/email-update-requests", handleDeleteUserEmailUpdateRequestsRequest)
 	router.Handle("GET", "/email-update-requests/:request_id", handleGetEmailUpdateRequestRequest)
 	router.Handle("DELETE", "/email-update-requests/:request_id", handleDeleteEmailUpdateRequestRequest)
 	router.Handle("POST", "/update-email", handleUpdateEmailRequest)
@@ -313,6 +319,8 @@ func CreateApp(env *Environment) http.Handler {
 	router.Handle("GET", "/password-reset-requests/:request_id", handleGetPasswordResetRequestRequest)
 	router.Handle("DELETE", "/password-reset-requests/:request_id", handleDeletePasswordResetRequestRequest)
 	router.Handle("POST", "/password-reset-requests/:request_id/verify-email", handleVerifyPasswordResetRequestEmailRequest)
+	router.Handle("GET", "/users/:user_id/password-reset-requests", handleGetUserPasswordResetRequestsRequest)
+	router.Handle("DELETE", "/users/:user_id/password-reset-requests", handleDeleteUserPasswordResetRequestsRequest)
 	router.Handle("POST", "/reset-password", handleResetPasswordRequest)
 
 	return router.Handler()
