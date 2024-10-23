@@ -25,6 +25,8 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("post /users", func(t *testing.T) {
 		t.Parallel()
 
+		testAuthentication(t, "POST", "/users")
+
 		db := initializeTestDB(t)
 		defer db.Close()
 
@@ -77,6 +79,8 @@ func TestEndpointResponses(t *testing.T) {
 
 	t.Run("get /users", func(t *testing.T) {
 		t.Parallel()
+
+		testAuthentication(t, "GET", "/users")
 
 		t.Run("sort order", func(t *testing.T) {
 			t.Parallel()
@@ -259,6 +263,8 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("get /users/userid", func(t *testing.T) {
 		t.Parallel()
 
+		testAuthentication(t, "GET", "/users/1")
+
 		db := initializeTestDB(t)
 		defer db.Close()
 
@@ -309,6 +315,8 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("delete /users/userid", func(t *testing.T) {
 		t.Parallel()
 
+		testAuthentication(t, "DELETE", "/users/1")
+
 		db := initializeTestDB(t)
 		defer db.Close()
 
@@ -343,6 +351,8 @@ func TestEndpointResponses(t *testing.T) {
 
 	t.Run("post /users/userid/update-password", func(t *testing.T) {
 		t.Parallel()
+
+		testAuthentication(t, "POST", "/users/1/update-password")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -400,6 +410,8 @@ func TestEndpointResponses(t *testing.T) {
 
 	t.Run("post /users/userid/totp", func(t *testing.T) {
 		t.Parallel()
+
+		testAuthentication(t, "POST", "/users/1/totp")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -484,6 +496,8 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("get /user/userid/totp", func(t *testing.T) {
 		t.Parallel()
 
+		testAuthentication(t, "GET", "/users/1/totp")
+
 		db := initializeTestDB(t)
 		defer db.Close()
 
@@ -563,6 +577,8 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("delete /users/userid/totp", func(t *testing.T) {
 		t.Parallel()
 
+		testAuthentication(t, "DELETE", "/users/1/totp")
+
 		db := initializeTestDB(t)
 		defer db.Close()
 
@@ -627,6 +643,8 @@ func TestEndpointResponses(t *testing.T) {
 
 	t.Run("post /users/userid/verify-2fa/totp", func(t *testing.T) {
 		t.Parallel()
+
+		testAuthentication(t, "POST", "/users/1/verify-2fa/totp")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -704,6 +722,8 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("post /users/userid/reset-2fa", func(t *testing.T) {
 		t.Parallel()
 
+		testAuthentication(t, "POST", "/users/1/reset-2fa")
+
 		db := initializeTestDB(t)
 		defer db.Close()
 
@@ -747,6 +767,8 @@ func TestEndpointResponses(t *testing.T) {
 
 	t.Run("post /authenticate/password", func(t *testing.T) {
 		t.Parallel()
+
+		testAuthentication(t, "POST", "/authenticate/password")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -795,6 +817,8 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("post /users/userid/email-verification-request", func(t *testing.T) {
 		t.Parallel()
 
+		testAuthentication(t, "POST", "/users/1/email-verification-request")
+
 		db := initializeTestDB(t)
 		defer db.Close()
 
@@ -835,6 +859,8 @@ func TestEndpointResponses(t *testing.T) {
 
 	t.Run("get /users/userid/email-verification-request", func(t *testing.T) {
 		t.Parallel()
+
+		testAuthentication(t, "GET", "/users/1/email-verification-request")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -948,6 +974,8 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("delete /users/userid/email-verification-request", func(t *testing.T) {
 		t.Parallel()
 
+		testAuthentication(t, "DELETE", "/users/1/email-verification-request")
+
 		db := initializeTestDB(t)
 		defer db.Close()
 
@@ -1044,6 +1072,8 @@ func TestEndpointResponses(t *testing.T) {
 
 	t.Run("post /users/userid/verify-email", func(t *testing.T) {
 		t.Parallel()
+
+		testAuthentication(t, "POST", "/users/1/verify-email")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1150,6 +1180,8 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("post /users/userid/email-update-requests", func(t *testing.T) {
 		t.Parallel()
 
+		testAuthentication(t, "POST", "/users/1/email-update-requests")
+
 		db := initializeTestDB(t)
 		defer db.Close()
 
@@ -1195,6 +1227,8 @@ func TestEndpointResponses(t *testing.T) {
 
 	t.Run("get /users/userid/email-update-requests", func(t *testing.T) {
 		t.Parallel()
+
+		testAuthentication(t, "GET", "/users/1/email-update-requests")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1301,6 +1335,8 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("delete /users/userid/email-update-requests", func(t *testing.T) {
 		t.Parallel()
 
+		testAuthentication(t, "DELETE", "/users/1/email-update-requests")
+
 		db := initializeTestDB(t)
 		defer db.Close()
 
@@ -1350,6 +1386,8 @@ func TestEndpointResponses(t *testing.T) {
 
 	t.Run("get /email-update-requests/requestid", func(t *testing.T) {
 		t.Parallel()
+
+		testAuthentication(t, "GET", "/email-update-requests/1")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1435,6 +1473,8 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("delete /email-update-requests/requestid", func(t *testing.T) {
 		t.Parallel()
 
+		testAuthentication(t, "DELETE", "/email-update-requests/1")
+
 		db := initializeTestDB(t)
 		defer db.Close()
 
@@ -1503,6 +1543,8 @@ func TestEndpointResponses(t *testing.T) {
 
 	t.Run("post /update-email", func(t *testing.T) {
 		t.Parallel()
+
+		testAuthentication(t, "POST", "/update-email")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1598,6 +1640,8 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("post /password-reset-requests", func(t *testing.T) {
 		t.Parallel()
 
+		testAuthentication(t, "POST", "/password-reset-requests")
+
 		db := initializeTestDB(t)
 		defer db.Close()
 
@@ -1643,6 +1687,8 @@ func TestEndpointResponses(t *testing.T) {
 
 	t.Run("get /password-reset-requests/requestid", func(t *testing.T) {
 		t.Parallel()
+
+		testAuthentication(t, "POST", "/password-reset-requests/1")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1726,6 +1772,8 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("delete /password-reset-requests/requestid", func(t *testing.T) {
 		t.Parallel()
 
+		testAuthentication(t, "DELETE", "/password-reset-requests/1")
+
 		db := initializeTestDB(t)
 		defer db.Close()
 
@@ -1792,6 +1840,8 @@ func TestEndpointResponses(t *testing.T) {
 
 	t.Run("get /users/userid/password-reset-requests", func(t *testing.T) {
 		t.Parallel()
+
+		testAuthentication(t, "GET", "/users/1/password-reset-requests")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1895,6 +1945,8 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("delete /users/userid/password-reset-requests", func(t *testing.T) {
 		t.Parallel()
 
+		testAuthentication(t, "DELETE", "/users/1/password-reset-requests")
+
 		db := initializeTestDB(t)
 		defer db.Close()
 
@@ -1943,6 +1995,8 @@ func TestEndpointResponses(t *testing.T) {
 
 	t.Run("post /password-reset-requests/requestid/verify-email", func(t *testing.T) {
 		t.Parallel()
+
+		testAuthentication(t, "POST", "/password-reset-requests/1/verify-email")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -2020,6 +2074,8 @@ func TestEndpointResponses(t *testing.T) {
 
 	t.Run("/reset-password", func(t *testing.T) {
 		t.Parallel()
+
+		testAuthentication(t, "POST", "/reset-password")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -2357,3 +2413,13 @@ var recoveryCodeJSONKeys = []string{"recovery_code"}
 var userEmailVerificationRequestJSONKeys = []string{"user_id", "created_at", "expires_at", "code"}
 var emailUpdateRequestJSONKeys = []string{"id", "user_id", "created_at", "email", "expires_at", "code"}
 var passwordResetRequestWithCodeJSONKeys = []string{"id", "user_id", "created_at", "expires_at", "code"}
+
+func testAuthentication(t *testing.T, method string, url string) {
+	env := createEnvironment(nil, []byte("hello"))
+	app := CreateApp(env)
+	r := httptest.NewRequest(method, url, nil)
+	w := httptest.NewRecorder()
+	app.ServeHTTP(w, r)
+	res := w.Result()
+	assertErrorResponse(t, res, 401, "NOT_AUTHENTICATED")
+}
