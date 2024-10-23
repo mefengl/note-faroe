@@ -12,8 +12,10 @@ An error indicating a server error response.
 
 ```ts
 interface Properties {
-    code: string
+    status: number;
+    code: string;
 }
 ```
 
+- `status`: HTTP response status.
 - `code`: Faroe error code.
