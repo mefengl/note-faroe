@@ -4,7 +4,7 @@ title: "Faroe.getUserTOTPCredential()"
 
 # Faroe.getUserTOTPCredential()
 
-Mapped to [GET /users/\[user_id\]/totp](/api-reference/rest/endpoints/get_users_userid_totp).
+Mapped to [GET /users/\[user_id\]/totp-credential](/api-reference/rest/endpoints/get_users_userid_totp-credential).
 
 Gets a user's TOTP credential. Returns `null` if the user doesn't exist or if the user doesn't have a TOTP credential.
 

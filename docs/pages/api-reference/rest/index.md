@@ -89,8 +89,8 @@ All endpoints that hashes passwords with Argon2id are rate limited based on IP a
 #### Two-factor authentication
 
 - [POST /users/\[user_id\/register-totp](/api-reference/rest/endpoints/post_users_userid_register-totp): Register a TOTP credential.
-- [GET /users/\[user_id\]/totp](/api-reference/rest/endpoints/get_users_userid_totp): Get a user's TOTP credential.
-- [DELETE /users/\[user_id\]/totp](/api-reference/rest/endpoints/delete_users_userid_totp): Delete a user's TOTP credential.
+- [GET /users/\[user_id\]/totp-credential](/api-reference/rest/endpoints/get_users_userid_totp-credential): Get a user's TOTP credential.
+- [DELETE /users/\[user_id\]/totp-credential](/api-reference/rest/endpoints/delete_users_userid_totp-credential): Delete a user's TOTP credential.
 - [POST /users/\[user_id\]/verify-2fa/totp](/api-reference/rest/endpoints/post_users_userid_verify-2fa_totp): Verify a user's TOTP code.
 - [POST /users/\[user_id\]/regenerate-recovery-code](/api-reference/rest/endpoints/post_users_userid_regenerate-recovery-code): Generate a new user recovery code.
 - [POST /users/\[user_id\]/reset-2fa](/api-reference/rest/endpoints/post_users_userid_reset-2fa): Reset a user's second factors with a recovery code.

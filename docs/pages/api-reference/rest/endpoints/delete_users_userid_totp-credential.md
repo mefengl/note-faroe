@@ -1,13 +1,13 @@
 ---
-title: "DELETE /users/[user_id]/totp"
+title: "DELETE /users/[user_id]/totp-credential"
 ---
 
-# DELETE /users/[user_id]/totp
+# DELETE /users/[user_id]/totp-credential
 
 Deletes a user's TOTP credential.
 
 ```
-DELETE https://your-domain.com/users/USER_ID/totp
+DELETE https://your-domain.com/users/USER_ID/totp-credential
 ```
 
 ## Successful response

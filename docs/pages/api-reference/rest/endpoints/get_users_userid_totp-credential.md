@@ -1,13 +1,13 @@
 ---
-title: "GET /users/[user_id]/totp"
+title: "GET /users/[user_id]/totp-credential"
 ---
 
-# GET /users/[user_id]/totp
+# GET /users/[user_id]/totp-credential
 
 Gets a user's TOTP credential.
 
 ```
-GET https://your-domain.com/users/USER_ID/totp
+GET https://your-domain.com/users/USER_ID/totp-credential
 ```
 
 ## Response body

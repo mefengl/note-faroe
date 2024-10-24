@@ -555,7 +555,7 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("post /users/userid/register-totp", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "POST", "/users/1/totp")
+		testAuthentication(t, "POST", "/users/1/register-totp")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -637,10 +637,10 @@ func TestEndpointResponses(t *testing.T) {
 		assertJSONResponse(t, res, userTOTPCredentialJSONKeys)
 	})
 
-	t.Run("get /user/userid/totp", func(t *testing.T) {
+	t.Run("get /user/userid/totp-credential", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "GET", "/users/1/totp")
+		testAuthentication(t, "GET", "/users/1/totp-credential")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -684,19 +684,19 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("GET", "/users/3/totp", nil)
+		r := httptest.NewRequest("GET", "/users/3/totp-credential", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("GET", "/users/2/totp", nil)
+		r = httptest.NewRequest("GET", "/users/2/totp-credential", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("GET", "/users/1/totp", nil)
+		r = httptest.NewRequest("GET", "/users/1/totp-credential", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -718,10 +718,10 @@ func TestEndpointResponses(t *testing.T) {
 		assert.Equal(t, expected, result)
 	})
 
-	t.Run("delete /users/userid/totp", func(t *testing.T) {
+	t.Run("delete /users/userid/totp-credential", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "DELETE", "/users/1/totp")
+		testAuthentication(t, "DELETE", "/users/1/totp-credential")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -766,19 +766,19 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("DELETE", "/users/3/totp", nil)
+		r := httptest.NewRequest("DELETE", "/users/3/totp-credential", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("DELETE", "/users/2/totp", nil)
+		r = httptest.NewRequest("DELETE", "/users/2/totp-credential", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("DELETE", "/users/1/totp", nil)
+		r = httptest.NewRequest("DELETE", "/users/1/totp-credential", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
