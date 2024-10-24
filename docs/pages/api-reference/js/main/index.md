@@ -22,6 +22,7 @@ title: "@faroe/sdk"
 - [`FaroeUserEmailVerificationRequest`](/api-reference/js/main/FaroeUserEmailVerificationRequest)
 - [`FaroeUserTOTPCredential`](/api-reference/js/main/FaroeUserTOTPCredential)
 - [`FaroeUser`](/api-reference/js/main/FaroeUser)
+- [`PaginationResult`](/api-reference/js/main/PaginationResult)
 
 ## Enums
 

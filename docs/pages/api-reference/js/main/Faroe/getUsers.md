@@ -11,13 +11,14 @@ Gets an array of users. Returns an empty array if there are no users.
 ## Definition
 
 ```ts
+//$ PaginationResult=/api-reference/js/main/PaginationResult
 //$ FaroeUser=/api-reference/js/main/FaroeUser
 async function getUsers(
     sortBy: UserSortBy,
     sortOrder: SortOrder,
     count: number,
     page: number
-): Promise<$$FaroeUser[]>
+): Promise<$$PaginationResult<$$FaroeUser>>
 ```
 
 ### Parameters

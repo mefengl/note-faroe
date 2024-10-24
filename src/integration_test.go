@@ -210,30 +210,31 @@ func TestEndpointResponses(t *testing.T) {
 			app := CreateApp(env)
 
 			testCases := []struct {
-				Count           string
-				Page            string
-				ExpectedIdStart int
-				ExpectedIdEnd   int
+				Count              string
+				Page               string
+				ExpectedIdStart    int
+				ExpectedIdEnd      int
+				ExpectedTotalPages int
 			}{
-				{"10", "2", 11, 21},
-				{"20", "2", 21, 31},
-				{"30", "2", 31, 31},
-				{"", "2", 21, 31},
-				{"a", "2", 21, 31},
-				{"-1", "2", 21, 31},
-				{"0", "2", 21, 31},
+				{"10", "2", 11, 21, 3},
+				{"20", "2", 21, 31, 2},
+				{"30", "2", 31, 31, 1},
+				{"", "2", 21, 31, 2},
+				{"a", "2", 21, 31, 2},
+				{"-1", "2", 21, 31, 2},
+				{"0", "2", 21, 31, 2},
 
-				{"10", "1", 1, 11},
-				{"10", "2", 11, 21},
-				{"10", "3", 21, 31},
-				{"10", "4", 31, 31},
-				{"10", "0", 1, 11},
-				{"10", "-1", 1, 11},
-				{"10", "", 1, 11},
-				{"10", "a", 1, 11},
+				{"10", "1", 1, 11, 3},
+				{"10", "2", 11, 21, 3},
+				{"10", "3", 21, 31, 3},
+				{"10", "4", 31, 31, 3},
+				{"10", "0", 1, 11, 3},
+				{"10", "-1", 1, 11, 3},
+				{"10", "", 1, 11, 3},
+				{"10", "a", 1, 11, 3},
 
-				{"a", "a", 1, 21},
-				{"", "", 1, 21},
+				{"a", "a", 1, 21, 2},
+				{"", "", 1, 21, 2},
 			}
 
 			for _, testCase := range testCases {
@@ -247,6 +248,8 @@ func TestEndpointResponses(t *testing.T) {
 				app.ServeHTTP(w, r)
 				res := w.Result()
 				assert.Equal(t, 200, res.StatusCode)
+
+				assert.Equal(t, strconv.Itoa(testCase.ExpectedTotalPages), res.Header.Get("X-Pagination-Total"))
 				body, err := io.ReadAll(res.Body)
 				if err != nil {
 					t.Fatal(err)

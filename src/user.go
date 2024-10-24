@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -411,7 +412,15 @@ func handleGetUsersRequest(env *Environment, w http.ResponseWriter, r *http.Requ
 		writeUnExpectedErrorResponse(w)
 		return
 	}
+	userCount, err := getTotalUserCount(env.db, r.Context())
+	if err != nil {
+		log.Println(err)
+		writeUnExpectedErrorResponse(w)
+		return
+	}
+	totalPages := int64(math.Ceil(float64(userCount) / float64(count)))
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Pagination-Total", strconv.FormatInt(totalPages, 10))
 	w.WriteHeader(200)
 	if len(users) == 0 {
 		w.Write([]byte("[]"))
@@ -704,6 +713,12 @@ func verifyPasswordStrength(password string) (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+func getTotalUserCount(db *sql.DB, ctx context.Context) (int64, error) {
+	var count int64
+	err := db.QueryRowContext(ctx, "SELECT count(*) FROM user").Scan(&count)
+	return count, err
 }
 
 func encodeRecoveryCodeToJSON(code string) string {
