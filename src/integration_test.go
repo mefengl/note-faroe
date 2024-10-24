@@ -317,8 +317,8 @@ func TestEndpointResponses(t *testing.T) {
 
 			values := url.Values{}
 			values.Set("email_query", "@example.com")
-			url := "/users?" + values.Encode()
-			r := httptest.NewRequest("GET", url, nil)
+			requestURL := "/users?" + values.Encode()
+			r := httptest.NewRequest("GET", requestURL, nil)
 			w := httptest.NewRecorder()
 			app.ServeHTTP(w, r)
 			res := w.Result()
@@ -348,8 +348,25 @@ func TestEndpointResponses(t *testing.T) {
 				t.Fatal(err)
 			}
 			expected = append(expected, expected2)
-
 			assert.Equal(t, expected, result)
+
+			values = url.Values{}
+			values.Set("email_query", "")
+			requestURL = "/users?" + values.Encode()
+			r = httptest.NewRequest("GET", requestURL, nil)
+			w = httptest.NewRecorder()
+			app.ServeHTTP(w, r)
+			res = w.Result()
+			assert.Equal(t, 200, res.StatusCode)
+			body, err = io.ReadAll(res.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = json.Unmarshal(body, &result)
+			if err != nil {
+				t.Fatal(err)
+			}
+			assert.Equal(t, 3, len(result))
 		})
 
 		t.Run("pagination with query", func(t *testing.T) {
