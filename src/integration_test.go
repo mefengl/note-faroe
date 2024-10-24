@@ -95,19 +95,6 @@ func TestEndpointResponses(t *testing.T) {
 
 			now := time.Unix(time.Now().Unix(), 0)
 
-			user2 := User{
-				Id:             "2",
-				Email:          "c@example.com",
-				CreatedAt:      now,
-				PasswordHash:   "HASH2",
-				RecoveryCode:   "CODE2",
-				TOTPRegistered: false,
-			}
-			err := insertUser(db, context.Background(), &user2)
-			if err != nil {
-				t.Fatal(err)
-			}
-
 			user1 := User{
 				Id:             "1",
 				Email:          "a@example.com",
@@ -116,7 +103,20 @@ func TestEndpointResponses(t *testing.T) {
 				RecoveryCode:   "CODE1",
 				TOTPRegistered: false,
 			}
-			err = insertUser(db, context.Background(), &user1)
+			err := insertUser(db, context.Background(), &user1)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			user2 := User{
+				Id:             "2",
+				Email:          "c@example.com",
+				CreatedAt:      now,
+				PasswordHash:   "HASH2",
+				RecoveryCode:   "CODE2",
+				TOTPRegistered: false,
+			}
+			err = insertUser(db, context.Background(), &user2)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -191,7 +191,7 @@ func TestEndpointResponses(t *testing.T) {
 
 			now := time.Unix(time.Now().Unix(), 0)
 
-			for i := range 30 {
+			for i := 0; i < 30; i++ {
 				user := User{
 					Id:             strconv.Itoa(i + 1),
 					Email:          fmt.Sprintf("user%d@example.com", i+1),
@@ -265,8 +265,143 @@ func TestEndpointResponses(t *testing.T) {
 					assert.Equal(t, result[i-testCase.ExpectedIdStart].Id, strconv.Itoa(i), fmt.Sprintf(`count: %s, page: %s`, testCase.PerPage, testCase.Page))
 				}
 			}
+
+		})
+		t.Run("query", func(t *testing.T) {
+			t.Parallel()
+			db := initializeTestDB(t)
+			defer db.Close()
+
+			now := time.Unix(time.Now().Unix(), 0)
+
+			user1 := User{
+				Id:             "1",
+				Email:          "user1@example.com",
+				CreatedAt:      time.Unix(now.Unix(), 0),
+				PasswordHash:   "HASH1",
+				RecoveryCode:   "CODE1",
+				TOTPRegistered: false,
+			}
+			err := insertUser(db, context.Background(), &user1)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			user2 := User{
+				Id:             "2",
+				Email:          "user2@example.com",
+				CreatedAt:      time.Unix(now.Add(1*time.Second).Unix(), 0),
+				PasswordHash:   "HASH2",
+				RecoveryCode:   "CODE2",
+				TOTPRegistered: false,
+			}
+			err = insertUser(db, context.Background(), &user2)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			user3 := User{
+				Id:           "3",
+				Email:        "user3@mail.com",
+				CreatedAt:    time.Unix(now.Add(2*time.Second).Unix(), 0),
+				PasswordHash: "HASH3",
+				RecoveryCode: "CODE3",
+			}
+			err = insertUser(db, context.Background(), &user3)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			env := createEnvironment(db, nil)
+			app := CreateApp(env)
+
+			values := url.Values{}
+			values.Set("email_query", "@example.com")
+			url := "/users?" + values.Encode()
+			r := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			app.ServeHTTP(w, r)
+			res := w.Result()
+			assert.Equal(t, 200, res.StatusCode)
+			body, err := io.ReadAll(res.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var result []UserJSON
+			err = json.Unmarshal(body, &result)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var expected []UserJSON
+
+			var expected1 UserJSON
+			err = json.Unmarshal([]byte(user1.EncodeToJSON()), &expected1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			expected = append(expected, expected1)
+
+			var expected2 UserJSON
+			err = json.Unmarshal([]byte(user2.EncodeToJSON()), &expected2)
+			if err != nil {
+				t.Fatal(err)
+			}
+			expected = append(expected, expected2)
+
+			assert.Equal(t, expected, result)
 		})
 
+		t.Run("pagination with query", func(t *testing.T) {
+			t.Parallel()
+			db := initializeTestDB(t)
+			defer db.Close()
+
+			now := time.Unix(time.Now().Unix(), 0)
+
+			for i := 0; i < 25; i++ {
+				user := User{
+					Id:             strconv.Itoa(i + 1),
+					Email:          fmt.Sprintf("user%d@mail.com", i+1),
+					CreatedAt:      time.Unix(now.Add(time.Duration(i*int(time.Second))).Unix(), 0),
+					PasswordHash:   "HASH",
+					RecoveryCode:   "CODE",
+					TOTPRegistered: false,
+				}
+				err := insertUser(db, context.Background(), &user)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			for i := 25; i < 30; i++ {
+				user := User{
+					Id:             strconv.Itoa(i + 1),
+					Email:          fmt.Sprintf("user%d@example.com", i+1),
+					CreatedAt:      time.Unix(now.Add(time.Duration(i*int(time.Second))).Unix(), 0),
+					PasswordHash:   "HASH",
+					RecoveryCode:   "CODE",
+					TOTPRegistered: false,
+				}
+				err := insertUser(db, context.Background(), &user)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			env := createEnvironment(db, nil)
+			app := CreateApp(env)
+
+			values := url.Values{}
+			values.Set("email_query", "@example.com")
+			url := "/users?" + values.Encode()
+			r := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			app.ServeHTTP(w, r)
+			res := w.Result()
+			assert.Equal(t, 200, res.StatusCode)
+			assert.Equal(t, "1", res.Header.Get("X-Pagination-Total"))
+		})
 	})
 
 	t.Run("get /users/userid", func(t *testing.T) {

@@ -491,6 +491,7 @@ func getUserPasswordResetRequests(db *sql.DB, ctx context.Context, requestId str
 		return nil, err
 	}
 	var requests []PasswordResetRequest
+	defer rows.Close()
 	for rows.Next() {
 		var request PasswordResetRequest
 		var createdAtUnix, expiresAtUnix int64

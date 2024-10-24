@@ -668,6 +668,7 @@ func getUserEmailUpdateRequests(db *sql.DB, ctx context.Context, userId string) 
 		return nil, err
 	}
 	var requests []EmailUpdateRequest
+	defer rows.Close()
 	for rows.Next() {
 		var request EmailUpdateRequest
 		var createdAtUnix, expiresAtUnix int64

@@ -406,13 +406,15 @@ func handleGetUsersRequest(env *Environment, w http.ResponseWriter, r *http.Requ
 	if err != nil || page < 1 {
 		page = 1
 	}
-	users, err := getUsers(env.db, r.Context(), sortBy, sortOrder, perPage, page)
-	if err != nil {
-		log.Println(err)
-		writeUnExpectedErrorResponse(w)
-		return
+
+	emailQuery := r.URL.Query().Get("email_query")
+	var users []User
+	var userCount int64
+	if emailQuery != "" {
+		users, userCount, err = getUsersWithEmailSearch(env.db, r.Context(), emailQuery, sortBy, sortOrder, perPage, page)
+	} else {
+		users, userCount, err = getUsers(env.db, r.Context(), sortBy, sortOrder, perPage, page)
 	}
-	userCount, err := getTotalUserCount(env.db, r.Context())
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
@@ -506,7 +508,7 @@ func getUser(db *sql.DB, ctx context.Context, userId string) (User, error) {
 	return user, nil
 }
 
-func getUsers(db *sql.DB, ctx context.Context, sortBy UserSortBy, sortOrder SortOrder, perPage, page int) ([]User, error) {
+func getUsers(db *sql.DB, ctx context.Context, sortBy UserSortBy, sortOrder SortOrder, perPage, page int) ([]User, int64, error) {
 	var orderBySQL, orderSQL string
 
 	if sortBy == UserSortByCreatedAt {
@@ -516,7 +518,7 @@ func getUsers(db *sql.DB, ctx context.Context, sortBy UserSortBy, sortOrder Sort
 	} else if sortBy == UserSortById {
 		orderBySQL = "user.id"
 	} else {
-		return nil, errors.New("invalid 'sortBy' value")
+		return nil, 0, errors.New("invalid 'sortBy' value")
 	}
 
 	if sortOrder == SortOrderAscending {
@@ -524,7 +526,7 @@ func getUsers(db *sql.DB, ctx context.Context, sortBy UserSortBy, sortOrder Sort
 	} else if sortOrder == SortOrderDescending {
 		orderSQL = "DESC"
 	} else {
-		return nil, errors.New("invalid 'sortOrder' value")
+		return nil, 0, errors.New("invalid 'sortOrder' value")
 	}
 
 	query := fmt.Sprintf(`SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(user_totp_credential.user_id IS NOT NULL, 1, 0)
@@ -534,7 +536,7 @@ func getUsers(db *sql.DB, ctx context.Context, sortBy UserSortBy, sortOrder Sort
 	var users []User
 	rows, err := db.QueryContext(ctx, query, perPage, perPage*(page-1))
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -543,13 +545,72 @@ func getUsers(db *sql.DB, ctx context.Context, sortBy UserSortBy, sortOrder Sort
 		var totpRegisteredInt int
 		err = rows.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &totpRegisteredInt)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		user.CreatedAt = time.Unix(createdAtUnix, 0)
 		user.TOTPRegistered = totpRegisteredInt == 1
 		users = append(users, user)
 	}
-	return users, nil
+
+	var total int64
+	err = db.QueryRowContext(ctx, "SELECT count(*) FROM user").Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+	return users, total, nil
+}
+
+func getUsersWithEmailSearch(db *sql.DB, ctx context.Context, emailQuery string, sortBy UserSortBy, sortOrder SortOrder, perPage, page int) ([]User, int64, error) {
+	var orderBySQL, orderSQL string
+
+	if sortBy == UserSortByCreatedAt {
+		orderBySQL = "user.created_at"
+	} else if sortBy == UserSortByEmail {
+		orderBySQL = "user.email"
+	} else if sortBy == UserSortById {
+		orderBySQL = "user.id"
+	} else {
+		return nil, 0, errors.New("invalid 'sortBy' value")
+	}
+
+	if sortOrder == SortOrderAscending {
+		orderSQL = "ASC"
+	} else if sortOrder == SortOrderDescending {
+		orderSQL = "DESC"
+	} else {
+		return nil, 0, errors.New("invalid 'sortOrder' value")
+	}
+
+	query := fmt.Sprintf(`SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(user_totp_credential.user_id IS NOT NULL, 1, 0)
+		FROM user LEFT JOIN user_totp_credential ON user.id = user_totp_credential.user_id
+		WHERE instr(email, ?) > 0
+		ORDER BY %s %s LIMIT ? OFFSET ?`, orderBySQL, orderSQL)
+
+	var users []User
+	rows, err := db.QueryContext(ctx, query, emailQuery, perPage, perPage*(page-1))
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var user User
+		var createdAtUnix int64
+		var totpRegisteredInt int
+		err = rows.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &totpRegisteredInt)
+		if err != nil {
+			return nil, 0, err
+		}
+		user.CreatedAt = time.Unix(createdAtUnix, 0)
+		user.TOTPRegistered = totpRegisteredInt == 1
+		users = append(users, user)
+	}
+
+	var total int64
+	err = db.QueryRowContext(ctx, "SELECT count(*) FROM user WHERE instr(email, ?) > 0", emailQuery).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+	return users, total, nil
 }
 
 func deleteUsers(db *sql.DB, ctx context.Context) error {

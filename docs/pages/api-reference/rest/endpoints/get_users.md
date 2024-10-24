@@ -23,16 +23,23 @@ All parameters are optional.
     - `descending`
 - `per_page`: A positive integer that specifies the number of items in a page (default: 20).
 - `page`: A positive integer that specifies the page number to be returned (default: 1).
+- `email_query: A non-empty string. Only users with an email that includes the keyword will be returned. Multiple keywords are not supported.
 
 ### Example
 
 ```
-/users?sort_by=created_at&sort_order=descending&per_page=50&page=2
+/users?sort_by=created_at&sort_order=descending&per_page=50&page=2&email_query=%40example.com
 ```
 
 ## Successful response
 
 Returns a JSON array of [user models](/api-reference/rest/models/user). If there are no users in the page, it will return an empty array.
+
+You can get the number of total pages from the `X-Pagination-Total` header.
+
+```
+X-Pagination-Total: 6
+```
 
 ### Example
 
