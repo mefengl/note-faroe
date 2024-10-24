@@ -21,13 +21,13 @@ All parameters are optional.
 - `sort_order` Order of the list. One of:
     - `ascending` (default)
     - `descending`
-- `count`: A positive integer that specifies the number of items in a page (default: 20).
+- `per_page`: A positive integer that specifies the number of items in a page (default: 20).
 - `page`: A positive integer that specifies the page number to be returned (default: 1).
 
 ### Example
 
 ```
-/users?sort_by=created_at&sort_order=descending&count=50&page=2
+/users?sort_by=created_at&sort_order=descending&per_page=50&page=2
 ```
 
 ## Successful response

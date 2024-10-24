@@ -398,15 +398,15 @@ func handleGetUsersRequest(env *Environment, w http.ResponseWriter, r *http.Requ
 		sortOrder = SortOrderAscending
 	}
 
-	count, err := strconv.Atoi(r.URL.Query().Get("count"))
-	if err != nil || count < 1 {
-		count = 20
+	perPage, err := strconv.Atoi(r.URL.Query().Get("per_page"))
+	if err != nil || perPage < 1 {
+		perPage = 20
 	}
 	page, err := strconv.Atoi(r.URL.Query().Get("page"))
 	if err != nil || page < 1 {
 		page = 1
 	}
-	users, err := getUsers(env.db, r.Context(), sortBy, sortOrder, count, page)
+	users, err := getUsers(env.db, r.Context(), sortBy, sortOrder, perPage, page)
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
@@ -418,7 +418,7 @@ func handleGetUsersRequest(env *Environment, w http.ResponseWriter, r *http.Requ
 		writeUnExpectedErrorResponse(w)
 		return
 	}
-	totalPages := int64(math.Ceil(float64(userCount) / float64(count)))
+	totalPages := int64(math.Ceil(float64(userCount) / float64(perPage)))
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Pagination-Total", strconv.FormatInt(totalPages, 10))
 	w.WriteHeader(200)
@@ -506,7 +506,7 @@ func getUser(db *sql.DB, ctx context.Context, userId string) (User, error) {
 	return user, nil
 }
 
-func getUsers(db *sql.DB, ctx context.Context, sortBy UserSortBy, sortOrder SortOrder, count, page int) ([]User, error) {
+func getUsers(db *sql.DB, ctx context.Context, sortBy UserSortBy, sortOrder SortOrder, perPage, page int) ([]User, error) {
 	var orderBySQL, orderSQL string
 
 	if sortBy == UserSortByCreatedAt {
@@ -532,7 +532,7 @@ func getUsers(db *sql.DB, ctx context.Context, sortBy UserSortBy, sortOrder Sort
 		ORDER BY %s %s LIMIT ? OFFSET ?`, orderBySQL, orderSQL)
 
 	var users []User
-	rows, err := db.QueryContext(ctx, query, count, count*(page-1))
+	rows, err := db.QueryContext(ctx, query, perPage, perPage*(page-1))
 	if err != nil {
 		return nil, err
 	}

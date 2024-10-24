@@ -210,7 +210,7 @@ func TestEndpointResponses(t *testing.T) {
 			app := CreateApp(env)
 
 			testCases := []struct {
-				Count              string
+				PerPage            string
 				Page               string
 				ExpectedIdStart    int
 				ExpectedIdEnd      int
@@ -239,7 +239,7 @@ func TestEndpointResponses(t *testing.T) {
 
 			for _, testCase := range testCases {
 				values := url.Values{}
-				values.Set("count", testCase.Count)
+				values.Set("per_page", testCase.PerPage)
 				values.Set("page", testCase.Page)
 				values.Set("created_at", "id")
 				url := "/users?" + values.Encode()
@@ -259,10 +259,10 @@ func TestEndpointResponses(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				assert.Equal(t, testCase.ExpectedIdEnd-testCase.ExpectedIdStart, len(result), fmt.Sprintf(`count: %s, page: %s`, testCase.Count, testCase.Page))
+				assert.Equal(t, testCase.ExpectedIdEnd-testCase.ExpectedIdStart, len(result), fmt.Sprintf(`count: %s, page: %s`, testCase.PerPage, testCase.Page))
 
 				for i := testCase.ExpectedIdStart; i < testCase.ExpectedIdEnd; i++ {
-					assert.Equal(t, result[i-testCase.ExpectedIdStart].Id, strconv.Itoa(i), fmt.Sprintf(`count: %s, page: %s`, testCase.Count, testCase.Page))
+					assert.Equal(t, result[i-testCase.ExpectedIdStart].Id, strconv.Itoa(i), fmt.Sprintf(`count: %s, page: %s`, testCase.PerPage, testCase.Page))
 				}
 			}
 		})

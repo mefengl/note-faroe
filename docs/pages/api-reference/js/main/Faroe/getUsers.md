@@ -13,20 +13,20 @@ Gets an array of users. Returns an empty array if there are no users.
 ```ts
 //$ PaginationResult=/api-reference/js/main/PaginationResult
 //$ FaroeUser=/api-reference/js/main/FaroeUser
-async function getUsers(
-    sortBy: UserSortBy,
-    sortOrder: SortOrder,
-    count: number,
-    page: number
-): Promise<$$PaginationResult<$$FaroeUser>>
+async function getUsers(options?: {
+    sortBy: UserSortBy = UserSortBy.CreatedAt,
+    sortOrder: SortOrder = SortOrder.Ascending,
+    perPage: number = 20,
+    page: number = 1
+}): Promise<$$PaginationResult<$$FaroeUser>>
 ```
 
 ### Parameters
 
-- `sortBy`
-- `sortOrder`
-- `count`
-- `page`
+- `options.sortBy` 
+- `options.sortOrder`
+- `options.perPage`
+- `options.page`
 
 ## Error codes
 
@@ -39,5 +39,10 @@ import { Faroe, UserSortBy, SortOrder } from "@faroe/sdk";
 
 const faroe = new Faroe(url, secret);
 
-const users = await faroe.getUsers(UserSortBy.CreatedAt, SortOrder.Ascending, 20, 2);
+const users = await faroe.getUsers({
+    sortBy: UserSortBy.CreatedAt,
+    sortOrder: SortOrder.Ascending,
+    perPage: 20,
+    page: 2
+});
 ```
