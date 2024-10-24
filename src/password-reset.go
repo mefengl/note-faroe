@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -49,7 +50,7 @@ func handleCreatePasswordResetRequestRequest(env *Environment, w http.ResponseWr
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	email := *data.Email
+	email := strings.ToLower(*data.Email)
 
 	if !verifyEmailInput(email) {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)

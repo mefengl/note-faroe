@@ -61,7 +61,7 @@ func handleCreateUserRequest(env *Environment, w http.ResponseWriter, r *http.Re
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	email, password := *data.Email, *data.Password
+	email, password := strings.ToLower(*data.Email), *data.Password
 	if !verifyEmailInput(email) {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
@@ -682,7 +682,7 @@ func regenerateUserRecoveryCode(db *sql.DB, ctx context.Context, userId string) 
 var emailInputRegex = regexp.MustCompile(`^.+@.+\..+$`)
 
 func verifyEmailInput(email string) bool {
-	return len(email) < 256 && emailInputRegex.MatchString(email)
+	return len(email) < 256 && emailInputRegex.MatchString(email) && strings.TrimSpace(email) == email
 }
 
 func verifyPasswordStrength(password string) (bool, error) {

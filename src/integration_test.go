@@ -58,6 +58,12 @@ func TestEndpointResponses(t *testing.T) {
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorEmailAlreadyUsed)
 
+		r = httptest.NewRequest("POST", "/users", strings.NewReader(`{"email":"USER1@EXAMPLE.COM","password":"12345678"}`))
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assertErrorResponse(t, res, 400, ExpectedErrorEmailAlreadyUsed)
+
 		r = httptest.NewRequest("POST", "/users", strings.NewReader(`{"email":"user2@example.com","password":"1234"}`))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
@@ -812,6 +818,12 @@ func TestEndpointResponses(t *testing.T) {
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertJSONResponse(t, res, userJSONKeys)
+
+		r = httptest.NewRequest("POST", "/authenticate/password", strings.NewReader(`{"email":"USER1@EXAMPLE.COM","password":"super_secure_password"}`))
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assertJSONResponse(t, res, userJSONKeys)
 	})
 
 	t.Run("post /users/userid/email-verification-request", func(t *testing.T) {
@@ -1211,6 +1223,13 @@ func TestEndpointResponses(t *testing.T) {
 		assertErrorResponse(t, res, 400, ExpectedErrorInvalidData)
 
 		data = `{"email":"user1@example.com"}`
+		r = httptest.NewRequest("POST", "/users/1/email-update-requests", strings.NewReader(data))
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assertErrorResponse(t, res, 400, ExpectedErrorEmailAlreadyUsed)
+
+		data = `{"email":"USER1@EXAMPLE.COM"}`
 		r = httptest.NewRequest("POST", "/users/1/email-update-requests", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
@@ -1678,6 +1697,13 @@ func TestEndpointResponses(t *testing.T) {
 		assertErrorResponse(t, res, 400, ExpectedErrorUserNotExists)
 
 		data = `{"email":"user1@example.com"}`
+		r = httptest.NewRequest("POST", "/password-reset-requests", strings.NewReader(data))
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assertJSONResponse(t, res, passwordResetRequestWithCodeJSONKeys)
+
+		data = `{"email":"USER1@EXAMPLE.COM"}`
 		r = httptest.NewRequest("POST", "/password-reset-requests", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)

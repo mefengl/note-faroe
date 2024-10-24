@@ -266,7 +266,7 @@ func handleCreateUserEmailUpdateRequestRequest(env *Environment, w http.Response
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	email := *data.Email
+	email := strings.ToLower(*data.Email)
 	if !verifyEmailInput(email) {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return

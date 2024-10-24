@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -51,7 +52,7 @@ func handleAuthenticateWithPasswordRequest(env *Environment, w http.ResponseWrit
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	email, password := *data.Email, *data.Password
+	email, password := strings.ToLower(*data.Email), *data.Password
 	if !verifyEmailInput(email) {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
