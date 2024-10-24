@@ -1,10 +1,10 @@
 ---
-title: "POST /users/[user_id]/totp"
+title: "POST /users/[user_id]/register-totp"
 ---
 
-# POST /users/[user_id]/totp
+# POST /users/[user_id]/register-totp
 
-Registers a TOTP (SHA-1, 6 digits, 30 seconds interval) credential to a user.
+Verifies and registers a TOTP (SHA-1, 6 digits, 30 seconds interval) credential to a user..
 
 ```
 POST https://your-domain.com/users/USER_ID/totp

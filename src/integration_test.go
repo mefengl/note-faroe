@@ -552,7 +552,7 @@ func TestEndpointResponses(t *testing.T) {
 		assert.Equal(t, 204, res.StatusCode)
 	})
 
-	t.Run("post /users/userid/totp", func(t *testing.T) {
+	t.Run("post /users/userid/register-totp", func(t *testing.T) {
 		t.Parallel()
 
 		testAuthentication(t, "POST", "/users/1/totp")
@@ -576,35 +576,35 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("POST", "/users/2/totp", nil)
+		r := httptest.NewRequest("POST", "/users/2/register-totp", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
 		data := `{"key": "moM4ZtcDvWQQIA==", "code": "123456"}`
-		r = httptest.NewRequest("POST", "/users/1/totp", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/users/1/register-totp", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorInvalidData)
 
 		data = `{"key": "j1dCsnrWOnKAfyMxShUPZ9AUwes", "code": "123456"}`
-		r = httptest.NewRequest("POST", "/users/1/totp", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/users/1/register-totp", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorInvalidData)
 
 		data = `{"key": "j1dCsnrWOnKAfyMxShUPZ9AUwe$=", "code": "123456"}`
-		r = httptest.NewRequest("POST", "/users/1/totp", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/users/1/register-totp", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorInvalidData)
 
 		data = `{"key": "j1dCsnrWOnKAfyMxShUPZ9AUwes=", "code": "123456"}`
-		r = httptest.NewRequest("POST", "/users/1/totp", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/users/1/register-totp", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -617,7 +617,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 		totp := otp.GenerateTOTP(time.Now(), key, 30*time.Second, 6)
 		data = fmt.Sprintf(`{"key":"%s", "code":"%s"}`, base64.StdEncoding.EncodeToString(key), totp)
-		r = httptest.NewRequest("POST", "/users/1/totp", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/users/1/register-totp", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -630,7 +630,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 		totp = otp.GenerateTOTP(time.Now(), key, 30*time.Second, 6)
 		data = fmt.Sprintf(`{"key":"%s", "code":"%s"}`, base64.StdEncoding.EncodeToString(key), totp)
-		r = httptest.NewRequest("POST", "/users/1/totp", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/users/1/register-totp", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -2491,13 +2491,13 @@ func TestApp(t *testing.T) {
 		t.Fatal(err)
 	}
 	totp := otp.GenerateTOTP(time.Now(), key, 30*time.Second, 6)
-	url = fmt.Sprintf("/users/%s/totp", user.Id)
+	url = fmt.Sprintf("/users/%s/register-totp", user.Id)
 	data = fmt.Sprintf(`{"key":"%s","code":"%s"}`, base64.StdEncoding.EncodeToString(key), totp)
 	r = httptest.NewRequest("POST", url, strings.NewReader(data))
 	w = httptest.NewRecorder()
 	app.ServeHTTP(w, r)
 	res = w.Result()
-	assert.Equal(t, 200, res.StatusCode, "POST /users/[user_id]/totp status code")
+	assert.Equal(t, 200, res.StatusCode, "POST /users/[user_id]/register-totp status code")
 
 	// Verify TOTP
 	totp = otp.GenerateTOTP(time.Now(), key, 30*time.Second, 6)
