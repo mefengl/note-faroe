@@ -776,12 +776,6 @@ func verifyPasswordStrength(password string) (bool, error) {
 	return true, nil
 }
 
-func getTotalUserCount(db *sql.DB, ctx context.Context) (int64, error) {
-	var count int64
-	err := db.QueryRowContext(ctx, "SELECT count(*) FROM user").Scan(&count)
-	return count, err
-}
-
 func encodeRecoveryCodeToJSON(code string) string {
 	encoded := fmt.Sprintf("{\"recovery_code\":\"%s\"}", code)
 	return encoded
