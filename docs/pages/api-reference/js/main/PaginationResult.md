@@ -10,6 +10,7 @@ Represents a paginated result.
 
 ```ts
 interface PaginationResult<T> {
+    total: number;
     totalPages: number;
     items: T[]
 }
@@ -21,5 +22,6 @@ interface PaginationResult<T> {
 
 ### Properties
 
+- `total`: Total number of records.
 - `totalPages`
 - `items`: Items in the page.
