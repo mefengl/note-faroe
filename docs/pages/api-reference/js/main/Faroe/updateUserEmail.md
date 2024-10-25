@@ -13,14 +13,13 @@ The update request is immediately invalidated after the 5th failed attempt.
 ## Definition
 
 ```ts
-function updateUserEmail(requestId: string, code: string, clientIP: string): Promise<string>;
+function updateUserEmail(requestId: string, code: string): Promise<string>;
 ```
 
 ## Parameters
 
 - `requestId`: A valid email update request ID.
 - `code`: The verification code of the request.
-- `clientIP`
 
 ## Error codes
 

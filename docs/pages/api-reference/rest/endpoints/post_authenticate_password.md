@@ -12,17 +12,17 @@ POST https://your-domain.com/authenticate/password
 
 ## Request body
 
-All fields are required.
-
 ```ts
 {
     "email": string,
-    "password": string
+    "password": string,
+    "client_ip": string
 }
 ```
 
-- `email`: A valid email address.
-- `password`: A valid password.
+- `email` (required): A valid email address.
+- `password` (required): A valid password.
+- `client_ip`: The client's IP address. If included, it will rate limit the endpoint based on it.
 
 ### Example
 

@@ -24,7 +24,6 @@ import (
 )
 
 func handleCreateUserRequest(env *Environment, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	clientIP := r.Header.Get("X-Client-IP")
 	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -47,6 +46,7 @@ func handleCreateUserRequest(env *Environment, w http.ResponseWriter, r *http.Re
 	var data struct {
 		Email    *string `json:"email"`
 		Password *string `json:"password"`
+		ClientIP string  `json:"client_ip"`
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
@@ -93,7 +93,7 @@ func handleCreateUserRequest(env *Environment, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if clientIP != "" && !env.passwordHashingIPRateLimit.Consume(clientIP) {
+	if data.ClientIP != "" && !env.passwordHashingIPRateLimit.Consume(data.ClientIP) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -175,7 +175,6 @@ func handleDeleteUserRequest(env *Environment, w http.ResponseWriter, r *http.Re
 }
 
 func handleUpdateUserPasswordRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	clientIP := r.Header.Get("X-Client-IP")
 	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -206,6 +205,7 @@ func handleUpdateUserPasswordRequest(env *Environment, w http.ResponseWriter, r 
 	var data struct {
 		Password    *string `json:"password"`
 		NewPassword *string `json:"new_password"`
+		ClientIP    string  `json:"client_ip"`
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
@@ -227,7 +227,7 @@ func handleUpdateUserPasswordRequest(env *Environment, w http.ResponseWriter, r 
 		return
 	}
 
-	if !env.passwordHashingIPRateLimit.Consume(clientIP) {
+	if data.ClientIP != "" && !env.passwordHashingIPRateLimit.Consume(data.ClientIP) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}

@@ -14,21 +14,22 @@ POST https://your-domain.com/password-reset-requests/REQUEST_ID/verify-email
 
 ## Request body
 
-All fields are required.
-
 ```ts
 {
-    "code": string
+    "code": string,
+    "client_ip": string
 }
 ```
 
-- `code`: The email verification code for the password reset request.
+- `code` (required): The email verification code for the password reset request.
+- `client_ip`: The client's IP address. If included, it will rate limit the endpoint based on it.
 
 ### Example
 
 ```json
 {
-    "code": "9TW45AZU"
+    "code": "9TW45AZU",
+    "client_ip": "0.0.0.0"
 }
 ```
 

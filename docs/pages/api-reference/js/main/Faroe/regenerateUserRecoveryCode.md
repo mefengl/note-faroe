@@ -12,15 +12,13 @@ Regenerates a user's recovery code and returns the new recovery code.
 
 ```ts
 async function regenerateUserRecoveryCode(
-    userId: string,
-    clientIP: string | null
+    userId: string
 ): Promise<string>
 ```
 
 ### Parameters
 
 - `userId`
-- `clientIP`
 
 ## Error codes
 

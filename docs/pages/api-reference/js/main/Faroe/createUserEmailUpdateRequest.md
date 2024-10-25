@@ -14,8 +14,7 @@ Creates a new email verification request for a user. This can only be called 3 t
 //$ $$FaroeEmailUpdateRequest=/api-reference/js/main/$$FaroeEmailUpdateRequest
 async function createUserEmailUpdateRequest(
     userId: string,
-    email: string,
-	clientIP: string | null
+    email: string
 ): Promise<$$FaroeEmailUpdateRequest>
 ```
 
@@ -23,7 +22,6 @@ async function createUserEmailUpdateRequest(
 
 - `userId`
 - `email`: A valid email address.
-- `clientIP`
 
 ## Error codes
 

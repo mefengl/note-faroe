@@ -13,15 +13,13 @@ Creates a new email verification request for a user. This can only be called 3 t
 ```ts
 //$ FaroeUserEmailVerificationRequest=/api-reference/js/main/FaroeUserEmailVerificationRequest
 async function createUserEmailVerificationRequest(
-    userId: string,
-	clientIP: string | null
+    userId: string
 ): Promise<$$FaroeUserEmailVerificationRequest>
 ```
 
 ### Parameters
 
 - `userId`
-- `clientIP`
 
 ## Error codes
 

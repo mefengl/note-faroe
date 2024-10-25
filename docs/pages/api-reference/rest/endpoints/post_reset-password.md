@@ -12,17 +12,17 @@ POST /reset-password
 
 ## Request body
 
-All fields are required.
-
 ```ts
 {
     "request_id": string,
-    "password": string
+    "password": string,
+    "client_ip": string
 }
 ```
 
-- `request_id`: A valid password reset request ID.
-- `password`: A valid password. Password strength is determined by checking it aginst past data leaks using the [HaveIBeenPwned API](https://haveibeenpwned.com/API/v3#PwnedPasswords).
+- `request_id` (required): A valid password reset request ID.
+- `password` (required): A valid password. Password strength is determined by checking it aginst past data leaks using the [HaveIBeenPwned API](https://haveibeenpwned.com/API/v3#PwnedPasswords).
+- `client_ip`: The client's IP address. If included, it will rate limit the endpoint based on it.
 
 ## Successful response
 

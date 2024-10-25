@@ -14,21 +14,22 @@ POST https://your-domain.com/password-reset-requests
 
 ## Request body
 
-All fields are required.
-
 ```ts
 {
-    "email": string
+    "email": string,
+    "client_ip": string
 }
 ```
 
-- `email`
+- `email` (required): A valid email address.
+- `client_ip`: The client's IP address. If included, it will rate limit the endpoint based on it.
 
 ### Example
 
 ```json
 {
-    "email": "penguin@example.com"
+    "email": "penguin@example.com",
+    "client_ip": "0.0.0.0"
 }
 ```
 

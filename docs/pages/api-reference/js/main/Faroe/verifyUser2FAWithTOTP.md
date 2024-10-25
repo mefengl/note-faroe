@@ -11,16 +11,13 @@ Verifies a user's TOTP code. The user will be locked out from using TOTP as thei
 ## Definition
 
 ```ts
-async function verifyUser2FAWithTOTP(
-    code: string,
-    clientIP: string | null
-): Promise<void>
+async function verifyUser2FAWithTOTP(userId: string, code: string): Promise<void>
 ```
 
 ### Parameters
 
+- `userId`
 - `code`: The TOTP code.
-- `clientIP`
 
 ## Error codes
 

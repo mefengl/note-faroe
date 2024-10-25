@@ -11,13 +11,18 @@ Resets a user's password with a password reset request.On validation, it will ma
 ## Definition
 
 ```ts
-async function resetUserPassword(requestId: string, password: string): Promise<void>
+async function resetUserPassword(
+    requestId: string,
+    password: string,
+    clientIP: string | null
+): Promise<void>
 ```
 
 ### Parameters
 
 - `request_id`: A valid password reset request ID.
 - `password`: A new valid password. A valid password. Password strength is determined by checking it aginst past data leaks using the [HaveIBeenPwned API](https://haveibeenpwned.com/API/v3#PwnedPasswords).
+- `clientIP`
 
 ## Error codes
 

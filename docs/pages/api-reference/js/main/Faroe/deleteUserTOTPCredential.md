@@ -12,15 +12,13 @@ Deletes a user's TOTP credential. Deleting a non-existent credential will not re
 
 ```ts
 async function deleteUserTOTPCredential(
-    userId: string,
-    clientIP: string
+    userId: string
 ): Promise<void>
 ```
 
 ### Parameters
 
 - `userId`
-- `clientIP`
 
 ## Error codes
 

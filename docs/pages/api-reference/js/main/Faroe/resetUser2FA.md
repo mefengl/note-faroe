@@ -14,8 +14,7 @@ Resets a user's second factors using a recovery code and returns a new recovery 
 ```ts
 async function resetUser2FA(
     userId: string,
-    recoveryCode: string,
-    clientIP: string | null
+    recoveryCode: string
 ): Promise<string>;
 ```
 
@@ -23,7 +22,6 @@ async function resetUser2FA(
 
 - `userId`
 - `recoveryCode`
-- `clientIP`
 
 ## Error codes
 

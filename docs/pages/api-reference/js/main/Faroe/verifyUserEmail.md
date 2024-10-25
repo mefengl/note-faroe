@@ -11,18 +11,13 @@ Verifies and updates a user's email with the user's email verification request c
 ## Definition
 
 ```ts
-async function verifyUserEmail(
-    userId: string,
-    code: string,
-    clientIP: string | null
-): Promise<void>
+async function verifyUserEmail(userId: string, code: string): Promise<void>
 ```
 
 ### Parameters
 
 - `userId`
 - `code`: The one-time code of the email verification request.
-- `clientIP`
 
 ## Error codes
 

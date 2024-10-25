@@ -14,24 +14,25 @@ POST https://your-domain.com/users
 
 ## Request body
 
-All fields are required.
-
 ```ts
 {
     "email": string,
-    "password": string
+    "password": string,
+    "client_ip": string
 }
 ```
 
-- `email`: A valid email address.
-- `password`: A valid password. Password strength is determined by checking it aginst past data leaks using the [HaveIBeenPwned API](https://haveibeenpwned.com/API/v3#PwnedPasswords).
+- `email` (required): A valid email address.
+- `password` (required): A valid password. Password strength is determined by checking it aginst past data leaks using the [HaveIBeenPwned API](https://haveibeenpwned.com/API/v3#PwnedPasswords).
+- `client_ip`: The client's IP address. If included, it will rate limit the endpoint based on it.
 
 ### Example
 
 ```json
 {
     "email": "penguin@example.com",
-    "password": "48n2r3tnaqp"
+    "password": "48n2r3tnaqp",
+    "client_ip": "0.0.0.0"
 }
 ```
 

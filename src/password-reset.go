@@ -17,8 +17,6 @@ import (
 )
 
 func handleCreatePasswordResetRequestRequest(env *Environment, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	clientIP := r.Header.Get("X-Client-IP")
-
 	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -39,7 +37,8 @@ func handleCreatePasswordResetRequestRequest(env *Environment, w http.ResponseWr
 		return
 	}
 	var data struct {
-		Email *string `json:"email"`
+		Email    *string `json:"email"`
+		ClientIP string  `json:"client_ip"`
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
@@ -67,11 +66,11 @@ func handleCreatePasswordResetRequestRequest(env *Environment, w http.ResponseWr
 		writeUnExpectedErrorResponse(w)
 		return
 	}
-	if clientIP != "" && !env.passwordHashingIPRateLimit.Consume(clientIP) {
+	if data.ClientIP != "" && !env.passwordHashingIPRateLimit.Consume(data.ClientIP) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
-	if clientIP != "" && !env.createPasswordResetIPRateLimit.Consume(clientIP) {
+	if data.ClientIP != "" && !env.createPasswordResetIPRateLimit.Consume(data.ClientIP) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -147,7 +146,6 @@ func handleGetPasswordResetRequestRequest(env *Environment, w http.ResponseWrite
 }
 
 func handleVerifyPasswordResetRequestEmailRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	clientIP := r.Header.Get("X-Client-IP")
 	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -186,7 +184,8 @@ func handleVerifyPasswordResetRequestEmailRequest(env *Environment, w http.Respo
 		return
 	}
 	var data struct {
-		Code *string `json:"code"`
+		Code     *string `json:"code"`
+		ClientIP string  `json:"client_ip"`
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
@@ -197,7 +196,7 @@ func handleVerifyPasswordResetRequestEmailRequest(env *Environment, w http.Respo
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	if clientIP != "" && !env.passwordHashingIPRateLimit.Consume(clientIP) {
+	if data.ClientIP != "" && !env.passwordHashingIPRateLimit.Consume(data.ClientIP) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -244,6 +243,7 @@ func handleResetPasswordRequest(env *Environment, w http.ResponseWriter, r *http
 	var data struct {
 		RequestId *string `json:"request_id"`
 		Password  *string `json:"password"`
+		ClientIP  string  `json:"client_ip"`
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
@@ -294,6 +294,11 @@ func handleResetPasswordRequest(env *Environment, w http.ResponseWriter, r *http
 	}
 	if !strongPassword {
 		writeExpectedErrorResponse(w, ExpectedErrorWeakPassword)
+		return
+	}
+
+	if data.ClientIP != "" && !env.passwordHashingIPRateLimit.Consume(data.ClientIP) {
+		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
 	passwordHash, err := argon2id.Hash(password)
