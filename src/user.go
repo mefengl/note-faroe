@@ -422,7 +422,8 @@ func handleGetUsersRequest(env *Environment, w http.ResponseWriter, r *http.Requ
 	}
 	totalPages := int64(math.Ceil(float64(userCount) / float64(perPage)))
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("X-Pagination-Total", strconv.FormatInt(totalPages, 10))
+	w.Header().Set("X-Pagination-Total", strconv.FormatInt(userCount, 10))
+	w.Header().Set("X-Pagination-Total-Pages", strconv.FormatInt(totalPages, 10))
 	w.WriteHeader(200)
 	if len(users) == 0 {
 		w.Write([]byte("[]"))

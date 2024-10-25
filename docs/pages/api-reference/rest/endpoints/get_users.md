@@ -35,10 +35,11 @@ All parameters are optional.
 
 Returns a JSON array of [user models](/api-reference/rest/models/user). If there are no users in the page, it will return an empty array.
 
-You can get the number of total pages from the `X-Pagination-Total` header.
+You can get the number of total pages from the `X-Pagination-Total-Pages` header and the total number of users with the `X-Pagination-Total` header..
 
 ```
-X-Pagination-Total: 6
+X-Pagination-Total-Pages: 6
+X-Pagination-Total: 113
 ```
 
 ### Example

@@ -249,7 +249,9 @@ func TestEndpointResponses(t *testing.T) {
 				res := w.Result()
 				assert.Equal(t, 200, res.StatusCode)
 
-				assert.Equal(t, strconv.Itoa(testCase.ExpectedTotalPages), res.Header.Get("X-Pagination-Total"))
+				assert.Equal(t, "30", res.Header.Get("X-Pagination-Total"))
+				assert.Equal(t, strconv.Itoa(testCase.ExpectedTotalPages), res.Header.Get("X-Pagination-Total-Pages"))
+
 				body, err := io.ReadAll(res.Body)
 				if err != nil {
 					t.Fatal(err)
@@ -417,7 +419,8 @@ func TestEndpointResponses(t *testing.T) {
 			app.ServeHTTP(w, r)
 			res := w.Result()
 			assert.Equal(t, 200, res.StatusCode)
-			assert.Equal(t, "1", res.Header.Get("X-Pagination-Total"))
+			assert.Equal(t, "5", res.Header.Get("X-Pagination-Total"))
+			assert.Equal(t, "1", res.Header.Get("X-Pagination-Total-Pages"))
 		})
 	})
 
