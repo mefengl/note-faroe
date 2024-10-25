@@ -11,7 +11,7 @@ Gets an array of a user's valid email update requests. Returns an empty array if
 ## Definition
 
 ```ts
-//$ FaroeEmailUpdateRequest=/api-reference/js/main/FaroeEmailUpdateRequest
+//$ FaroeEmailUpdateRequest=/api-reference/sdk-js/main/FaroeEmailUpdateRequest
 async function getUserEmailUpdateRequests(
     userId: string
 ): Promise<$$FaroeEmailUpdateRequest[] | null>

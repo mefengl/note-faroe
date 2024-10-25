@@ -11,7 +11,7 @@ Gets an array of a user's valid password reset requests. Returns an empty array 
 ## Definition
 
 ```ts
-//$ FaroePasswordResetRequest=/api-reference/js/main/FaroePasswordResetRequest
+//$ FaroePasswordResetRequest=/api-reference/sdk-js/main/FaroePasswordResetRequest
 async function getUserPasswordResetRequests(
     userId: string
 ): Promise<$$FaroePasswordResetRequest[] | null>

@@ -11,7 +11,7 @@ Gets a user's email verification request. Returns `null` if the request doesn't 
 ## Definition
 
 ```ts
-//$ FaroeUserEmailVerificationRequest=/api-reference/js/main/FaroeUserEmailVerificationRequest
+//$ FaroeUserEmailVerificationRequest=/api-reference/sdk-js/main/FaroeUserEmailVerificationRequest
 async function getUserEmailVerificationRequest(
     userId: string
 ): Promise<$$FaroeUserEmailVerificationRequest | null>

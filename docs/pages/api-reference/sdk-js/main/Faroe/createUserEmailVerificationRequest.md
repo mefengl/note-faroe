@@ -11,7 +11,7 @@ Creates a new email verification request for a user. This can only be called 3 t
 ## Definition
 
 ```ts
-//$ FaroeUserEmailVerificationRequest=/api-reference/js/main/FaroeUserEmailVerificationRequest
+//$ FaroeUserEmailVerificationRequest=/api-reference/sdk-js/main/FaroeUserEmailVerificationRequest
 async function createUserEmailVerificationRequest(
     userId: string
 ): Promise<$$FaroeUserEmailVerificationRequest>

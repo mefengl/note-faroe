@@ -11,7 +11,7 @@ Gets a user's TOTP credential. Returns `null` if the user doesn't exist or if th
 ## Definition
 
 ```ts
-//$ FaroeUserTOTPCredential=/api-reference/js/main/FaroeUserTOTPCredential
+//$ FaroeUserTOTPCredential=/api-reference/sdk-js/main/FaroeUserTOTPCredential
 async function getUserTOTPCredential(userId: string): Promise<$$FaroeUserTOTPCredential | null>
 ```
 

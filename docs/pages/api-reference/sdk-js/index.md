@@ -12,4 +12,4 @@ npm install @faroe/sdk
 
 ## Modules
 
-- [`@faroe/sdk`](/api-reference/js/main)
+- [`@faroe/sdk`](/api-reference/sdk-js/main)

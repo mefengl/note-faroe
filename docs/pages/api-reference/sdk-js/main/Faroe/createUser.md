@@ -13,7 +13,7 @@ We highly recommend putting a Captcha or equivalent in front for spam and bot de
 ## Definition
 
 ```ts
-//$ FaroeUser=/api-reference/js/main/FaroeUser
+//$ FaroeUser=/api-reference/sdk-js/main/FaroeUser
 async function createUser(
     email: string,
     password: string,

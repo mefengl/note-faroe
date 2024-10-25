@@ -11,7 +11,7 @@ Gets a email update request. Returns `null` if the request doesn't exist or has 
 ## Definition
 
 ```ts
-//$ FaroeEmailUpdateRequest=/api-reference/js/main/FaroeEmailUpdateRequest
+//$ FaroeEmailUpdateRequest=/api-reference/sdk-js/main/FaroeEmailUpdateRequest
 async function getEmailUpdateRequest(
     requestId: string
 ): Promise<$$FaroeEmailUpdateRequest | null>

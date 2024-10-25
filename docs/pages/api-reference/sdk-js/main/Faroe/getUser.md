@@ -11,7 +11,7 @@ Gets a user. Returns `null` if the user doesn't exist.
 ## Definition
 
 ```ts
-//$ FaroeUser=/api-reference/js/main/FaroeUser
+//$ FaroeUser=/api-reference/sdk-js/main/FaroeUser
 async function getUser(userId: string): Promise<$$FaroeUser | null>
 ```
 

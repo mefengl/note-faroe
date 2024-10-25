@@ -13,7 +13,7 @@ Send the created reset request's code to the email address.
 ## Definition
 
 ```ts
-//$ FaroePasswordResetRequest=/api-reference/js/main/$$FaroePasswordResetRequest
+//$ FaroePasswordResetRequest=/api-reference/sdk-js/main/$$FaroePasswordResetRequest
 async function createPasswordResetRequest(
     email: string,
     clientIP: string | null

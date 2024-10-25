@@ -11,8 +11,8 @@ Gets an array of users. Returns an empty array if there are no users.
 ## Definition
 
 ```ts
-//$ PaginationResult=/api-reference/js/main/PaginationResult
-//$ FaroeUser=/api-reference/js/main/FaroeUser
+//$ PaginationResult=/api-reference/sdk-js/main/PaginationResult
+//$ FaroeUser=/api-reference/sdk-js/main/FaroeUser
 async function getUsers(options?: {
     sortBy: UserSortBy = UserSortBy.CreatedAt,
     sortOrder: SortOrder = SortOrder.Ascending,

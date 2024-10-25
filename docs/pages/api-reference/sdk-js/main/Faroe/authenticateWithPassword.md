@@ -11,7 +11,7 @@ Authenticates a user with email and password. It will temporary block the IP add
 ## Definition
 
 ```ts
-//$ FaroeUser=/api-reference/js/main/FaroeUser
+//$ FaroeUser=/api-reference/sdk-js/main/FaroeUser
 async function authenticateWithPassword(
     email: string,
     password: string,

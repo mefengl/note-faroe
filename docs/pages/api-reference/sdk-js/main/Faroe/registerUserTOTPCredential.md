@@ -11,7 +11,7 @@ Registers a TOTP (SHA-1, 6 digits, 30 seconds interval) credential to a user.
 ## Definition
 
 ```ts
-//$ FaroeUserTOTPCredential=/api-reference/js/main/FaroeUserTOTPCredential
+//$ FaroeUserTOTPCredential=/api-reference/sdk-js/main/FaroeUserTOTPCredential
 async function registerUserTOTPCredential(
     userId: string,
     totpKey: Uint8Array,

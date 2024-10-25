@@ -11,7 +11,7 @@ Gets a password reset request. Returns `null` if the request doesn't exist.
 ## Definition
 
 ```ts
-//$ FaroePasswordResetRequest=/api-reference/js/main/FaroePasswordResetRequest
+//$ FaroePasswordResetRequest=/api-reference/sdk-js/main/FaroePasswordResetRequest
 async function getPasswordResetRequest(
     requestId: string
 ): Promise<$$FaroePasswordResetRequest | null>
