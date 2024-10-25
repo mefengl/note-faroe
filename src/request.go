@@ -27,7 +27,7 @@ func verifyJSONContentTypeHeader(r *http.Request) bool {
 	if err != nil {
 		return false
 	}
-	return mediatype == "application/json" || mediatype == "text/plain"
+	return mediatype == "application/json"
 }
 
 func verifyJSONAcceptHeader(r *http.Request) bool {
@@ -40,9 +40,36 @@ func verifyJSONAcceptHeader(r *http.Request) bool {
 		entry = strings.TrimSpace(entry)
 		parts := strings.Split(entry, ";")
 		mediaType := strings.TrimSpace(parts[0])
-		if mediaType == "*/*" || mediaType == "application/*" || mediaType == "application/json" || mediaType == "text/plain" {
+		if mediaType == "*/*" || mediaType == "application/*" || mediaType == "application/json" {
 			return true
 		}
 	}
 	return false
 }
+
+func parseJSONOrTextAcceptHeader(r *http.Request) (ContentType, bool) {
+	accept, ok := r.Header["Accept"]
+	if !ok {
+		return ContentTypeJSON, true
+	}
+	entries := strings.Split(accept[0], ",")
+	for _, entry := range entries {
+		entry = strings.TrimSpace(entry)
+		parts := strings.Split(entry, ";")
+		mediaType := strings.TrimSpace(parts[0])
+		if mediaType == "*/*" || mediaType == "application/*" || mediaType == "application/json" {
+			return ContentTypeJSON, true
+		}
+		if mediaType == "text/plain" {
+			return ContentTypePlainText, true
+		}
+	}
+	return ContentTypeJSON, false
+}
+
+type ContentType = int
+
+const (
+	ContentTypeJSON ContentType = iota
+	ContentTypePlainText
+)

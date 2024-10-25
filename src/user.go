@@ -372,7 +372,8 @@ func handleGetUsersRequest(env *Environment, w http.ResponseWriter, r *http.Requ
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
-	if !verifyJSONAcceptHeader(r) {
+	responseContentType, ok := parseJSONOrTextAcceptHeader(r)
+	if !ok {
 		writeUnsupportedMediaTypeErrorResponse(w)
 		return
 	}
@@ -421,22 +422,34 @@ func handleGetUsersRequest(env *Environment, w http.ResponseWriter, r *http.Requ
 		return
 	}
 	totalPages := int64(math.Ceil(float64(userCount) / float64(perPage)))
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("X-Pagination-Total", strconv.FormatInt(userCount, 10))
-	w.Header().Set("X-Pagination-Total-Pages", strconv.FormatInt(totalPages, 10))
-	w.WriteHeader(200)
-	if len(users) == 0 {
-		w.Write([]byte("[]"))
+	if responseContentType == ContentTypeJSON {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Pagination-Total", strconv.FormatInt(userCount, 10))
+		w.Header().Set("X-Pagination-Total-Pages", strconv.FormatInt(totalPages, 10))
+		w.WriteHeader(200)
+		if len(users) == 0 {
+			w.Write([]byte("[]"))
+			return
+		}
+		w.Write([]byte("["))
+		for i, user := range users {
+			w.Write([]byte(user.EncodeToJSON()))
+			if i != len(users)-1 {
+				w.Write([]byte(","))
+			}
+		}
+		w.Write([]byte("]"))
 		return
 	}
-	w.Write([]byte("["))
-	for i, user := range users {
-		w.Write([]byte(user.EncodeToJSON()))
-		if i != len(users)-1 {
-			w.Write([]byte(","))
-		}
+	if responseContentType == ContentTypePlainText {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Header().Set("X-Pagination-Total", strconv.FormatInt(userCount, 10))
+		w.Header().Set("X-Pagination-Total-Pages", strconv.FormatInt(totalPages, 10))
+		w.WriteHeader(200)
+		writeUserListAsFormattedString(w, users)
+		return
 	}
-	w.Write([]byte("]"))
+	writeUnExpectedErrorResponse(w)
 }
 
 func handleDeleteUsersRequest(env *Environment, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -799,6 +812,44 @@ func (u *User) EncodeToJSON() string {
 	escapedEmail := strings.ReplaceAll(u.Email, "\"", "\\\"")
 	encoded := fmt.Sprintf("{\"id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"recovery_code\":\"%s\",\"totp_registered\":%t}", u.Id, u.CreatedAt.Unix(), escapedEmail, u.RecoveryCode, u.TOTPRegistered)
 	return encoded
+}
+
+func writeUserListAsFormattedString(w io.Writer, users []User) {
+	var timeLayout = "Jan 02 2006 15:04:05"
+
+	var maxEmailSize = len("Email address")
+	for _, user := range users {
+		if len(user.Email) > maxEmailSize {
+			maxEmailSize = len(user.Email)
+		}
+	}
+	w.Write([]byte(padEnd("User ID", 24)))
+	w.Write(([]byte("  ")))
+	w.Write([]byte(padEnd("Email address", maxEmailSize)))
+	w.Write(([]byte("  ")))
+	w.Write([]byte(padEnd("Created at", len(timeLayout))))
+	w.Write(([]byte("  ")))
+	w.Write([]byte("Recovery code"))
+	w.Write(([]byte("  ")))
+	w.Write([]byte("TOTP"))
+	w.Write([]byte("\n\n"))
+
+	for _, user := range users {
+		w.Write([]byte(user.Id))
+		w.Write(([]byte("  ")))
+		w.Write([]byte(padEnd(user.Email, maxEmailSize)))
+		w.Write(([]byte("  ")))
+		w.Write([]byte(user.CreatedAt.UTC().Format(timeLayout)))
+		w.Write(([]byte("  ")))
+		w.Write([]byte(padEnd(user.RecoveryCode, len("Recovery code"))))
+		w.Write(([]byte("  ")))
+		if user.TOTPRegistered {
+			w.Write([]byte("✓"))
+		} else {
+			w.Write([]byte("-"))
+		}
+		w.Write([]byte("\n"))
+	}
 }
 
 type UserSortBy int

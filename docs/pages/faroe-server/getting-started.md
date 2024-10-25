@@ -32,3 +32,9 @@ For production apps, generate a secret with the `generate-secret` command and pa
 ```
 ./faroe serve --secret=SECRET
 ```
+
+You can get a formatted list of users by sending a GET request to `/users` with the `Accept` header set to `text/plain`.
+
+```
+curl http://localhost:3000/users -H "Accept: text/plain"
+```

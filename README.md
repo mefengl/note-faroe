@@ -1,5 +1,7 @@
 # Faroe
 
+**Documentation: [faroe.dev](https://faroe.dev)**
+
 *This software is not stable yet. Do not use it in production.*
 
 Faroe is an open source, self-hosted, and modular authentication backend designed for email and password authentication. It exposes various API endpoints including:
@@ -32,7 +34,7 @@ async function handleLoginRequest() {
 }
 ```
 
-This is not a full authentication backend (Auth0, Supabase, etc) nor a full identity provider (KeyCloak, etc). It is specfically designed to only handle the backend logic for email and password authentication. Faroe does not provide session management, frontend UI, or OAuth integration.
+This is not a full authentication backend (Auth0, Supabase, etc) nor a full identity provider (KeyCloak, etc). It is specifically designed to handle the backend logic for email and password authentication. Faroe does not provide session management, frontend UI, or OAuth integration.
 
 Faroe is written in Go and uses SQLite as its database.
 
@@ -44,10 +46,6 @@ Licensed under the MIT license.
 - Rate limiting and brute force protection
 - Proper password strength checks
 - Everything included in a single binary
-- WIP: Logging
-- WIP: Dashboard
-- WIP: Database backup
-- WIP: WebAuthn
 
 ## Why?
 
