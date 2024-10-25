@@ -59,3 +59,7 @@ Faroe is the middle ground between a dedicated auth backend and a custom impleme
 - Bot protection is not included. We highly recommend using Captchas or equivalent in registration and password reset forms.
 - Faroe uses SQLite in WAL mode as its database. This shouldn't cause issues unless you have 100,000+ users, and even then, the database will only handle a small part of your total requests.
 - Faroe uses in-memory storage for rate limiting.
+
+## Repositories
+
+- [JavaScript SDK](https://github.com/faroedev/sdk-js)
