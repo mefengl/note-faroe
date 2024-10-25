@@ -27,7 +27,7 @@ func verifyJSONContentTypeHeader(r *http.Request) bool {
 	if err != nil {
 		return false
 	}
-	return mediatype == "application/json"
+	return mediatype == "application/json" || mediatype == "text/plain"
 }
 
 func verifyJSONAcceptHeader(r *http.Request) bool {
