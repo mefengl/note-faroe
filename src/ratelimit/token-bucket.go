@@ -146,7 +146,6 @@ func (rl *ExpiringTokenBucketRateLimit) AddTokenIfEmpty(key string) {
 	}
 	count := int(math.Max(float64(bucket.count), 1))
 	rl.storage[key] = expiringTokenBucket{count, bucket.createdAtUnixMilliseconds}
-	rl.mu.Unlock()
 }
 
 func (rl *ExpiringTokenBucketRateLimit) Reset(key string) {

@@ -86,6 +86,9 @@ func handleAuthenticateWithPasswordRequest(env *Environment, w http.ResponseWrit
 		writeExpectedErrorResponse(w, ExpectedErrorIncorrectPassword)
 		return
 	}
+	if data.ClientIP != "" {
+		env.loginIPRateLimit.AddTokenIfEmpty(data.ClientIP)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	w.Write([]byte(user.EncodeToJSON()))
