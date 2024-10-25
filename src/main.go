@@ -95,6 +95,10 @@ func serveCommand() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	_, err = db.Exec("PRAGMA busy_timeout=5000;")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	_, err = db.Exec(schema)
 	if err != nil {
