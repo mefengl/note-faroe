@@ -87,7 +87,11 @@ func serveCommand() {
 		log.Fatal(err)
 	}
 
-	db, err := sql.Open("sqlite", "./faroe_data/sqlite.db?_journal_mode=WAL")
+	db, err := sql.Open("sqlite", "./faroe_data/sqlite.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = db.Exec("PRAGMA journal_mode=WAL;")
 	if err != nil {
 		log.Fatal(err)
 	}
