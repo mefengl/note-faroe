@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/mattn/go-sqlite3"
+	"modernc.org/sqlite"
 )
 
 func handleCreateUserEmailVerificationRequestRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -378,7 +378,7 @@ func handleUpdateEmailRequest(env *Environment, w http.ResponseWriter, r *http.R
 	}
 	validCode, err := updateUserEmailWithUpdateRequest(env.db, r.Context(), updateRequest.Id, *data.Code)
 	if err != nil {
-		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
+		if sqliteErr, ok := err.(*sqlite.Error); ok && sqliteErr.Code() == 2067 {
 			writeExpectedErrorResponse(w, ExpectedErrorEmailAlreadyUsed)
 			return
 		}

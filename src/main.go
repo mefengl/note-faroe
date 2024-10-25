@@ -17,7 +17,7 @@ import (
 	_ "embed"
 
 	"github.com/julienschmidt/httprouter"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 const version = "0.1.0"
@@ -87,7 +87,7 @@ func serveCommand() {
 		log.Fatal(err)
 	}
 
-	db, err := sql.Open("sqlite3", "./faroe_data/sqlite.db?_journal_mode=WAL")
+	db, err := sql.Open("sqlite", "./faroe_data/sqlite.db?_journal_mode=WAL")
 	if err != nil {
 		log.Fatal(err)
 	}

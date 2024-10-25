@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/mattn/go-sqlite3"
+	"modernc.org/sqlite"
 )
 
 func handleCreateUserRequest(env *Environment, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -106,7 +106,7 @@ func handleCreateUserRequest(env *Environment, w http.ResponseWriter, r *http.Re
 
 	user, err := createUser(env.db, r.Context(), email, passwordHash)
 	if err != nil {
-		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
+		if sqliteErr, ok := err.(*sqlite.Error); ok && sqliteErr.Code() == 2067 {
 			writeExpectedErrorResponse(w, ExpectedErrorEmailAlreadyUsed)
 			return
 		}
@@ -832,7 +832,7 @@ func writeUserListAsFormattedString(w io.Writer, users []User) {
 	w.Write([]byte("Recovery code"))
 	w.Write(([]byte("  ")))
 	w.Write([]byte("TOTP"))
-	w.Write([]byte("\n\n"))
+	w.Write([]byte("\n"))
 
 	for _, user := range users {
 		w.Write([]byte(user.Id))
