@@ -288,6 +288,7 @@ func handleResetUser2FARequest(env *Environment, w http.ResponseWriter, r *http.
 		writeUnExpectedErrorResponse(w)
 		return
 	}
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
@@ -340,18 +341,14 @@ func handleRegenerateUserRecoveryCodeRequest(env *Environment, w http.ResponseWr
 	}
 
 	userId := params.ByName("user_id")
-	user, err := getUser(env.db, r.Context(), userId)
-	if errors.Is(err, ErrRecordNotFound) {
+	userExists, err := checkUserExists(env.db, r.Context(), userId)
+	if !userExists {
 		writeNotFoundErrorResponse(w)
 		return
 	}
 	if err != nil {
 		log.Println(err)
 		writeUnExpectedErrorResponse(w)
-		return
-	}
-	if !user.Registered2FA() {
-		writeExpectedErrorResponse(w, ExpectedErrorNotAllowed)
 		return
 	}
 
@@ -364,7 +361,7 @@ func handleRegenerateUserRecoveryCodeRequest(env *Environment, w http.ResponseWr
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
-	encodeRecoveryCodeToJSON(newRecoveryCode)
+	w.Write([]byte(encodeRecoveryCodeToJSON(newRecoveryCode)))
 }
 
 func handleGetUsersRequest(env *Environment, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -810,7 +807,7 @@ func (u *User) Registered2FA() bool {
 
 func (u *User) EncodeToJSON() string {
 	escapedEmail := strings.ReplaceAll(u.Email, "\"", "\\\"")
-	encoded := fmt.Sprintf("{\"id\":\"%s\",\"created_at\":%d,\"email\":\"%s\",\"recovery_code\":\"%s\",\"totp_registered\":%t}", u.Id, u.CreatedAt.Unix(), escapedEmail, u.RecoveryCode, u.TOTPRegistered)
+	encoded := fmt.Sprintf(`{"id":"%s","created_at":%d,"email":"%s","recovery_code":"%s","totp_registered":%t}`, u.Id, u.CreatedAt.Unix(), escapedEmail, u.RecoveryCode, u.TOTPRegistered)
 	return encoded
 }
 

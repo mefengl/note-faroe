@@ -38,7 +38,11 @@ func handleCreateUserEmailVerificationRequestRequest(env *Environment, w http.Re
 		return
 	}
 
-	if !env.createEmailVerificationUserRateLimit.Consume(userId) {
+	if !env.verifyUserEmailRateLimit.Check(userId) {
+		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
+		return
+	}
+	if !env.createEmailRequestUserRateLimit.Consume(userId) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -79,7 +83,7 @@ func handleVerifyUserEmailRequest(env *Environment, w http.ResponseWriter, r *ht
 
 	verificationRequest, err := getUserEmailVerificationRequest(env.db, r.Context(), userId)
 	if errors.Is(err, ErrRecordNotFound) {
-		env.createEmailVerificationUserRateLimit.AddTokenIfEmpty(userId)
+		env.createEmailRequestUserRateLimit.AddTokenIfEmpty(userId)
 		writeExpectedErrorResponse(w, ExpectedErrorNotAllowed)
 		return
 	}
@@ -97,7 +101,7 @@ func handleVerifyUserEmailRequest(env *Environment, w http.ResponseWriter, r *ht
 			writeUnExpectedErrorResponse(w)
 			return
 		}
-		env.createEmailVerificationUserRateLimit.AddTokenIfEmpty(userId)
+		env.createEmailRequestUserRateLimit.AddTokenIfEmpty(userId)
 		writeExpectedErrorResponse(w, ExpectedErrorNotAllowed)
 		return
 	}
@@ -283,7 +287,7 @@ func handleCreateUserEmailUpdateRequestRequest(env *Environment, w http.Response
 		return
 	}
 
-	if !env.createEmailVerificationUserRateLimit.Consume(userId) {
+	if !env.createEmailRequestUserRateLimit.Consume(userId) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}

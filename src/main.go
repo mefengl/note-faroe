@@ -127,7 +127,7 @@ func serveCommand() {
 
 	passwordHashingIPRateLimit := ratelimit.NewTokenBucketRateLimit(5, 10*time.Second)
 	loginIPRateLimit := ratelimit.NewExpiringTokenBucketRateLimit(5, 15*time.Minute)
-	createEmailVerificationUserRateLimit := ratelimit.NewTokenBucketRateLimit(3, 5*time.Minute)
+	createEmailRequestUserRateLimit := ratelimit.NewTokenBucketRateLimit(3, 5*time.Minute)
 	verifyUserEmailRateLimit := ratelimit.NewExpiringTokenBucketRateLimit(5, 15*time.Minute)
 	verifyEmailUpdateVerificationCodeLimitCounter := ratelimit.NewLimitCounter(5)
 	createPasswordResetIPRateLimit := ratelimit.NewTokenBucketRateLimit(3, 5*time.Minute)
@@ -139,7 +139,7 @@ func serveCommand() {
 		for range time.Tick(10 * 24 * time.Hour) {
 			passwordHashingIPRateLimit.Clear()
 			loginIPRateLimit.Clear()
-			createEmailVerificationUserRateLimit.Clear()
+			createEmailRequestUserRateLimit.Clear()
 			verifyUserEmailRateLimit.Clear()
 			verifyEmailUpdateVerificationCodeLimitCounter.Clear()
 			createPasswordResetIPRateLimit.Clear()
@@ -151,12 +151,12 @@ func serveCommand() {
 	}()
 
 	env := &Environment{
-		db:                                   db,
-		secret:                               secret,
-		passwordHashingIPRateLimit:           passwordHashingIPRateLimit,
-		loginIPRateLimit:                     loginIPRateLimit,
-		createEmailVerificationUserRateLimit: createEmailVerificationUserRateLimit,
-		verifyUserEmailRateLimit:             verifyUserEmailRateLimit,
+		db:                              db,
+		secret:                          secret,
+		passwordHashingIPRateLimit:      passwordHashingIPRateLimit,
+		loginIPRateLimit:                loginIPRateLimit,
+		createEmailRequestUserRateLimit: createEmailRequestUserRateLimit,
+		verifyUserEmailRateLimit:        verifyUserEmailRateLimit,
 		verifyEmailUpdateVerificationCodeLimitCounter: verifyEmailUpdateVerificationCodeLimitCounter,
 		createPasswordResetIPRateLimit:                createPasswordResetIPRateLimit,
 		verifyPasswordResetCodeLimitCounter:           verifyPasswordResetCodeLimitCounter,
@@ -274,7 +274,7 @@ type Environment struct {
 	secret                                        []byte
 	passwordHashingIPRateLimit                    ratelimit.TokenBucketRateLimit
 	loginIPRateLimit                              ratelimit.ExpiringTokenBucketRateLimit
-	createEmailVerificationUserRateLimit          ratelimit.TokenBucketRateLimit
+	createEmailRequestUserRateLimit               ratelimit.TokenBucketRateLimit
 	verifyUserEmailRateLimit                      ratelimit.ExpiringTokenBucketRateLimit
 	verifyEmailUpdateVerificationCodeLimitCounter ratelimit.LimitCounter
 	createPasswordResetIPRateLimit                ratelimit.TokenBucketRateLimit
