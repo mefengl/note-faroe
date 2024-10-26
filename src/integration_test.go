@@ -883,6 +883,44 @@ func TestEndpointResponses(t *testing.T) {
 		assert.Equal(t, 204, res.StatusCode)
 	})
 
+	t.Run("post /users/userid/regenerate-recovery-code", func(t *testing.T) {
+		t.Parallel()
+
+		testAuthentication(t, "POST", "/users/1/regenerate-recovery-code")
+
+		db := initializeTestDB(t)
+		defer db.Close()
+
+		now := time.Unix(time.Now().Unix(), 0)
+		user1 := User{
+			Id:             "1",
+			CreatedAt:      now,
+			Email:          "user1@example.com",
+			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
+			RecoveryCode:   "12345678",
+			TOTPRegistered: false,
+		}
+		err := insertUser(db, context.Background(), &user1)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		env := createEnvironment(db, nil)
+		app := CreateApp(env)
+
+		r := httptest.NewRequest("POST", "/users/2/regenerate-recovery-code", nil)
+		w := httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res := w.Result()
+		assertErrorResponse(t, res, 404, "NOT_FOUND")
+
+		r = httptest.NewRequest("POST", "/users/1/regenerate-recovery-code", nil)
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assertJSONResponse(t, res, recoveryCodeJSONKeys)
+	})
+
 	t.Run("post /users/userid/reset-2fa", func(t *testing.T) {
 		t.Parallel()
 
@@ -2548,6 +2586,31 @@ func TestApp(t *testing.T) {
 	}
 
 	// Use regenerated recovery code
+	url = fmt.Sprintf("/users/%s/reset-2fa", user.Id)
+	data = fmt.Sprintf(`{"recovery_code":"%s"}`, recoveryCodeResult.RecoveryCode)
+	r = httptest.NewRequest("POST", url, strings.NewReader(data))
+	w = httptest.NewRecorder()
+	app.ServeHTTP(w, r)
+	res = w.Result()
+	assert.Equal(t, 200, res.StatusCode, "POST /users/[user_id]/reset-2fa status code")
+
+	// Manually regenerate recovery code
+	url = fmt.Sprintf("/users/%s/regenerate-recovery-code", user.Id)
+	r = httptest.NewRequest("POST", url, nil)
+	w = httptest.NewRecorder()
+	app.ServeHTTP(w, r)
+	res = w.Result()
+	assert.Equal(t, 200, res.StatusCode, "POST /users/[user_id]/regenerate-recovery-code status code")
+	body, err = io.ReadAll(res.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = json.Unmarshal(body, &recoveryCodeResult)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Use manually regenerated recovery code
 	url = fmt.Sprintf("/users/%s/reset-2fa", user.Id)
 	data = fmt.Sprintf(`{"recovery_code":"%s"}`, recoveryCodeResult.RecoveryCode)
 	r = httptest.NewRequest("POST", url, strings.NewReader(data))
