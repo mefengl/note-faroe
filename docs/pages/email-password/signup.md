@@ -63,12 +63,22 @@ async function handleSignUpRequest(
         return;
     }
 
-    const emailVerificationRequest = await faroe.createUserEmailVerificationRequest(faroeUser.id, clientIP);
+	let user: User;
+	try {
+		user = await createUser(faroeUser.id, email, {
+            emailVerified: false
+        });
+	} catch {
+		await faroe.deleteUser(faroeUser.id);
+        response.writeHeader(500);
+        response.write("An unknown error occurred. Please try again later.");
+        return;
+	}
 
-    const user = await createUser(faroeUser.id, email, {
-        emailVerified: false
-    });
-
+    const emailVerificationRequest = await faroe.createUserEmailVerificationRequest(
+        faroeUser.id,
+        clientIP
+    );
     const emailContent = `Your verification code is ${emailVerificationRequest.code}.`;
     await sendEmail(faroeUser.email, emailContent);
 
