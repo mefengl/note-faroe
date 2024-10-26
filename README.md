@@ -22,24 +22,24 @@ let faroeUser: FaroeUser;
 try {
 	faroeUser = await faroe.authenticateUserWithPassword(email, password, clientIP);
 } catch (e) {
-    if (e instanceof FaroeError && e.code === "USER_NOT_EXISTS") {
-        response.writeHeader(400);
-        response.write("Account does not exist.");
-        return;
-    }
-    if (e instanceof FaroeError && e.code === "INCORRECT_PASSWORD") {
-        response.writeHeader(400);
-        response.write("Incorrect password.");
-        return;
-    }
-    if (e instanceof FaroeError && e.code === "TOO_MANY_REQUESTS") {
-        response.writeHeader(429);
-        response.write("Please try again later.");
-        return;
-    }
-    response.writeHeader(500);
-    response.write("An unknown error occurred. Please try again later.");
-    return;
+	if (e instanceof FaroeError && e.code === "USER_NOT_EXISTS") {
+		response.writeHeader(400);
+		response.write("Account does not exist.");
+		return;
+	}
+	if (e instanceof FaroeError && e.code === "INCORRECT_PASSWORD") {
+		response.writeHeader(400);
+		response.write("Incorrect password.");
+		return;
+	}
+	if (e instanceof FaroeError && e.code === "TOO_MANY_REQUESTS") {
+		response.writeHeader(429);
+		response.write("Please try again later.");
+		return;
+	}
+	response.writeHeader(500);
+	response.write("An unknown error occurred. Please try again later.");
+	return;
 }
 
 // Your custom logic
