@@ -41,7 +41,10 @@
         },
         {
             "title": "Link",
-            "pages": [["GitHub", "https://github.com/faroedev/faroe"]]
+            "pages": [
+                ["GitHub", "https://github.com/faroedev/faroe"],
+                ["Discord", "https://discord.gg/EcwqgqSRt4"]
+            ]
         }
     ]
 }
