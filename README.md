@@ -64,6 +64,11 @@ Faroe is the middle ground between a dedicated auth backend and a custom impleme
 
 - [JavaScript SDK](https://github.com/faroedev/sdk-js)
 
+## Examples
+
+- [Astro basic](https://github.com/faroedev/example-astro-basic)
+- [Next.js basic](https://github.com/faroedev/example-nextjs-basic)
+
 ## Security
 
 Please report security vulnerabilities to `pilcrowonpaper@gmail.com`.

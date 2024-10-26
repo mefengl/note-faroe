@@ -12,6 +12,7 @@
         {
             "title": "Email and password",
             "pages": [
+                ["Example projects", "/email-password/examples"],
                 ["Setting up your project", "/email-password/setup"],
                 ["Sign up", "/email-password/signup"],
                 ["Sign in", "/email-password/login"],
