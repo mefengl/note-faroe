@@ -13,12 +13,12 @@ Install the latest version of Faroe:
 - [Download Faroe v0.1.0 for Windows (x64)]()
 - [Download Faroe v0.1.0 for Windows (ARM64)]()
 
-You can immediately start the server on port 3000 with `faroe server`:
+You can immediately start the server on port 4000 with `faroe server`:
 
 ```
 ./faroe serve
 
-./faroe serve --port=4000
+./faroe serve --port=3000
 ```
 
 This will create a `faroe_data` folder in the root that contains the SQLite database. Remember to add this to `.gitignore`.
@@ -36,5 +36,5 @@ For production apps, generate a secret with the `generate-secret` command and pa
 You can get a formatted list of users by sending a GET request to `/users` with the `Accept` header set to `text/plain`.
 
 ```
-curl http://localhost:3000/users -H "Accept: text/plain"
+curl http://localhost:4000/users -H "Accept: text/plain"
 ```

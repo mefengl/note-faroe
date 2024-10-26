@@ -76,7 +76,7 @@ func serveCommand() {
 
 	var port int
 	var secretString string
-	flag.IntVar(&port, "port", 3000, "Port number")
+	flag.IntVar(&port, "port", 4000, "Port number")
 	flag.StringVar(&secretString, "secret", "", "Server secret")
 	flag.Parse()
 

@@ -12,10 +12,10 @@ npm install @faroe/sdk
 
 ```ts
 // Without a secret.
-export const faroe = new Faroe("http://localhost:3000", null);
+export const faroe = new Faroe("http://localhost:4000", null);
 
 // With a secret.
-export const faroe = new Faroe("http://localhost:3000", secret);
+export const faroe = new Faroe("http://localhost:4000", secret);
 ```
 
 In your application, you'll need to create a database table for your users, sessions, and password reset sessions.
