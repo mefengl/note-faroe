@@ -46,7 +46,7 @@ async function handleForgotPasswordRequest(
             return;
         }
         if (e instanceof FaroeError && e.code === "TOO_MANY_REQUESTS") {
-            response.writeHeader(400);
+            response.writeHeader(429);
             response.write("Please try again later.");
             return;
         }

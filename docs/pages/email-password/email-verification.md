@@ -61,7 +61,7 @@ async function handleVerifyEmailRequest(
             return;
         }
         if (e instanceof FaroeError && e.code === "TOO_MANY_REQUESTS") {
-            response.writeHeader(400);
+            response.writeHeader(429);
             response.write("Please try again later.");
             return;
         }
@@ -78,7 +78,7 @@ async function handleVerifyEmailRequest(
 }
 ```
 
-Like in the sign up process, use `Faroe.createUserEmailVerificationRequest()` to create a new email verification request. This method has rate limiting built-in to prevent DoS attacks targetting your email servers. However, consider adding some kind of bot and spam protection.
+Like in the sign up process, use `Faroe.createUserEmailVerificationRequest()` to create a new email verification request. This method has rate limiting built-in to prevent DoS attacks targeting your email servers. However, consider adding some kind of bot and spam protection.
 
 ```ts
 import { FaroeError } from "@faroe/sdk";
@@ -122,7 +122,7 @@ async function handleResendEmailVerificationCodeRequest(
         );
     } catch (e) {
         if (e instanceof FaroeError && e.code === "TOO_MANY_REQUESTS") {
-            response.writeHeader(400);
+            response.writeHeader(429);
             response.write("Please try again later.");
             return;
         }
@@ -138,4 +138,33 @@ async function handleResendEmailVerificationCodeRequest(
     // ...
 
 }
+```
+
+Faroe will lock out the user from creating a new verification request for a maximum of 15 minutes after their 5th failed attempt. If you plan to automatically create a new verification request if the current user doesn't have a valid request, ensure to expect rate-limiting errors.
+
+
+```ts
+let verificationRequest = await faroe.getUserEmailVerificationRequest(Astro.locals.user.faroeId);
+if (verificationRequest === null) {
+	try {
+		verificationRequest = await faroe.createUserEmailVerificationRequest(
+            faroeUser.id
+        );
+        // Send verification code to user's inbox.
+        const emailContent = `Your verification code is ${emailVerificationRequest.code}.`;
+        await sendEmail(faroeUser.email, emailContent);
+	} catch (e) {
+		if (e instanceof FaroeError && e.code === "TOO_MANY_REQUESTS") {
+            response.writeHeader(429);
+            response.write("Please try again later.");
+            return;
+		}
+        response.writeHeader(500);
+        response.write("An unknown error occurred. Please try again later.");
+        return;
+	}
+}
+
+// Render form
+
 ```
