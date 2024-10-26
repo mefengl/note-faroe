@@ -2,6 +2,8 @@
 
 **Documentation: [faroe.dev](https://faroe.dev)**
 
+**[Discord server](https://discord.gg/EcwqgqSRt4)**
+
 *This software is not stable yet. Do not use it in production.*
 
 Faroe is an open source, self-hosted, and modular backend for email and password authentication. It exposes various API endpoints including:
