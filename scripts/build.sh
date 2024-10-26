@@ -21,6 +21,7 @@ GOOS=windows GOARCH=arm64 go build -o ../.bin/windows-arm64/faroe
 cd ..
 cd .bin
 for dir in $(ls -d *); do
+    cp ../LICENSE "$dir"/LICENSE
     zip -r "$dir".zip $dir
     rm -rf $dir
 done
