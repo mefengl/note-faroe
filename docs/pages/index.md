@@ -18,22 +18,33 @@ Faroe is an open source, self-hosted, and modular backend for email and password
 These work with your application's UI and backend to provide a complete authentication system.
 
 ```ts
-import { Faroe } from "@faroe/sdk"
-
-const faroe = new Faroe(url, secret);
-
-async function handleLoginRequest() {
-
-  // ...
-
-  const faroeUser = await faroe.withIP(clientIP).authenticateWithPassword(email, password);
-
-  // Your application logic
-  const user = await getUserByFaroeId(faroeUser.id);
-  const session = await createSession(user.id, {
-    twoFactorVerified: false
-  });
+let faroeUser: FaroeUser;
+try {
+	faroeUser = await faroe.authenticateUserWithPassword(email, password, clientIP);
+} catch (e) {
+    if (e instanceof FaroeError && e.code === "USER_NOT_EXISTS") {
+        response.writeHeader(400);
+        response.write("Account does not exist.");
+        return;
+    }
+    if (e instanceof FaroeError && e.code === "INCORRECT_PASSWORD") {
+        response.writeHeader(400);
+        response.write("Incorrect password.");
+        return;
+    }
+    if (e instanceof FaroeError && e.code === "TOO_MANY_REQUESTS") {
+        response.writeHeader(429);
+        response.write("Please try again later.");
+        return;
+    }
+    response.writeHeader(500);
+    response.write("An unknown error occurred. Please try again later.");
+    return;
 }
+
+// Your custom logic
+const user = await getUserFromFaroeId(faroeUser.id);
+const session = await createSession(user.id, null);
 ```
 
 This is not a full authentication backend (Auth0, Supabase, etc) nor a full identity provider (KeyCloak, etc). It is specifically designed to handle the backend logic for email and password authentication. Faroe does not provide session management, frontend UI, or OAuth integration.
