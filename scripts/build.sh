@@ -21,7 +21,7 @@ GOOS=windows GOARCH=arm64 go build -o ../.bin/windows-arm64/faroe
 cd ..
 cd .bin
 for dir in $(ls -d *); do
-    tar cfzv "$dir".tgz $dir
+    zip -r "$dir".zip $dir
     rm -rf $dir
 done
 cd ..
