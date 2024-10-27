@@ -14,9 +14,9 @@ echo 'building linux-arm64...'
 GOOS=linux GOARCH=arm64 go build -o ../bin/linux-arm64/faroe
 
 echo 'building windows-amd64...'
-GOOS=windows GOARCH=amd64 go build -o ../bin/windows-amd64/faroe
+GOOS=windows GOARCH=amd64 go build -o ../bin/windows-amd64/faroe.exe
 echo 'building windows-arm64...'
-GOOS=windows GOARCH=arm64 go build -o ../bin/windows-arm64/faroe
+GOOS=windows GOARCH=arm64 go build -o ../bin/windows-arm64/faroe.exe
 
 cd ..
 cd bin
