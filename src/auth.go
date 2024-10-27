@@ -7,12 +7,11 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"strings"
 
 	"github.com/julienschmidt/httprouter"
 )
 
-func handleAuthenticateWithPasswordRequest(env *Environment, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func handleVerifyUserPasswordRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -26,14 +25,25 @@ func handleAuthenticateWithPasswordRequest(env *Environment, w http.ResponseWrit
 		return
 	}
 
+	userId := params.ByName("user_id")
+	user, err := getUser(env.db, r.Context(), userId)
+	if errors.Is(err, ErrRecordNotFound) {
+		writeNotFoundErrorResponse(w)
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	var data struct {
-		Email    *string `json:"email"`
 		Password *string `json:"password"`
 		ClientIP string  `json:"client_ip"`
 	}
@@ -44,28 +54,8 @@ func handleAuthenticateWithPasswordRequest(env *Environment, w http.ResponseWrit
 		return
 	}
 
-	if data.Email == nil {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
-		return
-	}
 	if data.Password == nil {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
-		return
-	}
-	email, password := strings.ToLower(*data.Email), *data.Password
-	if !verifyEmailInput(email) {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
-		return
-	}
-
-	user, err := getUserFromEmail(env.db, r.Context(), email)
-	if errors.Is(err, ErrRecordNotFound) {
-		writeExpectedErrorResponse(w, ExpectedErrorUserNotExists)
-		return
-	}
-	if err != nil {
-		log.Println(err)
-		writeUnExpectedErrorResponse(w)
 		return
 	}
 	if data.ClientIP != "" && !env.passwordHashingIPRateLimit.Consume(data.ClientIP) {
@@ -76,10 +66,10 @@ func handleAuthenticateWithPasswordRequest(env *Environment, w http.ResponseWrit
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
-	validPassword, err := argon2id.Verify(user.PasswordHash, password)
+	validPassword, err := argon2id.Verify(user.PasswordHash, *data.Password)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	if !validPassword {
@@ -89,7 +79,5 @@ func handleAuthenticateWithPasswordRequest(env *Environment, w http.ResponseWrit
 	if data.ClientIP != "" {
 		env.loginIPRateLimit.AddTokenIfEmpty(data.ClientIP)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	w.Write([]byte(user.EncodeToJSON()))
+	w.WriteHeader(204)
 }

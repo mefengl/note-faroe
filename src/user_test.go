@@ -15,7 +15,6 @@ func TestUserEncodeToJSON(t *testing.T) {
 
 	user := User{
 		Id:             "1",
-		Email:          "user1@example.com",
 		CreatedAt:      now,
 		PasswordHash:   "HASH1",
 		RecoveryCode:   "12345678",
@@ -24,7 +23,6 @@ func TestUserEncodeToJSON(t *testing.T) {
 
 	expected := UserJSON{
 		Id:             user.Id,
-		Email:          user.Email,
 		CreatedAtUnix:  user.CreatedAt.Unix(),
 		TOTPRegistered: user.TOTPRegistered,
 		RecoveryCode:   user.RecoveryCode,
@@ -55,7 +53,6 @@ func TestEncodeRecoveryCodeToJSON(t *testing.T) {
 
 type UserJSON struct {
 	Id             string `json:"id"`
-	Email          string `json:"email"`
 	CreatedAtUnix  int64  `json:"created_at"`
 	RecoveryCode   string `json:"recovery_code"`
 	TOTPRegistered bool   `json:"totp_registered"`

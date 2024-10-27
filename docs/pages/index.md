@@ -18,9 +18,17 @@ Faroe is an open source, self-hosted, and modular backend for email and password
 These work with your application's UI and backend to provide a complete authentication system.
 
 ```ts
+// Get user from your database.
+const user = await getUserFromEmail(email);
+if (user === null) {
+    response.writeHeader(400);
+    response.write("Please enter a valid email address.");
+    return;
+}
+
 let faroeUser: FaroeUser;
 try {
-	faroeUser = await faroe.authenticateUserWithPassword(email, password, clientIP);
+	faroeUser = await faroe.verifyUserPassword(user.faroeId, password, clientIP);
 } catch (e) {
     if (e instanceof FaroeError && e.code === "USER_NOT_EXISTS") {
         response.writeHeader(400);
@@ -42,8 +50,7 @@ try {
     return;
 }
 
-// Your custom logic
-const user = await getUserFromFaroeId(faroeUser.id);
+// Create a new session in your application.
 const session = await createSession(user.id, null);
 ```
 

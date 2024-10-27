@@ -16,13 +16,11 @@ POST https://your-domain.com/users
 
 ```ts
 {
-    "email": string,
     "password": string,
     "client_ip": string
 }
 ```
 
-- `email` (required): A valid email address.
 - `password` (required): A valid password. Password strength is determined by checking it aginst past data leaks using the [HaveIBeenPwned API](https://haveibeenpwned.com/API/v3#PwnedPasswords).
 - `client_ip`: The client's IP address. If included, it will rate limit the endpoint based on it.
 
@@ -30,7 +28,6 @@ POST https://your-domain.com/users
 
 ```json
 {
-    "email": "penguin@example.com",
     "password": "48n2r3tnaqp",
     "client_ip": "0.0.0.0"
 }

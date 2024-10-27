@@ -44,7 +44,7 @@ async function handleReset2FARequest(
     // ...
 
     try {
-        await faroe.resetUser2FA(user.id, recoveryCode, clientIP);
+        await faroe.resetUser2FA(user.id, recoveryCode);
     } catch (e) {
         if (e instanceof FaroeError && e.code === "INCORRECT_CODE") {
             response.writeHeader(400);
@@ -91,7 +91,7 @@ async function handleReset2FARequest(
 
     let recoveryCode: string;
     try {
-        recoveryCode = await faroe.regenerateUserRecoveryCode(user.id, clientIP);
+        recoveryCode = await faroe.regenerateUserRecoveryCode(user.id);
     } catch (e) {
         response.writeHeader(500);
         response.write("An unknown error occurred. Please try again later.");

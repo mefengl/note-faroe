@@ -178,7 +178,7 @@ func writeExpectedErrorResponse(w http.ResponseWriter, message string) {
 	w.Write([]byte(fmt.Sprintf("{\"error\":\"%s\"}", escapedMessage)))
 }
 
-func writeUnExpectedErrorResponse(w http.ResponseWriter) {
+func writeUnexpectedErrorResponse(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 	w.Write([]byte("{\"error\":\"UNEXPECTED_ERROR\"}"))
@@ -229,7 +229,6 @@ const (
 	ExpectedErrorInvalidData             = "INVALID_DATA"
 	ExpectedErrorTooManyRequests         = "TOO_MANY_REQUESTS"
 	ExpectedErrorWeakPassword            = "WEAK_PASSWORD"
-	ExpectedErrorEmailAlreadyUsed        = "EMAIL_ALREADY_USED"
 	ExpectedErrorUserNotExists           = "USER_NOT_EXISTS"
 	ExpectedErrorIncorrectPassword       = "INCORRECT_PASSWORD"
 	ExpectedErrorIncorrectCode           = "INCORRECT_CODE"
@@ -300,12 +299,12 @@ func CreateApp(env *Environment) http.Handler {
 		w.Write([]byte(fmt.Sprintf("Faroe version %s\n\nRead the documentation: https://faroe.dev\n", version)))
 	})
 
-	router.Handle("POST", "/authenticate/password", handleAuthenticateWithPasswordRequest)
 	router.Handle("POST", "/users", handleCreateUserRequest)
 	router.Handle("GET", "/users", handleGetUsersRequest)
 	router.Handle("DELETE", "/users", handleDeleteUsersRequest)
 	router.Handle("GET", "/users/:user_id", handleGetUserRequest)
 	router.Handle("DELETE", "/users/:user_id", handleDeleteUserRequest)
+	router.Handle("POST", "/users/:user_id/verify-password", handleVerifyUserPasswordRequest)
 	router.Handle("POST", "/users/:user_id/update-password", handleUpdateUserPasswordRequest)
 	router.Handle("POST", "/users/:user_id/register-totp", handleRegisterTOTPRequest)
 	router.Handle("GET", "/users/:user_id/totp-credential", handleGetUserTOTPCredentialRequest)
@@ -322,8 +321,8 @@ func CreateApp(env *Environment) http.Handler {
 	router.Handle("DELETE", "/users/:user_id/email-update-requests", handleDeleteUserEmailUpdateRequestsRequest)
 	router.Handle("GET", "/email-update-requests/:request_id", handleGetEmailUpdateRequestRequest)
 	router.Handle("DELETE", "/email-update-requests/:request_id", handleDeleteEmailUpdateRequestRequest)
-	router.Handle("POST", "/update-email", handleUpdateEmailRequest)
-	router.Handle("POST", "/password-reset-requests", handleCreatePasswordResetRequestRequest)
+	router.Handle("POST", "/verify-new-email", handleUpdateEmailRequest)
+	router.Handle("POST", "/users/:user_id/password-reset-requests", handleCreateUserPasswordResetRequestRequest)
 	router.Handle("GET", "/password-reset-requests/:request_id", handleGetPasswordResetRequestRequest)
 	router.Handle("DELETE", "/password-reset-requests/:request_id", handleDeletePasswordResetRequestRequest)
 	router.Handle("POST", "/password-reset-requests/:request_id/verify-email", handleVerifyPasswordResetRequestEmailRequest)

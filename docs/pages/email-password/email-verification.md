@@ -11,6 +11,7 @@ Ask the user for the email verification code sent to their inbox.
 Get the email verification request linked to the current session and use `Faroe.verifyUserEmail()` to verify the user's email. If successful, set the `email_verified` field of your application's user to `true` and unlink the verification request from the session.
 
 ```ts
+// Everything not imported is something you need to define yourself.
 import { FaroeError } from "@faroe/sdk";
 
 async function handleVerifyEmailRequest(
@@ -81,6 +82,7 @@ async function handleVerifyEmailRequest(
 Like in the sign up process, use `Faroe.createUserEmailVerificationRequest()` to create a new email verification request. This method has rate limiting built-in to prevent DoS attacks targeting your email servers. However, consider adding some kind of bot and spam protection.
 
 ```ts
+// Everything not imported is something you need to define yourself.
 import { FaroeError } from "@faroe/sdk";
 
 import type { FaroeUserEmailVerificationRequest } from "@faroe/sdk";
@@ -144,6 +146,9 @@ Faroe will lock out the user from creating a new verification request for a maxi
 
 
 ```ts
+// Everything not imported is something you need to define yourself.
+import { FaroeError } from "@faroe/sdk";
+
 let verificationRequest = await faroe.getUserEmailVerificationRequest(Astro.locals.user.faroeId);
 if (verificationRequest === null) {
 	try {

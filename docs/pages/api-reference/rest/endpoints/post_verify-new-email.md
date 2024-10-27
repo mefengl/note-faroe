@@ -1,15 +1,15 @@
 ---
-title: "POST /update-email"
+title: "POST /verify-new-email"
 ---
 
-# POST /update-email
+# POST /verify-new-email
 
-Updates a user's email with an email update request. Upon a successful verification, all email update requests linked to the email address and password reset requests to the user are invalidated.
+Verifies an email update request's verification code. Upon a successful verification, all email update requests linked to the email address and password reset requests to the user are invalidated.
 
 The update request is immediately invalidated after the 5th failed attempt.
 
 ```
-POST https://your-domain.com/update-email
+POST https://your-domain.com/verify-new-email
 ```
 
 ## Request body
@@ -26,7 +26,7 @@ POST https://your-domain.com/update-email
 
 ## Response body
 
-The updated email.
+The email address linked to the email update request.
 
 ```ts
 {

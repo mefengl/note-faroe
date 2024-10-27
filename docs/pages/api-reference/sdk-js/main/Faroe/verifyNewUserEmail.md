@@ -1,19 +1,19 @@
 ---
-title: "Faroe.updateUserEmail()"
+title: "Faroe.verifyNewUserEmail()"
 ---
 
-# Faroe.updateUserEmail()
+# Faroe.verifyNewUserEmail()
 
-Mapped to [POST /update-email](/api-reference/rest/endpoints/post_update-email).
+Mapped to [POST /verify-new-email](/api-reference/rest/endpoints/post_verify-new-email).
 
-Updates a user's email with an email update request and returns the new user email. Upon a successful verification, all email update requests linked to the email address and password reset requests to the user are invalidated.
+Verifies an email update request's verification code. Upon a successful verification, all email update requests linked to the email address and password reset requests to the user are invalidated.
 
 The update request is immediately invalidated after the 5th failed attempt.
 
 ## Definition
 
 ```ts
-function updateUserEmail(requestId: string, code: string): Promise<string>;
+function verifyNewUserEmail(requestId: string, code: string): Promise<string>;
 ```
 
 ## Parameters

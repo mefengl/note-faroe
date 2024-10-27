@@ -17,8 +17,7 @@ async function getUsers(options?: {
     sortBy: UserSortBy = UserSortBy.CreatedAt,
     sortOrder: SortOrder = SortOrder.Ascending,
     perPage: number = 20,
-    page: number = 1,
-    emailQuery?: string
+    page: number = 1
 }): Promise<$$PaginationResult<$$FaroeUser>>
 ```
 
@@ -28,7 +27,6 @@ async function getUsers(options?: {
 - `options.sortOrder`
 - `options.perPage`
 - `options.page`
-- `options.emailQuery: A non-empty string. If defined, only users with an email that includes the keyword will be returned. Multiple keywords are not supported.
 
 ## Error codes
 
@@ -45,7 +43,6 @@ const users = await faroe.getUsers({
     sortBy: UserSortBy.CreatedAt,
     sortOrder: SortOrder.Ascending,
     perPage: 20,
-    page: 2,
-    emailQuery: "@example.com"
+    page: 2
 });
 ```

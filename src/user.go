@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"modernc.org/sqlite"
 )
 
 func handleCreateUserRequest(env *Environment, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -40,11 +39,10 @@ func handleCreateUserRequest(env *Environment, w http.ResponseWriter, r *http.Re
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	var data struct {
-		Email    *string `json:"email"`
 		Password *string `json:"password"`
 		ClientIP string  `json:"client_ip"`
 	}
@@ -54,38 +52,19 @@ func handleCreateUserRequest(env *Environment, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if data.Email == nil {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
-		return
-	}
 	if data.Password == nil {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	email, password := strings.ToLower(*data.Email), *data.Password
-	if !verifyEmailInput(email) {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
-		return
-	}
-	emailAvailable, err := checkEmailAvailability(env.db, r.Context(), email)
-	if err != nil {
-		log.Println(err)
-		writeUnExpectedErrorResponse(w)
-		return
-	}
-	if !emailAvailable {
-		writeExpectedErrorResponse(w, ExpectedErrorEmailAlreadyUsed)
-		return
-	}
 
-	if password == "" || len(password) > 127 {
+	if *data.Password == "" || len(*data.Password) > 127 {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	strongPassword, err := verifyPasswordStrength(password)
+	strongPassword, err := verifyPasswordStrength(*data.Password)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	if !strongPassword {
@@ -97,21 +76,17 @@ func handleCreateUserRequest(env *Environment, w http.ResponseWriter, r *http.Re
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
-	passwordHash, err := argon2id.Hash(password)
+	passwordHash, err := argon2id.Hash(*data.Password)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
-	user, err := createUser(env.db, r.Context(), email, passwordHash)
+	user, err := createUser(env.db, r.Context(), passwordHash)
 	if err != nil {
-		if sqliteErr, ok := err.(*sqlite.Error); ok && sqliteErr.Code() == 2067 {
-			writeExpectedErrorResponse(w, ExpectedErrorEmailAlreadyUsed)
-			return
-		}
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
@@ -138,7 +113,7 @@ func handleGetUserRequest(env *Environment, w http.ResponseWriter, r *http.Reque
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
@@ -154,20 +129,20 @@ func handleDeleteUserRequest(env *Environment, w http.ResponseWriter, r *http.Re
 	}
 	userId := params.ByName("user_id")
 	userExists, err := checkUserExists(env.db, r.Context(), userId)
-	if !userExists {
-		writeNotFoundErrorResponse(w)
-		return
-	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !userExists {
+		writeNotFoundErrorResponse(w)
 		return
 	}
 
 	err = deleteUser(env.db, r.Context(), userId)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
@@ -192,14 +167,14 @@ func handleUpdateUserPasswordRequest(env *Environment, w http.ResponseWriter, r 
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	var data struct {
@@ -234,7 +209,7 @@ func handleUpdateUserPasswordRequest(env *Environment, w http.ResponseWriter, r 
 	strongPassword, err := verifyPasswordStrength(newPassword)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	if !strongPassword {
@@ -245,7 +220,7 @@ func handleUpdateUserPasswordRequest(env *Environment, w http.ResponseWriter, r 
 	validPassword, err := argon2id.Verify(user.PasswordHash, password)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	if !validPassword {
@@ -255,7 +230,7 @@ func handleUpdateUserPasswordRequest(env *Environment, w http.ResponseWriter, r 
 	newPasswordHash, err := argon2id.Hash(newPassword)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	updateUserPassword(env.db, r.Context(), userId, newPasswordHash)
@@ -279,20 +254,20 @@ func handleResetUser2FARequest(env *Environment, w http.ResponseWriter, r *http.
 
 	userId := params.ByName("user_id")
 	userExists, err := checkUserExists(env.db, r.Context(), userId)
-	if !userExists {
-		writeNotFoundErrorResponse(w)
-		return
-	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !userExists {
+		writeNotFoundErrorResponse(w)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	var data struct {
@@ -315,7 +290,7 @@ func handleResetUser2FARequest(env *Environment, w http.ResponseWriter, r *http.
 	newRecoveryCode, valid, err := resetUser2FAWithRecoveryCode(env.db, r.Context(), userId, *data.RecoveryCode)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	if !valid {
@@ -342,20 +317,20 @@ func handleRegenerateUserRecoveryCodeRequest(env *Environment, w http.ResponseWr
 
 	userId := params.ByName("user_id")
 	userExists, err := checkUserExists(env.db, r.Context(), userId)
-	if !userExists {
-		writeNotFoundErrorResponse(w)
-		return
-	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !userExists {
+		writeNotFoundErrorResponse(w)
 		return
 	}
 
 	newRecoveryCode, err := regenerateUserRecoveryCode(env.db, r.Context(), userId)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
@@ -378,8 +353,6 @@ func handleGetUsersRequest(env *Environment, w http.ResponseWriter, r *http.Requ
 	sortByQuery := r.URL.Query().Get("sort_by")
 	if sortByQuery == "created_at" {
 		sortBy = UserSortByCreatedAt
-	} else if sortByQuery == "email" {
-		sortBy = UserSortByEmail
 	} else if sortByQuery == "id" {
 		sortBy = UserSortById
 	} else {
@@ -405,17 +378,10 @@ func handleGetUsersRequest(env *Environment, w http.ResponseWriter, r *http.Requ
 		page = 1
 	}
 
-	emailQuery := r.URL.Query().Get("email_query")
-	var users []User
-	var userCount int64
-	if emailQuery != "" {
-		users, userCount, err = getUsersWithEmailSearch(env.db, r.Context(), emailQuery, sortBy, sortOrder, perPage, page)
-	} else {
-		users, userCount, err = getUsers(env.db, r.Context(), sortBy, sortOrder, perPage, page)
-	}
+	users, userCount, err := getUsers(env.db, r.Context(), sortBy, sortOrder, perPage, page)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	totalPages := int64(math.Ceil(float64(userCount) / float64(perPage)))
@@ -446,7 +412,7 @@ func handleGetUsersRequest(env *Environment, w http.ResponseWriter, r *http.Requ
 		writeUserListAsFormattedString(w, users)
 		return
 	}
-	writeUnExpectedErrorResponse(w)
+	writeUnexpectedErrorResponse(w)
 }
 
 func handleDeleteUsersRequest(env *Environment, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -458,13 +424,13 @@ func handleDeleteUsersRequest(env *Environment, w http.ResponseWriter, r *http.R
 	err := deleteUsers(env.db, r.Context())
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	w.WriteHeader(204)
 }
 
-func createUser(db *sql.DB, ctx context.Context, email string, passwordHash string) (User, error) {
+func createUser(db *sql.DB, ctx context.Context, passwordHash string) (User, error) {
 	now := time.Now()
 	id, err := generateId()
 	if err != nil {
@@ -477,7 +443,6 @@ func createUser(db *sql.DB, ctx context.Context, email string, passwordHash stri
 	user := User{
 		Id:           id,
 		CreatedAt:    now,
-		Email:        email,
 		PasswordHash: passwordHash,
 		RecoveryCode: recoveryCode,
 	}
@@ -489,25 +454,16 @@ func createUser(db *sql.DB, ctx context.Context, email string, passwordHash stri
 }
 
 func insertUser(db *sql.DB, ctx context.Context, user *User) error {
-	_, err := db.ExecContext(ctx, "INSERT INTO user (id, created_at, email, password_hash, recovery_code) VALUES (?, ?, ?, ?, ?)", user.Id, user.CreatedAt.Unix(), user.Email, user.PasswordHash, user.RecoveryCode)
+	_, err := db.ExecContext(ctx, "INSERT INTO user (id, created_at, password_hash, recovery_code) VALUES (?, ?, ?, ?)", user.Id, user.CreatedAt.Unix(), user.PasswordHash, user.RecoveryCode)
 	return err
-}
-
-func checkEmailAvailability(db *sql.DB, ctx context.Context, email string) (bool, error) {
-	var count int
-	err := db.QueryRowContext(ctx, "SELECT count(*) FROM user WHERE email = ?", email).Scan(&count)
-	if err != nil {
-		return false, err
-	}
-	return count < 1, nil
 }
 
 func getUser(db *sql.DB, ctx context.Context, userId string) (User, error) {
 	var user User
 	var createdAtUnix int64
 	var totpRegisteredInt int
-	row := db.QueryRowContext(ctx, "SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(user_totp_credential.user_id IS NOT NULL, 1, 0) FROM user LEFT JOIN user_totp_credential ON user.id = user_totp_credential.user_id WHERE user.id = ?", userId)
-	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &totpRegisteredInt)
+	row := db.QueryRowContext(ctx, "SELECT user.id, user.created_at, user.password_hash, user.recovery_code, IIF(user_totp_credential.user_id IS NOT NULL, 1, 0) FROM user LEFT JOIN user_totp_credential ON user.id = user_totp_credential.user_id WHERE user.id = ?", userId)
+	err := row.Scan(&user.Id, &createdAtUnix, &user.PasswordHash, &user.RecoveryCode, &totpRegisteredInt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrRecordNotFound
 	}
@@ -524,8 +480,6 @@ func getUsers(db *sql.DB, ctx context.Context, sortBy UserSortBy, sortOrder Sort
 
 	if sortBy == UserSortByCreatedAt {
 		orderBySQL = "user.created_at"
-	} else if sortBy == UserSortByEmail {
-		orderBySQL = "user.email"
 	} else if sortBy == UserSortById {
 		orderBySQL = "user.id"
 	} else {
@@ -540,7 +494,7 @@ func getUsers(db *sql.DB, ctx context.Context, sortBy UserSortBy, sortOrder Sort
 		return nil, 0, errors.New("invalid 'sortOrder' value")
 	}
 
-	query := fmt.Sprintf(`SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(user_totp_credential.user_id IS NOT NULL, 1, 0)
+	query := fmt.Sprintf(`SELECT user.id, user.created_at, user.password_hash, user.recovery_code, IIF(user_totp_credential.user_id IS NOT NULL, 1, 0)
 		FROM user LEFT JOIN user_totp_credential ON user.id = user_totp_credential.user_id
 		ORDER BY %s %s LIMIT ? OFFSET ?`, orderBySQL, orderSQL)
 
@@ -554,7 +508,7 @@ func getUsers(db *sql.DB, ctx context.Context, sortBy UserSortBy, sortOrder Sort
 		var user User
 		var createdAtUnix int64
 		var totpRegisteredInt int
-		err = rows.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &totpRegisteredInt)
+		err = rows.Scan(&user.Id, &createdAtUnix, &user.PasswordHash, &user.RecoveryCode, &totpRegisteredInt)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -565,59 +519,6 @@ func getUsers(db *sql.DB, ctx context.Context, sortBy UserSortBy, sortOrder Sort
 
 	var total int64
 	err = db.QueryRowContext(ctx, "SELECT count(*) FROM user").Scan(&total)
-	if err != nil {
-		return nil, 0, err
-	}
-	return users, total, nil
-}
-
-func getUsersWithEmailSearch(db *sql.DB, ctx context.Context, emailQuery string, sortBy UserSortBy, sortOrder SortOrder, perPage, page int) ([]User, int64, error) {
-	var orderBySQL, orderSQL string
-
-	if sortBy == UserSortByCreatedAt {
-		orderBySQL = "user.created_at"
-	} else if sortBy == UserSortByEmail {
-		orderBySQL = "user.email"
-	} else if sortBy == UserSortById {
-		orderBySQL = "user.id"
-	} else {
-		return nil, 0, errors.New("invalid 'sortBy' value")
-	}
-
-	if sortOrder == SortOrderAscending {
-		orderSQL = "ASC"
-	} else if sortOrder == SortOrderDescending {
-		orderSQL = "DESC"
-	} else {
-		return nil, 0, errors.New("invalid 'sortOrder' value")
-	}
-
-	query := fmt.Sprintf(`SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(user_totp_credential.user_id IS NOT NULL, 1, 0)
-		FROM user LEFT JOIN user_totp_credential ON user.id = user_totp_credential.user_id
-		WHERE instr(email, ?) > 0
-		ORDER BY %s %s LIMIT ? OFFSET ?`, orderBySQL, orderSQL)
-
-	var users []User
-	rows, err := db.QueryContext(ctx, query, emailQuery, perPage, perPage*(page-1))
-	if err != nil {
-		return nil, 0, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var user User
-		var createdAtUnix int64
-		var totpRegisteredInt int
-		err = rows.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &totpRegisteredInt)
-		if err != nil {
-			return nil, 0, err
-		}
-		user.CreatedAt = time.Unix(createdAtUnix, 0)
-		user.TOTPRegistered = totpRegisteredInt == 1
-		users = append(users, user)
-	}
-
-	var total int64
-	err = db.QueryRowContext(ctx, "SELECT count(*) FROM user WHERE instr(email, ?) > 0", emailQuery).Scan(&total)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -661,23 +562,6 @@ func checkUserExists(db *sql.DB, ctx context.Context, userId string) (bool, erro
 		return false, err
 	}
 	return count > 0, nil
-}
-
-func getUserFromEmail(db *sql.DB, ctx context.Context, email string) (User, error) {
-	var user User
-	var createdAtUnix int64
-	var totpRegisteredInt int
-	row := db.QueryRowContext(ctx, "SELECT user.id, user.created_at, user.email, user.password_hash, user.recovery_code, IIF(user_totp_credential.user_id IS NOT NULL, 1, 0) FROM user LEFT JOIN user_totp_credential ON user.id = user_totp_credential.user_id WHERE user.email = ?", email)
-	err := row.Scan(&user.Id, &createdAtUnix, &user.Email, &user.PasswordHash, &user.RecoveryCode, &totpRegisteredInt)
-	if errors.Is(err, sql.ErrNoRows) {
-		return User{}, ErrRecordNotFound
-	}
-	if err != nil {
-		return User{}, err
-	}
-	user.CreatedAt = time.Unix(createdAtUnix, 0)
-	user.TOTPRegistered = totpRegisteredInt == 1
-	return user, nil
 }
 
 func deleteUser(db *sql.DB, ctx context.Context, userId string) error {
@@ -795,7 +679,6 @@ func encodeRecoveryCodeToJSON(code string) string {
 type User struct {
 	Id             string
 	CreatedAt      time.Time
-	Email          string
 	PasswordHash   string
 	RecoveryCode   string
 	TOTPRegistered bool
@@ -806,23 +689,14 @@ func (u *User) Registered2FA() bool {
 }
 
 func (u *User) EncodeToJSON() string {
-	escapedEmail := strings.ReplaceAll(u.Email, "\"", "\\\"")
-	encoded := fmt.Sprintf(`{"id":"%s","created_at":%d,"email":"%s","recovery_code":"%s","totp_registered":%t}`, u.Id, u.CreatedAt.Unix(), escapedEmail, u.RecoveryCode, u.TOTPRegistered)
+	encoded := fmt.Sprintf(`{"id":"%s","created_at":%d,"recovery_code":"%s","totp_registered":%t}`, u.Id, u.CreatedAt.Unix(), u.RecoveryCode, u.TOTPRegistered)
 	return encoded
 }
 
 func writeUserListAsFormattedString(w io.Writer, users []User) {
 	var timeLayout = "Jan 02 2006 15:04:05"
 
-	var maxEmailSize = len("Email address")
-	for _, user := range users {
-		if len(user.Email) > maxEmailSize {
-			maxEmailSize = len(user.Email)
-		}
-	}
 	w.Write([]byte(padEnd("User ID", 24)))
-	w.Write(([]byte("  ")))
-	w.Write([]byte(padEnd("Email address", maxEmailSize)))
 	w.Write(([]byte("  ")))
 	w.Write([]byte(padEnd("Created at", len(timeLayout))))
 	w.Write(([]byte("  ")))
@@ -833,8 +707,6 @@ func writeUserListAsFormattedString(w io.Writer, users []User) {
 
 	for _, user := range users {
 		w.Write([]byte(user.Id))
-		w.Write(([]byte("  ")))
-		w.Write([]byte(padEnd(user.Email, maxEmailSize)))
 		w.Write(([]byte("  ")))
 		w.Write([]byte(user.CreatedAt.UTC().Format(timeLayout)))
 		w.Write(([]byte("  ")))
@@ -853,6 +725,5 @@ type UserSortBy int
 
 const (
 	UserSortByCreatedAt UserSortBy = iota
-	UserSortByEmail
 	UserSortById
 )

@@ -9,7 +9,6 @@ title: "UserSortBy"
 ```ts
 enum UserSortBy {
     CreatedAt,
-    Id,
-    Email
+    Id
 }
 ```

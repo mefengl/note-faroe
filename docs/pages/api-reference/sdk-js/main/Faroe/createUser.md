@@ -15,7 +15,6 @@ We highly recommend putting a Captcha or equivalent in front for spam and bot de
 ```ts
 //$ FaroeUser=/api-reference/sdk-js/main/FaroeUser
 async function createUser(
-    email: string,
     password: string,
     clientIP: string | null
 ): Promise<$$FaroeUser>
@@ -23,7 +22,6 @@ async function createUser(
 
 ### Parameters
 
-- `email`: A valid email address.
 - `password`: A valid password. Password strength is determined by checking it aginst past data leaks using the [HaveIBeenPwned API](https://haveibeenpwned.com/API/v3#PwnedPasswords).
 - `clientIP`
 

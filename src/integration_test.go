@@ -33,7 +33,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      time.Unix(time.Now().Unix(), 0),
-			Email:          "user1@example.com",
 			PasswordHash:   "HASH1",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -46,37 +45,19 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("POST", "/users", strings.NewReader(`{"email":"email","password":"12345678"}`))
+		r := httptest.NewRequest("POST", "/users", strings.NewReader(`{"password":"1234"}`))
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
-		assertErrorResponse(t, res, 400, ExpectedErrorInvalidData)
+		assertErrorResponse(t, res, 400, ExpectedErrorWeakPassword)
 
-		r = httptest.NewRequest("POST", "/users", strings.NewReader(`{"email":"user1@example.com","password":"12345678"}`))
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertErrorResponse(t, res, 400, ExpectedErrorEmailAlreadyUsed)
-
-		r = httptest.NewRequest("POST", "/users", strings.NewReader(`{"email":"USER1@EXAMPLE.COM","password":"12345678"}`))
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertErrorResponse(t, res, 400, ExpectedErrorEmailAlreadyUsed)
-
-		r = httptest.NewRequest("POST", "/users", strings.NewReader(`{"email":"user2@example.com","password":"1234"}`))
+		r = httptest.NewRequest("POST", "/users", strings.NewReader(`{"password":"12345678"}`))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorWeakPassword)
 
-		r = httptest.NewRequest("POST", "/users", strings.NewReader(`{"email":"user2@example.com","password":"12345678"}`))
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertErrorResponse(t, res, 400, ExpectedErrorWeakPassword)
-
-		r = httptest.NewRequest("POST", "/users", strings.NewReader(`{"email":"user2@example.com","password":"super_secure_password"}`))
+		r = httptest.NewRequest("POST", "/users", strings.NewReader(`{"password":"super_secure_password"}`))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -97,7 +78,6 @@ func TestEndpointResponses(t *testing.T) {
 
 			user1 := User{
 				Id:             "1",
-				Email:          "a@example.com",
 				CreatedAt:      time.Unix(now.Add(1*time.Second).Unix(), 0),
 				PasswordHash:   "HASH1",
 				RecoveryCode:   "CODE1",
@@ -110,7 +90,6 @@ func TestEndpointResponses(t *testing.T) {
 
 			user2 := User{
 				Id:             "2",
-				Email:          "c@example.com",
 				CreatedAt:      now,
 				PasswordHash:   "HASH2",
 				RecoveryCode:   "CODE2",
@@ -123,7 +102,6 @@ func TestEndpointResponses(t *testing.T) {
 
 			user3 := User{
 				Id:           "3",
-				Email:        "b@example.com",
 				CreatedAt:    time.Unix(now.Add(2*time.Second).Unix(), 0),
 				PasswordHash: "HASH3",
 				RecoveryCode: "CODE3",
@@ -143,8 +121,6 @@ func TestEndpointResponses(t *testing.T) {
 			}{
 				{"created_at", "ascending", []User{user2, user1, user3}},
 				{"created_at", "descending", []User{user3, user1, user2}},
-				{"email", "ascending", []User{user1, user3, user2}},
-				{"email", "descending", []User{user2, user3, user1}},
 				{"id", "ascending", []User{user1, user2, user3}},
 				{"id", "descending", []User{user3, user2, user1}},
 				{"", "", []User{user2, user1, user3}},
@@ -194,7 +170,6 @@ func TestEndpointResponses(t *testing.T) {
 			for i := 0; i < 30; i++ {
 				user := User{
 					Id:             strconv.Itoa(i + 1),
-					Email:          fmt.Sprintf("user%d@example.com", i+1),
 					CreatedAt:      time.Unix(now.Add(time.Duration(i*int(time.Second))).Unix(), 0),
 					PasswordHash:   "HASH",
 					RecoveryCode:   "CODE",
@@ -269,159 +244,6 @@ func TestEndpointResponses(t *testing.T) {
 			}
 
 		})
-		t.Run("query", func(t *testing.T) {
-			t.Parallel()
-			db := initializeTestDB(t)
-			defer db.Close()
-
-			now := time.Unix(time.Now().Unix(), 0)
-
-			user1 := User{
-				Id:             "1",
-				Email:          "user1@example.com",
-				CreatedAt:      time.Unix(now.Unix(), 0),
-				PasswordHash:   "HASH1",
-				RecoveryCode:   "CODE1",
-				TOTPRegistered: false,
-			}
-			err := insertUser(db, context.Background(), &user1)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			user2 := User{
-				Id:             "2",
-				Email:          "user2@example.com",
-				CreatedAt:      time.Unix(now.Add(1*time.Second).Unix(), 0),
-				PasswordHash:   "HASH2",
-				RecoveryCode:   "CODE2",
-				TOTPRegistered: false,
-			}
-			err = insertUser(db, context.Background(), &user2)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			user3 := User{
-				Id:           "3",
-				Email:        "user3@mail.com",
-				CreatedAt:    time.Unix(now.Add(2*time.Second).Unix(), 0),
-				PasswordHash: "HASH3",
-				RecoveryCode: "CODE3",
-			}
-			err = insertUser(db, context.Background(), &user3)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			env := createEnvironment(db, nil)
-			app := CreateApp(env)
-
-			values := url.Values{}
-			values.Set("email_query", "@example.com")
-			requestURL := "/users?" + values.Encode()
-			r := httptest.NewRequest("GET", requestURL, nil)
-			w := httptest.NewRecorder()
-			app.ServeHTTP(w, r)
-			res := w.Result()
-			assert.Equal(t, 200, res.StatusCode)
-			body, err := io.ReadAll(res.Body)
-			if err != nil {
-				t.Fatal(err)
-			}
-			var result []UserJSON
-			err = json.Unmarshal(body, &result)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			var expected []UserJSON
-
-			var expected1 UserJSON
-			err = json.Unmarshal([]byte(user1.EncodeToJSON()), &expected1)
-			if err != nil {
-				t.Fatal(err)
-			}
-			expected = append(expected, expected1)
-
-			var expected2 UserJSON
-			err = json.Unmarshal([]byte(user2.EncodeToJSON()), &expected2)
-			if err != nil {
-				t.Fatal(err)
-			}
-			expected = append(expected, expected2)
-			assert.Equal(t, expected, result)
-
-			values = url.Values{}
-			values.Set("email_query", "")
-			requestURL = "/users?" + values.Encode()
-			r = httptest.NewRequest("GET", requestURL, nil)
-			w = httptest.NewRecorder()
-			app.ServeHTTP(w, r)
-			res = w.Result()
-			assert.Equal(t, 200, res.StatusCode)
-			body, err = io.ReadAll(res.Body)
-			if err != nil {
-				t.Fatal(err)
-			}
-			err = json.Unmarshal(body, &result)
-			if err != nil {
-				t.Fatal(err)
-			}
-			assert.Equal(t, 3, len(result))
-		})
-
-		t.Run("pagination with query", func(t *testing.T) {
-			t.Parallel()
-			db := initializeTestDB(t)
-			defer db.Close()
-
-			now := time.Unix(time.Now().Unix(), 0)
-
-			for i := 0; i < 25; i++ {
-				user := User{
-					Id:             strconv.Itoa(i + 1),
-					Email:          fmt.Sprintf("user%d@mail.com", i+1),
-					CreatedAt:      time.Unix(now.Add(time.Duration(i*int(time.Second))).Unix(), 0),
-					PasswordHash:   "HASH",
-					RecoveryCode:   "CODE",
-					TOTPRegistered: false,
-				}
-				err := insertUser(db, context.Background(), &user)
-				if err != nil {
-					t.Fatal(err)
-				}
-			}
-
-			for i := 25; i < 30; i++ {
-				user := User{
-					Id:             strconv.Itoa(i + 1),
-					Email:          fmt.Sprintf("user%d@example.com", i+1),
-					CreatedAt:      time.Unix(now.Add(time.Duration(i*int(time.Second))).Unix(), 0),
-					PasswordHash:   "HASH",
-					RecoveryCode:   "CODE",
-					TOTPRegistered: false,
-				}
-				err := insertUser(db, context.Background(), &user)
-				if err != nil {
-					t.Fatal(err)
-				}
-			}
-
-			env := createEnvironment(db, nil)
-			app := CreateApp(env)
-
-			values := url.Values{}
-			values.Set("email_query", "@example.com")
-			url := "/users?" + values.Encode()
-			r := httptest.NewRequest("GET", url, nil)
-			w := httptest.NewRecorder()
-			app.ServeHTTP(w, r)
-			res := w.Result()
-			assert.Equal(t, 200, res.StatusCode)
-			assert.Equal(t, "5", res.Header.Get("X-Pagination-Total"))
-			assert.Equal(t, "1", res.Header.Get("X-Pagination-Total-Pages"))
-		})
 	})
 
 	t.Run("get /users/userid", func(t *testing.T) {
@@ -435,7 +257,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      time.Unix(time.Now().Unix(), 0),
-			Email:          "user1@example.com",
 			PasswordHash:   "HASH1",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -487,7 +308,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      time.Unix(time.Now().Unix(), 0),
-			Email:          "user1@example.com",
 			PasswordHash:   "HASH1",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -524,7 +344,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      time.Unix(time.Now().Unix(), 0),
-			Email:          "user1@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -583,7 +402,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      time.Unix(time.Now().Unix(), 0),
-			Email:          "user1@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -669,7 +487,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -681,7 +498,6 @@ func TestEndpointResponses(t *testing.T) {
 		user2 := User{
 			Id:             "2",
 			CreatedAt:      now,
-			Email:          "user2@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -750,7 +566,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -763,7 +578,6 @@ func TestEndpointResponses(t *testing.T) {
 		user2 := User{
 			Id:             "2",
 			CreatedAt:      now,
-			Email:          "user2@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -817,7 +631,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -830,7 +643,6 @@ func TestEndpointResponses(t *testing.T) {
 		user2 := User{
 			Id:             "2",
 			CreatedAt:      now,
-			Email:          "user2@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -895,7 +707,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -933,7 +744,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -967,10 +777,10 @@ func TestEndpointResponses(t *testing.T) {
 		assertJSONResponse(t, res, recoveryCodeJSONKeys)
 	})
 
-	t.Run("post /authenticate/password", func(t *testing.T) {
+	t.Run("post /users/userid/verify-password", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "POST", "/authenticate/password")
+		testAuthentication(t, "POST", "/users/1/verify-password")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -978,7 +788,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      time.Unix(time.Now().Unix(), 0),
-			Email:          "user1@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -991,35 +800,23 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("POST", "/authenticate/password", strings.NewReader(`{"email":"email","password":"12345678"}`))
+		r := httptest.NewRequest("POST", "/users/2/verify-password", strings.NewReader(`{"password":"12345678"}`))
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
-		assertErrorResponse(t, res, 400, ExpectedErrorInvalidData)
+		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("POST", "/authenticate/password", strings.NewReader(`{"email":"user2@example.com","password":"12345678"}`))
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertErrorResponse(t, res, 400, ExpectedErrorUserNotExists)
-
-		r = httptest.NewRequest("POST", "/authenticate/password", strings.NewReader(`{"email":"user1@example.com","password":"12345678"}`))
+		r = httptest.NewRequest("POST", "/users/1/verify-password", strings.NewReader(`{"password":"12345678"}`))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorIncorrectPassword)
 
-		r = httptest.NewRequest("POST", "/authenticate/password", strings.NewReader(`{"email":"user1@example.com","password":"super_secure_password"}`))
+		r = httptest.NewRequest("POST", "/users/1/verify-password", strings.NewReader(`{"password":"super_secure_password"}`))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
-		assertJSONResponse(t, res, userJSONKeys)
-
-		r = httptest.NewRequest("POST", "/authenticate/password", strings.NewReader(`{"email":"USER1@EXAMPLE.COM","password":"super_secure_password"}`))
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertJSONResponse(t, res, userJSONKeys)
+		assert.Equal(t, 204, res.StatusCode)
 	})
 
 	t.Run("post /users/userid/email-verification-request", func(t *testing.T) {
@@ -1033,7 +830,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      time.Unix(time.Now().Unix(), 0),
-			Email:          "user1@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1078,7 +874,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1091,7 +886,6 @@ func TestEndpointResponses(t *testing.T) {
 		user2 := User{
 			Id:             "2",
 			CreatedAt:      now,
-			Email:          "user2@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1104,7 +898,6 @@ func TestEndpointResponses(t *testing.T) {
 		user3 := User{
 			Id:             "3",
 			CreatedAt:      now,
-			Email:          "user3@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1192,7 +985,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1205,7 +997,6 @@ func TestEndpointResponses(t *testing.T) {
 		user2 := User{
 			Id:             "2",
 			CreatedAt:      now,
-			Email:          "user2@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1218,7 +1009,6 @@ func TestEndpointResponses(t *testing.T) {
 		user3 := User{
 			Id:             "3",
 			CreatedAt:      now,
-			Email:          "user3@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1291,7 +1081,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1304,7 +1093,6 @@ func TestEndpointResponses(t *testing.T) {
 		user2 := User{
 			Id:             "2",
 			CreatedAt:      now,
-			Email:          "user2@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1317,7 +1105,6 @@ func TestEndpointResponses(t *testing.T) {
 		user3 := User{
 			Id:             "3",
 			CreatedAt:      now,
-			Email:          "user3@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1398,7 +1185,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1417,20 +1203,6 @@ func TestEndpointResponses(t *testing.T) {
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorInvalidData)
-
-		data = `{"email":"user1@example.com"}`
-		r = httptest.NewRequest("POST", "/users/1/email-update-requests", strings.NewReader(data))
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertErrorResponse(t, res, 400, ExpectedErrorEmailAlreadyUsed)
-
-		data = `{"email":"USER1@EXAMPLE.COM"}`
-		r = httptest.NewRequest("POST", "/users/1/email-update-requests", strings.NewReader(data))
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertErrorResponse(t, res, 400, ExpectedErrorEmailAlreadyUsed)
 
 		data = `{"email":"user2@example.com"}`
 		r = httptest.NewRequest("POST", "/users/1/email-update-requests", strings.NewReader(data))
@@ -1453,7 +1225,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1a@example.com",
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1466,7 +1237,6 @@ func TestEndpointResponses(t *testing.T) {
 		user2 := User{
 			Id:             "2",
 			CreatedAt:      now,
-			Email:          "user2a@example.com",
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1560,7 +1330,6 @@ func TestEndpointResponses(t *testing.T) {
 		user := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1a@example.com",
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1612,7 +1381,6 @@ func TestEndpointResponses(t *testing.T) {
 		user := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1a@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1698,7 +1466,6 @@ func TestEndpointResponses(t *testing.T) {
 		user := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1a@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1756,10 +1523,10 @@ func TestEndpointResponses(t *testing.T) {
 		assert.Equal(t, 204, res.StatusCode)
 	})
 
-	t.Run("post /update-email", func(t *testing.T) {
+	t.Run("post /verify-new-email", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "POST", "/update-email")
+		testAuthentication(t, "POST", "/verify-new-email")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1769,7 +1536,6 @@ func TestEndpointResponses(t *testing.T) {
 		user := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1a@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1809,28 +1575,28 @@ func TestEndpointResponses(t *testing.T) {
 		app := CreateApp(env)
 
 		data := `{"request_id":"3","code":"123445678"}`
-		r := httptest.NewRequest("POST", "/update-email", strings.NewReader(data))
+		r := httptest.NewRequest("POST", "/verify-new-email", strings.NewReader(data))
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorInvalidRequest)
 
 		data = `{"request_id":"2","code":"123445678"}`
-		r = httptest.NewRequest("POST", "/update-email", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/verify-new-email", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorInvalidRequest)
 
 		data = `{"request_id":"1","code":"87654321"}`
-		r = httptest.NewRequest("POST", "/update-email", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/verify-new-email", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorIncorrectCode)
 
 		data = `{"request_id":"1","code":"12345678"}`
-		r = httptest.NewRequest("POST", "/update-email", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/verify-new-email", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -1852,10 +1618,10 @@ func TestEndpointResponses(t *testing.T) {
 		assert.Equal(t, expected, result)
 	})
 
-	t.Run("post /password-reset-requests", func(t *testing.T) {
+	t.Run("post /users/userid/password-reset-requests", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "POST", "/password-reset-requests")
+		testAuthentication(t, "POST", "/users/1/password-reset-requests")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1865,7 +1631,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1@example.com",
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -1878,29 +1643,19 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		data := `{"email":"email"}`
-		r := httptest.NewRequest("POST", "/password-reset-requests", strings.NewReader(data))
+		r := httptest.NewRequest("POST", "/users/2/password-reset-requests", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
-		assertErrorResponse(t, res, 400, ExpectedErrorInvalidData)
+		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		data = `{"email":"user2@example.com"}`
-		r = httptest.NewRequest("POST", "/password-reset-requests", strings.NewReader(data))
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertErrorResponse(t, res, 400, ExpectedErrorUserNotExists)
-
-		data = `{"email":"user1@example.com"}`
-		r = httptest.NewRequest("POST", "/password-reset-requests", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/users/1/password-reset-requests", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertJSONResponse(t, res, passwordResetRequestWithCodeJSONKeys)
 
-		data = `{"email":"USER1@EXAMPLE.COM"}`
-		r = httptest.NewRequest("POST", "/password-reset-requests", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/users/1/password-reset-requests", strings.NewReader((`{}`)))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -1920,7 +1675,6 @@ func TestEndpointResponses(t *testing.T) {
 		user := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1@example.com",
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -2004,7 +1758,6 @@ func TestEndpointResponses(t *testing.T) {
 		user := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1@example.com",
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -2073,7 +1826,6 @@ func TestEndpointResponses(t *testing.T) {
 		user1 := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1a@example.com",
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -2086,7 +1838,6 @@ func TestEndpointResponses(t *testing.T) {
 		user2 := User{
 			Id:             "2",
 			CreatedAt:      now,
-			Email:          "user2a@example.com",
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -2177,7 +1928,6 @@ func TestEndpointResponses(t *testing.T) {
 		user := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1@example.com",
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -2228,7 +1978,6 @@ func TestEndpointResponses(t *testing.T) {
 		user := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1@example.com",
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -2307,7 +2056,6 @@ func TestEndpointResponses(t *testing.T) {
 		user := User{
 			Id:             "1",
 			CreatedAt:      now,
-			Email:          "user1@example.com",
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
 			TOTPRegistered: false,
@@ -2383,7 +2131,7 @@ func TestApp(t *testing.T) {
 	app := CreateApp(env)
 
 	// Create user
-	r := httptest.NewRequest("POST", "/users", strings.NewReader(`{"email":"user1a@example.com","password":"super_secure_password"}`))
+	r := httptest.NewRequest("POST", "/users", strings.NewReader(`{"password":"super_secure_password"}`))
 	w := httptest.NewRecorder()
 	app.ServeHTTP(w, r)
 	res := w.Result()
@@ -2399,11 +2147,12 @@ func TestApp(t *testing.T) {
 	}
 
 	// Authenticate user
-	r = httptest.NewRequest("POST", "/authenticate/password", strings.NewReader(`{"email":"user1a@example.com","password":"super_secure_password"}`))
+	url := fmt.Sprintf("/users/%s/verify-password", user.Id)
+	r = httptest.NewRequest("POST", url, strings.NewReader(`{"password":"super_secure_password"}`))
 	w = httptest.NewRecorder()
 	app.ServeHTTP(w, r)
 	res = w.Result()
-	assert.Equal(t, 200, res.StatusCode, "POST /authenticate/password status code")
+	assert.Equal(t, 204, res.StatusCode, "POST /users/[user_id]/verify-password status code")
 
 	// Create email verification request
 	r = httptest.NewRequest("POST", fmt.Sprintf("/users/%s/email-verification-request", user.Id), nil)
@@ -2422,7 +2171,7 @@ func TestApp(t *testing.T) {
 	}
 
 	// Verify user email
-	url := fmt.Sprintf("/users/%s/verify-email", user.Id)
+	url = fmt.Sprintf("/users/%s/verify-email", user.Id)
 	data := fmt.Sprintf(`{"code":"%s"}`, emailVerificationRequest.Code)
 	r = httptest.NewRequest("POST", url, strings.NewReader(data))
 	w = httptest.NewRecorder()
@@ -2438,19 +2187,20 @@ func TestApp(t *testing.T) {
 	assert.Equal(t, 204, res.StatusCode, "POST /users/[user_id]/update-password status code")
 
 	// Authenticate with updated password
-	r = httptest.NewRequest("POST", "/authenticate/password", strings.NewReader(`{"email":"user1a@example.com","password":"super_secure_password_updated"}`))
+	url = fmt.Sprintf("/users/%s/verify-password", user.Id)
+	r = httptest.NewRequest("POST", url, strings.NewReader(`{"password":"super_secure_password_updated"}`))
 	w = httptest.NewRecorder()
 	app.ServeHTTP(w, r)
 	res = w.Result()
-	assert.Equal(t, 200, res.StatusCode, "POST /authenticate/password status code")
+	assert.Equal(t, 204, res.StatusCode, "POST /users/[user_id]/verify-password status code")
 
 	// Create password reset request
-	data = `{"email":"user1a@example.com"}`
-	r = httptest.NewRequest("POST", "/password-reset-requests", strings.NewReader(data))
+	url = fmt.Sprintf("/users/%s/password-reset-requests", user.Id)
+	r = httptest.NewRequest("POST", url, nil)
 	w = httptest.NewRecorder()
 	app.ServeHTTP(w, r)
 	res = w.Result()
-	assert.Equal(t, 200, res.StatusCode, "POST /password-reset-requests status code")
+	assert.Equal(t, 200, res.StatusCode, "POST /users/userid/password-reset-requests status code")
 	body, err = io.ReadAll(res.Body)
 	if err != nil {
 		t.Fatal(err)
@@ -2481,7 +2231,7 @@ func TestApp(t *testing.T) {
 
 	// Update email
 	data = fmt.Sprintf(`{"request_id":"%s","code":"%s"}`, emailUpdateRequest.Id, emailUpdateRequest.Code)
-	r = httptest.NewRequest("POST", "/update-email", strings.NewReader(data))
+	r = httptest.NewRequest("POST", "/verify-new-email", strings.NewReader(data))
 	w = httptest.NewRecorder()
 	app.ServeHTTP(w, r)
 	res = w.Result()
@@ -2495,20 +2245,13 @@ func TestApp(t *testing.T) {
 	res = w.Result()
 	assert.Equal(t, 404, res.StatusCode, "GET /password-reset-requests/requestid status code")
 
-	// Authenticate user with updated email
-	r = httptest.NewRequest("POST", "/authenticate/password", strings.NewReader(`{"email":"user1b@example.com","password":"super_secure_password_updated"}`))
-	w = httptest.NewRecorder()
-	app.ServeHTTP(w, r)
-	res = w.Result()
-	assert.Equal(t, 200, res.StatusCode, "POST /authenticate/password status code")
-
 	// Create password reset request
-	data = `{"email":"user1b@example.com"}`
-	r = httptest.NewRequest("POST", "/password-reset-requests", strings.NewReader(data))
+	url = fmt.Sprintf("/users/%s/password-reset-requests", user.Id)
+	r = httptest.NewRequest("POST", url, nil)
 	w = httptest.NewRecorder()
 	app.ServeHTTP(w, r)
 	res = w.Result()
-	assert.Equal(t, 200, res.StatusCode, "POST /password-reset-requests status code")
+	assert.Equal(t, 200, res.StatusCode, "POST /users/[user_id]/password-reset-requests status code")
 	body, err = io.ReadAll(res.Body)
 	if err != nil {
 		t.Fatal(err)
@@ -2536,11 +2279,12 @@ func TestApp(t *testing.T) {
 	assert.Equal(t, 204, res.StatusCode, "/reset-password status code")
 
 	// Authenticate user with new password
-	r = httptest.NewRequest("POST", "/authenticate/password", strings.NewReader(`{"email":"user1b@example.com","password":"super_secure_password_new"}`))
+	url = fmt.Sprintf("/users/%s/verify-password", user.Id)
+	r = httptest.NewRequest("POST", url, strings.NewReader(`{"password":"super_secure_password_new"}`))
 	w = httptest.NewRecorder()
 	app.ServeHTTP(w, r)
 	res = w.Result()
-	assert.Equal(t, 200, res.StatusCode, "POST /authenticate/password status code")
+	assert.Equal(t, 204, res.StatusCode, "POST /users/[user_id]/verify-password status code")
 
 	// Register TOTP credential
 	key := make([]byte, 20)
@@ -2654,7 +2398,7 @@ func assertJSONResponse(t *testing.T, res *http.Response, jsonKeys []string) {
 	}
 }
 
-var userJSONKeys = []string{"id", "email", "created_at", "totp_registered", "recovery_code"}
+var userJSONKeys = []string{"id", "created_at", "totp_registered", "recovery_code"}
 var userTOTPCredentialJSONKeys = []string{"user_id", "created_at", "key"}
 var recoveryCodeJSONKeys = []string{"recovery_code"}
 var userEmailVerificationRequestJSONKeys = []string{"user_id", "created_at", "expires_at", "code"}

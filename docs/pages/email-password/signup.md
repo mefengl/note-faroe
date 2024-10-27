@@ -13,6 +13,7 @@ Next, create a new user for your application. Then, create a new email verificat
 We highly recommend putting some kind of bot and spam protection in front of this method.
 
 ```ts
+// Everything not imported is something you need to define yourself.
 import { verifyEmailInput, verifyPasswordInput, FaroeError } from "@faroe/sdk";
 
 import type { FaroeUser } from "@faroe/sdk";
@@ -33,21 +34,26 @@ async function handleSignUpRequest(
         response.write("Please enter a valid email address.");
         return;
     }
+    
+    // Check if email is already used.
+    const existingUser = await getUserFromEmail(email);
+    if (existingUser !== null) {
+        response.writeHeader(400);
+        response.write("Email is already used.");
+        return;
+    }
+
     if (!verifyPasswordInput(password)) {
         response.writeHeader(400);
         response.write("Password must be 8 characters long.");
         return;
     }
+    
 
     let faroeUser: FaroeUser;
     try {
-        faroeUser = await faroe.createUser(email, password, clientIP);
+        faroeUser = await faroe.createUser(password, clientIP);
     } catch (e) {
-        if (e instanceof FaroeError && e.code === "EMAIL_ALREADY_USED") {
-            response.writeHeader(400);
-            response.write("Email is already used.");
-            return;
-        }
         if (e instanceof FaroeError && e.code === "WEAK_PASSWORD") {
             response.writeHeader(400);
             response.write("Please use a stronger password.");

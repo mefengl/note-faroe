@@ -10,13 +10,12 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
 )
 
-func handleCreatePasswordResetRequestRequest(env *Environment, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func handleCreateUserPasswordResetRequestRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -30,76 +29,70 @@ func handleCreatePasswordResetRequestRequest(env *Environment, w http.ResponseWr
 		return
 	}
 
+	userId := params.ByName("user_id")
+	userExists, err := checkUserExists(env.db, r.Context(), userId)
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !userExists {
+		writeNotFoundErrorResponse(w)
+		return
+	}
+
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	var data struct {
-		Email    *string `json:"email"`
-		ClientIP string  `json:"client_ip"`
-	}
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
-		return
-	}
-	if data.Email == nil {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
-		return
-	}
-	email := strings.ToLower(*data.Email)
+	if len(body) > 0 {
+		var data struct {
+			ClientIP string `json:"client_ip"`
+		}
 
-	if !verifyEmailInput(email) {
-		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
-		return
+		err = json.Unmarshal(body, &data)
+		if err != nil {
+			writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
+			return
+		}
+
+		if data.ClientIP != "" && !env.passwordHashingIPRateLimit.Consume(data.ClientIP) {
+			writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
+			return
+		}
+		if data.ClientIP != "" && !env.createPasswordResetIPRateLimit.Consume(data.ClientIP) {
+			writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
+			return
+		}
 	}
 
-	user, err := getUserFromEmail(env.db, r.Context(), email)
-	if errors.Is(err, ErrRecordNotFound) {
-		writeExpectedErrorResponse(w, ExpectedErrorUserNotExists)
-		return
-	}
+	err = deleteExpiredUserPasswordResetRequests(env.db, r.Context(), userId)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
-		return
-	}
-	if data.ClientIP != "" && !env.passwordHashingIPRateLimit.Consume(data.ClientIP) {
-		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
-		return
-	}
-	if data.ClientIP != "" && !env.createPasswordResetIPRateLimit.Consume(data.ClientIP) {
-		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
-		return
-	}
-
-	err = deleteExpiredUserPasswordResetRequests(env.db, r.Context(), user.Id)
-	if err != nil {
-		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
 	code, err := generateSecureCode()
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
 	codeHash, err := argon2id.Hash(code)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
-	resetRequest, err := createPasswordResetRequest(env.db, r.Context(), user.Id, codeHash)
+	resetRequest, err := createPasswordResetRequest(env.db, r.Context(), userId, codeHash)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
@@ -126,7 +119,7 @@ func handleGetPasswordResetRequestRequest(env *Environment, w http.ResponseWrite
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	// If now is or after expiration
@@ -134,7 +127,7 @@ func handleGetPasswordResetRequestRequest(env *Environment, w http.ResponseWrite
 		err = deletePasswordResetRequest(env.db, r.Context(), resetRequest.Id)
 		if err != nil {
 			log.Println(err)
-			writeUnExpectedErrorResponse(w)
+			writeUnexpectedErrorResponse(w)
 			return
 		}
 		writeNotFoundErrorResponse(w)
@@ -163,7 +156,7 @@ func handleVerifyPasswordResetRequestEmailRequest(env *Environment, w http.Respo
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	// If now is or after expiration
@@ -171,7 +164,7 @@ func handleVerifyPasswordResetRequestEmailRequest(env *Environment, w http.Respo
 		err = deletePasswordResetRequest(env.db, r.Context(), resetRequest.Id)
 		if err != nil {
 			log.Println(err)
-			writeUnExpectedErrorResponse(w)
+			writeUnexpectedErrorResponse(w)
 			return
 		}
 		writeNotFoundErrorResponse(w)
@@ -204,7 +197,7 @@ func handleVerifyPasswordResetRequestEmailRequest(env *Environment, w http.Respo
 		err = deletePasswordResetRequest(env.db, r.Context(), resetRequest.Id)
 		if err != nil {
 			log.Println(err)
-			writeUnExpectedErrorResponse(w)
+			writeUnexpectedErrorResponse(w)
 			return
 		}
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
@@ -213,7 +206,7 @@ func handleVerifyPasswordResetRequestEmailRequest(env *Environment, w http.Respo
 	validCode, err := argon2id.Verify(resetRequest.CodeHash, *data.Code)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	if !validCode {
@@ -237,7 +230,7 @@ func handleResetPasswordRequest(env *Environment, w http.ResponseWriter, r *http
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	var data struct {
@@ -266,7 +259,7 @@ func handleResetPasswordRequest(env *Environment, w http.ResponseWriter, r *http
 		return
 	}
 	if err != nil {
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	// If now is or after expiration
@@ -274,7 +267,7 @@ func handleResetPasswordRequest(env *Environment, w http.ResponseWriter, r *http
 		err = deletePasswordResetRequest(env.db, r.Context(), resetRequest.Id)
 		if err != nil {
 			log.Println(err)
-			writeUnExpectedErrorResponse(w)
+			writeUnexpectedErrorResponse(w)
 			return
 		}
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequest)
@@ -289,7 +282,7 @@ func handleResetPasswordRequest(env *Environment, w http.ResponseWriter, r *http
 	strongPassword, err := verifyPasswordStrength(password)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	if !strongPassword {
@@ -304,14 +297,14 @@ func handleResetPasswordRequest(env *Environment, w http.ResponseWriter, r *http
 	passwordHash, err := argon2id.Hash(password)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
 	validResetRequest, err := resetUserPasswordWithPasswordResetRequest(env.db, r.Context(), resetRequest.Id, passwordHash)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	if !validResetRequest {
@@ -340,7 +333,7 @@ func handleDeletePasswordResetRequestRequest(env *Environment, w http.ResponseWr
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	// If now is or after expiration
@@ -348,7 +341,7 @@ func handleDeletePasswordResetRequestRequest(env *Environment, w http.ResponseWr
 		err = deletePasswordResetRequest(env.db, r.Context(), resetRequest.Id)
 		if err != nil {
 			log.Println(err)
-			writeUnExpectedErrorResponse(w)
+			writeUnexpectedErrorResponse(w)
 			return
 		}
 		writeNotFoundErrorResponse(w)
@@ -358,7 +351,7 @@ func handleDeletePasswordResetRequestRequest(env *Environment, w http.ResponseWr
 	err = deletePasswordResetRequest(env.db, r.Context(), resetRequest.Id)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
@@ -377,27 +370,27 @@ func handleGetUserPasswordResetRequestsRequest(env *Environment, w http.Response
 
 	userId := params.ByName("user_id")
 	userExists, err := checkUserExists(env.db, r.Context(), userId)
-	if !userExists {
-		writeNotFoundErrorResponse(w)
-		return
-	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !userExists {
+		writeNotFoundErrorResponse(w)
 		return
 	}
 
 	err = deleteExpiredUserPasswordResetRequests(env.db, r.Context(), userId)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
 	resetRequest, err := getUserPasswordResetRequests(env.db, r.Context(), userId)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
@@ -429,20 +422,20 @@ func handleDeleteUserPasswordResetRequestsRequest(env *Environment, w http.Respo
 
 	userId := params.ByName("user_id")
 	userExists, err := checkUserExists(env.db, r.Context(), userId)
-	if !userExists {
-		writeNotFoundErrorResponse(w)
-		return
-	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !userExists {
+		writeNotFoundErrorResponse(w)
 		return
 	}
 
 	err = deleteUserPasswordResetRequests(env.db, r.Context(), userId)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	w.WriteHeader(204)
