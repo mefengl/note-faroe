@@ -8,13 +8,14 @@ title: "Password reset"
 
 ## Send password reset email
 
-Create a "forgot password" form and ask for the user's email. Create a new password reset request with `Faroe.createPasswordResetRequest()`. We recommend doing some basic input validation with `verifyEmailInput()`.
+Create a "forgot password" form and ask for the user's email. Create a new password reset request with `Faroe.createUserPasswordResetRequest()`. We recommend doing some basic input validation with `verifyEmailInput()`.
 
 If successful, send the verification code to the user's inbox. Create a new password reset session and link the verification request to it.
 
 We highly recommend putting some kind of bot and spam protection in front of this method.
 
 ```ts
+// Everything not imported is something you need to define yourself.
 import { verifyEmailInput, FaroeError } from "@faroe/sdk";
 
 import type { FaroePasswordResetRequest } from "@faroe/sdk";
@@ -35,16 +36,18 @@ async function handleForgotPasswordRequest(
         return;
     }
 
+    const user = await getUserFromEmail(email);
+    if (user === null) {
+        response.writeHeader(400);
+        response.write("Account does not exist.");
+        return;
+    }
+
     let passwordResetRequest: FaroePasswordResetRequest;
     let verificationCode: string;
     try {
-        [passwordResetRequest, verificationCode] = await faroe.createPasswordResetRequest(email, clientIP);
+        [passwordResetRequest, verificationCode] = await faroe.createUserPasswordResetRequest(user.faroeId, clientIP);
     } catch (e) {
-        if (e instanceof FaroeError && e.code === "USER_NOT_EXISTS") {
-            response.writeHeader(400);
-            response.write("Account does not exist.");
-            return;
-        }
         if (e instanceof FaroeError && e.code === "TOO_MANY_REQUESTS") {
             response.writeHeader(429);
             response.write("Please try again later.");
@@ -58,8 +61,6 @@ async function handleForgotPasswordRequest(
     // Send verification code to user's inbox.
     const emailContent = `Your code is ${verificationCode}.`;
     await sendEmail(faroeUser.email, emailContent);
-
-    const user = await getUserFromFaroeId(passwordResetRequest.userId);
 
     const passwordResetSession = await createPasswordResetSession(user.id, passwordResetRequest.Id, {
         emailVerified: false
@@ -77,6 +78,7 @@ Ask the user for the verification code and use `Faroe.verifyPasswordResetRequest
 If successful, set the `email_verified` attribute of the session to `true`.
 
 ```ts
+// Everything not imported is something you need to define yourself.
 import { FaroeError } from "@faroe/sdk";
 
 async function handleVerifyPasswordResetEmailRequest(
@@ -135,6 +137,7 @@ Use `Faroe.resetUserPassword()` to reset the user's password using the password 
 If successful, set the user's email as verified and invalidate all sessions belonging to the user.
 
 ```ts
+// Everything not imported is something you need to define yourself.
 import { verifyPasswordInput, FaroeError } from "@faroe/sdk";
 
 async function handleResetPasswordRequest(

@@ -74,7 +74,7 @@ All error responses have a 4xx or 5xx status and includes a JSON object with an 
 -   [DELETE /users/\[user_id\]/email-update-requests](/api-reference/rest/endpoints/delete_users_userid_email-update-requests): Deletes a user's email update requests.
 -   [GET /email-update-requests/\[request_id\]](/api-reference/rest/endpoints/get_email-update-requests_requestid): Get an email update request.
 -   [DELETE /email-update-requests/\[request_id\]](/api-reference/rest/endpoints/delete_email-update-requests_requestid): Delete an email update request.
--   [POST /update-email](/api-reference/rest/endpoints/post_update-email): Update a user's email by verifying their email update request code.
+-   [POST /verify-new-email](/api-reference/rest/endpoints/post_verify-new-email): Update a user's email by verifying their email update request code.
 
 #### Two-factor authentication
 
@@ -87,7 +87,7 @@ All error responses have a 4xx or 5xx status and includes a JSON object with an 
 
 ### Password reset
 
--   [POST /password-reset-requests](/api-reference/rest/endpoints/post_password-reset-requests): Create a new password reset request from a user.
+-   [POST /users/\[user_id\]/password-reset-requests](/api-reference/rest/endpoints/post_users_userid_password-reset-requests): Create a new password reset request for a user.
 -   [GET /password-reset-requests/\[request_id\]](/api-reference/rest/endpoints/get_password-reset-requests_requestid): Get a password reset request.
 -   [DELETE /password-reset-requests/\[request_id\]](/api-reference/rest/endpoints/delete_password-reset-requests_requestid): Delete a password reset request.
 -   [POST /password-reset-requests/\[request_id\]/verify-email](/api-reference/rest/endpoints/post_password-reset-requests_requestid_verify-email): Verify a reset request's email.

@@ -15,7 +15,7 @@ CREATE TABLE session (
     id TEXT NOT NULL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES user(id),
     expires_at INTEGER NOT NULL,
-    faore_email_verification_id TEXT,
+    faroe_email_verification_id TEXT,
     two_factor_verified INTEGER NOT NULL DEFAULT 0
 );
 ```
@@ -59,7 +59,7 @@ if (user.registeredTOTP && !session.twoFactorVerified) {
 // ...
 
 try {
-    await faroe.resetPassword(session.faroeRequestId, password, clientIP);
+    await faroe.resetUserPassword(session.faroeRequestId, password, clientIP);
 } catch (e) {
     // ...
 }

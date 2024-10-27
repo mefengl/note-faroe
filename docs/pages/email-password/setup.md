@@ -20,13 +20,13 @@ export const faroe = new Faroe("http://localhost:4000", secret);
 
 In your application, you'll need to create a database table for your users, sessions, and password reset sessions.
 
-In the user table, create a field for the Faroe user ID, user email, and an `email_verified` flag. You do not have to add a unique constraint to the email field.
+In the user table, create a field for the Faroe user ID, user email, and an `email_verified` flag.
 
 ```sql
 CREATE TABLE user (
     id INTEGER NOT NULL PRIMARY KEY,
     faroe_id TEXT NOT NULL UNIQUE,
-    email TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
     email_verified INTEGER NOT NULL DEFAULT 0
 );
 ```

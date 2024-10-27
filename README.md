@@ -18,32 +18,39 @@ Faroe is an open source, self-hosted, and modular backend for email and password
 These work with your application's UI and backend to provide a complete authentication system.
 
 ```ts
-let faroeUser: FaroeUser;
-try {
-	faroeUser = await faroe.authenticateUserWithPassword(email, password, clientIP);
-} catch (e) {
-	if (e instanceof FaroeError && e.code === "USER_NOT_EXISTS") {
-		response.writeHeader(400);
-		response.write("Account does not exist.");
-		return;
-	}
-	if (e instanceof FaroeError && e.code === "INCORRECT_PASSWORD") {
-		response.writeHeader(400);
-		response.write("Incorrect password.");
-		return;
-	}
-	if (e instanceof FaroeError && e.code === "TOO_MANY_REQUESTS") {
-		response.writeHeader(429);
-		response.write("Please try again later.");
-		return;
-	}
-	response.writeHeader(500);
-	response.write("An unknown error occurred. Please try again later.");
-	return;
+// Get user from your database.
+const user = await getUserFromEmail(email);
+if (user === null) {
+    response.writeHeader(400);
+    response.write("Please enter a valid email address.");
+    return;
 }
 
-// Your custom logic
-const user = await getUserFromFaroeId(faroeUser.id);
+let faroeUser: FaroeUser;
+try {
+	faroeUser = await faroe.verifyUserPassword(user.faroeId, password, clientIP);
+} catch (e) {
+    if (e instanceof FaroeError && e.code === "USER_NOT_EXISTS") {
+        response.writeHeader(400);
+        response.write("Account does not exist.");
+        return;
+    }
+    if (e instanceof FaroeError && e.code === "INCORRECT_PASSWORD") {
+        response.writeHeader(400);
+        response.write("Incorrect password.");
+        return;
+    }
+    if (e instanceof FaroeError && e.code === "TOO_MANY_REQUESTS") {
+        response.writeHeader(429);
+        response.write("Please try again later.");
+        return;
+    }
+    response.writeHeader(500);
+    response.write("An unknown error occurred. Please try again later.");
+    return;
+}
+
+// Create a new session in your application.
 const session = await createSession(user.id, null);
 ```
 

@@ -1,36 +1,31 @@
 ---
-title: "POST /password-reset-requests"
+title: "POST /users/[user_id]/password-reset-requests"
 ---
 
-# POST /password-reset-requests
+# POST /users/[user_id]/password-reset-requests
 
 Creates a new password reset request for a user. This can only be called 3 times in a 15 minute window per user.
 
 Send the created reset request's code to the email address.
 
 ```
-POST https://your-domain.com/password-reset-requests
+POST https://your-domain.com/users/USER_ID/password-reset-requests
 ```
 
 ## Request body
 
 ```ts
 {
-    "email": string,
     "client_ip": string
 }
 ```
 
-- `email` (required): A valid email address.
 - `client_ip`: The client's IP address. If included, it will rate limit the endpoint based on it.
 
 ### Example
 
 ```json
-{
-    "email": "penguin@example.com",
-    "client_ip": "0.0.0.0"
-}
+{}
 ```
 
 ## Successful response
@@ -43,9 +38,6 @@ Returns the [password reset request model](/api-reference/rest/models/password-r
     "user_id": string,
     "created_at": number,
     "expires_at": number,
-    "email": string,
-    "email_verified": boolean,
-    "twoFactorVerified": boolean,
     "code": string
 }
 ```
@@ -60,8 +52,6 @@ Returns the [password reset request model](/api-reference/rest/models/password-r
     "user_id": "wz2nyjz4ims4cyuw7eq6tnxy",
     "created_at": 1728804201,
     "expires_at": 1728804801,
-    "email": "cat@example.com",
-    "email_verified": true,
     "twoFactorVerified": false
 }
 ```
@@ -69,6 +59,6 @@ Returns the [password reset request model](/api-reference/rest/models/password-r
 ## Error codes
 
 - [400] `INVALID_DATA`: Invalid request data.
-- [400] `USER_NOT_EXISTS`: A user linked to the email does not exist.
 - [400] `TOO_MANY_REQUESTS`: Exceeded rate limit.
+- [404] `NOT_FOUND`: The user does not exist.
 - [500] `UNKNOWN_ERROR`

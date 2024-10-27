@@ -9,6 +9,7 @@ title: "Update password"
 Use `Faroe.updateUserPassword()` to update the user's password using their current password. We recommend doing some basic input validation with `verifyPasswordInput()`. If successful, invalidate all existing sessions belonging to the user.
 
 ```ts
+// Everything not imported is something you need to define yourself.
 import { verifyPasswordInput, FaroeError } from "@faroe/sdk";
 
 import type { FaroeUser } from "@faroe/sdk";

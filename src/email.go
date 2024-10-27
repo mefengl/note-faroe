@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"modernc.org/sqlite"
 )
 
 func handleCreateUserEmailVerificationRequestRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -28,13 +27,13 @@ func handleCreateUserEmailVerificationRequestRequest(env *Environment, w http.Re
 
 	userId := params.ByName("user_id")
 	userExists, err := checkUserExists(env.db, r.Context(), userId)
-	if !userExists {
-		writeNotFoundErrorResponse(w)
-		return
-	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !userExists {
+		writeNotFoundErrorResponse(w)
 		return
 	}
 
@@ -50,7 +49,7 @@ func handleCreateUserEmailVerificationRequestRequest(env *Environment, w http.Re
 	verificationRequest, err := createUserEmailVerificationRequest(env.db, r.Context(), userId)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
@@ -71,13 +70,13 @@ func handleVerifyUserEmailRequest(env *Environment, w http.ResponseWriter, r *ht
 
 	userId := params.ByName("user_id")
 	userExists, err := checkUserExists(env.db, r.Context(), userId)
-	if !userExists {
-		writeNotFoundErrorResponse(w)
-		return
-	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !userExists {
+		writeNotFoundErrorResponse(w)
 		return
 	}
 
@@ -89,7 +88,7 @@ func handleVerifyUserEmailRequest(env *Environment, w http.ResponseWriter, r *ht
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
@@ -98,7 +97,7 @@ func handleVerifyUserEmailRequest(env *Environment, w http.ResponseWriter, r *ht
 		err = deleteUserEmailVerificationRequest(env.db, r.Context(), verificationRequest.UserId)
 		if err != nil {
 			log.Println(err)
-			writeUnExpectedErrorResponse(w)
+			writeUnexpectedErrorResponse(w)
 			return
 		}
 		env.createEmailRequestUserRateLimit.AddTokenIfEmpty(userId)
@@ -128,7 +127,7 @@ func handleVerifyUserEmailRequest(env *Environment, w http.ResponseWriter, r *ht
 		err = deleteUserEmailVerificationRequest(env.db, r.Context(), verificationRequest.UserId)
 		if err != nil {
 			log.Println(err)
-			writeUnExpectedErrorResponse(w)
+			writeUnexpectedErrorResponse(w)
 			return
 		}
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
@@ -137,7 +136,7 @@ func handleVerifyUserEmailRequest(env *Environment, w http.ResponseWriter, r *ht
 	validCode, err := validateUserEmailVerificationRequest(env.db, r.Context(), userId, *data.Code)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	if !validCode {
@@ -164,7 +163,7 @@ func handleDeleteUserEmailVerificationRequestRequest(env *Environment, w http.Re
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
@@ -172,7 +171,7 @@ func handleDeleteUserEmailVerificationRequestRequest(env *Environment, w http.Re
 		err = deleteUserEmailVerificationRequest(env.db, r.Context(), verificationRequest.UserId)
 		if err != nil {
 			log.Println(err)
-			writeUnExpectedErrorResponse(w)
+			writeUnexpectedErrorResponse(w)
 			return
 		}
 		writeNotFoundErrorResponse(w)
@@ -182,7 +181,7 @@ func handleDeleteUserEmailVerificationRequestRequest(env *Environment, w http.Re
 	err = deleteUserEmailVerificationRequest(env.db, r.Context(), verificationRequest.UserId)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	w.WriteHeader(204)
@@ -206,7 +205,7 @@ func handleGetUserEmailVerificationRequestRequest(env *Environment, w http.Respo
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
@@ -215,7 +214,7 @@ func handleGetUserEmailVerificationRequestRequest(env *Environment, w http.Respo
 		err = deleteUserEmailVerificationRequest(env.db, r.Context(), verificationRequest.UserId)
 		if err != nil {
 			log.Println(err)
-			writeUnExpectedErrorResponse(w)
+			writeUnexpectedErrorResponse(w)
 			return
 		}
 		writeNotFoundErrorResponse(w)
@@ -243,13 +242,13 @@ func handleCreateUserEmailUpdateRequestRequest(env *Environment, w http.Response
 
 	userId := params.ByName("user_id")
 	userExists, err := checkUserExists(env.db, r.Context(), userId)
-	if !userExists {
-		writeNotFoundErrorResponse(w)
-		return
-	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !userExists {
+		writeNotFoundErrorResponse(w)
 		return
 	}
 
@@ -276,17 +275,6 @@ func handleCreateUserEmailUpdateRequestRequest(env *Environment, w http.Response
 		return
 	}
 
-	emailAvailable, err := checkEmailAvailability(env.db, r.Context(), email)
-	if err != nil {
-		log.Println(err)
-		writeUnExpectedErrorResponse(w)
-		return
-	}
-	if !emailAvailable {
-		writeExpectedErrorResponse(w, ExpectedErrorEmailAlreadyUsed)
-		return
-	}
-
 	if !env.createEmailRequestUserRateLimit.Consume(userId) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
@@ -295,14 +283,14 @@ func handleCreateUserEmailUpdateRequestRequest(env *Environment, w http.Response
 	err = deleteExpiredUserEmailUpdateRequest(env.db, r.Context(), userId)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
 	updateRequest, err := createEmailUpdateRequest(env.db, r.Context(), userId, email)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
@@ -355,7 +343,7 @@ func handleUpdateEmailRequest(env *Environment, w http.ResponseWriter, r *http.R
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
@@ -364,7 +352,7 @@ func handleUpdateEmailRequest(env *Environment, w http.ResponseWriter, r *http.R
 		err = deleteEmailUpdateRequest(env.db, r.Context(), updateRequest.Id)
 		if err != nil {
 			log.Println(err)
-			writeUnExpectedErrorResponse(w)
+			writeUnexpectedErrorResponse(w)
 			return
 		}
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidRequest)
@@ -374,20 +362,16 @@ func handleUpdateEmailRequest(env *Environment, w http.ResponseWriter, r *http.R
 		err = deleteEmailUpdateRequest(env.db, r.Context(), updateRequest.Id)
 		if err != nil {
 			log.Println(err)
-			writeUnExpectedErrorResponse(w)
+			writeUnexpectedErrorResponse(w)
 			return
 		}
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
-	validCode, err := updateUserEmailWithUpdateRequest(env.db, r.Context(), updateRequest.Id, *data.Code)
+	validCode, err := redeemUpdateRequest(env.db, r.Context(), updateRequest.Id, *data.Code)
 	if err != nil {
-		if sqliteErr, ok := err.(*sqlite.Error); ok && sqliteErr.Code() == 2067 {
-			writeExpectedErrorResponse(w, ExpectedErrorEmailAlreadyUsed)
-			return
-		}
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	if !validCode {
@@ -415,7 +399,7 @@ func handleDeleteEmailUpdateRequestRequest(env *Environment, w http.ResponseWrit
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	// If now is or after expiration
@@ -423,7 +407,7 @@ func handleDeleteEmailUpdateRequestRequest(env *Environment, w http.ResponseWrit
 		err = deleteEmailUpdateRequest(env.db, r.Context(), updateRequest.Id)
 		if err != nil {
 			log.Println(err)
-			writeUnExpectedErrorResponse(w)
+			writeUnexpectedErrorResponse(w)
 			return
 		}
 		writeNotFoundErrorResponse(w)
@@ -432,7 +416,7 @@ func handleDeleteEmailUpdateRequestRequest(env *Environment, w http.ResponseWrit
 	err = deleteEmailUpdateRequest(env.db, r.Context(), updateRequest.Id)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
@@ -457,7 +441,7 @@ func handleGetEmailUpdateRequestRequest(env *Environment, w http.ResponseWriter,
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	// If now is or after expiration
@@ -465,7 +449,7 @@ func handleGetEmailUpdateRequestRequest(env *Environment, w http.ResponseWriter,
 		err = deleteEmailUpdateRequest(env.db, r.Context(), updateRequest.Id)
 		if err != nil {
 			log.Println(err)
-			writeUnExpectedErrorResponse(w)
+			writeUnexpectedErrorResponse(w)
 			return
 		}
 		writeNotFoundErrorResponse(w)
@@ -509,27 +493,27 @@ func handleGetUserEmailUpdateRequestsRequest(env *Environment, w http.ResponseWr
 
 	userId := params.ByName("user_id")
 	userExists, err := checkUserExists(env.db, r.Context(), userId)
-	if !userExists {
-		writeNotFoundErrorResponse(w)
-		return
-	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !userExists {
+		writeNotFoundErrorResponse(w)
 		return
 	}
 
 	err = deleteExpiredUserEmailUpdateRequest(env.db, r.Context(), userId)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
 	updateRequests, err := getUserEmailUpdateRequests(env.db, r.Context(), userId)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
@@ -561,20 +545,20 @@ func handleDeleteUserEmailUpdateRequestsRequest(env *Environment, w http.Respons
 
 	userId := params.ByName("user_id")
 	userExists, err := checkUserExists(env.db, r.Context(), userId)
-	if !userExists {
-		writeNotFoundErrorResponse(w)
-		return
-	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !userExists {
+		writeNotFoundErrorResponse(w)
 		return
 	}
 
 	err = deleteUserEmailUpdateRequests(env.db, r.Context(), userId)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	w.WriteHeader(204)
@@ -702,7 +686,7 @@ func deleteExpiredUserEmailUpdateRequest(db *sql.DB, ctx context.Context, userId
 	return err
 }
 
-func updateUserEmailWithUpdateRequest(db *sql.DB, ctx context.Context, requestId string, code string) (bool, error) {
+func redeemUpdateRequest(db *sql.DB, ctx context.Context, requestId string, code string) (bool, error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return false, err
@@ -718,11 +702,6 @@ func updateUserEmailWithUpdateRequest(db *sql.DB, ctx context.Context, requestId
 		}
 		return false, nil
 	}
-	if err != nil {
-		tx.Rollback()
-		return false, err
-	}
-	_, err = tx.Exec("UPDATE user SET email = ? WHERE id = ?", email, userId)
 	if err != nil {
 		tx.Rollback()
 		return false, err

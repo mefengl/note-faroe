@@ -28,20 +28,20 @@ func handleRegisterTOTPRequest(env *Environment, w http.ResponseWriter, r *http.
 
 	userId := params.ByName("user_id")
 	userExists, err := checkUserExists(env.db, r.Context(), userId)
-	if !userExists {
-		writeNotFoundErrorResponse(w)
-		return
-	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !userExists {
+		writeNotFoundErrorResponse(w)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	var data struct {
@@ -84,7 +84,7 @@ func handleRegisterTOTPRequest(env *Environment, w http.ResponseWriter, r *http.
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
@@ -105,13 +105,13 @@ func handleVerifyTOTPRequest(env *Environment, w http.ResponseWriter, r *http.Re
 
 	userId := params.ByName("user_id")
 	userExists, err := checkUserExists(env.db, r.Context(), userId)
-	if !userExists {
-		writeNotFoundErrorResponse(w)
-		return
-	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !userExists {
+		writeNotFoundErrorResponse(w)
 		return
 	}
 
@@ -122,14 +122,14 @@ func handleVerifyTOTPRequest(env *Environment, w http.ResponseWriter, r *http.Re
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 	var data struct {
@@ -172,14 +172,14 @@ func handleDeleteUserTOTPCredentialRequest(env *Environment, w http.ResponseWrit
 	}
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 
 	err = deleteUserTOTPCredential(env.db, r.Context(), userId)
 	if err != nil {
 		log.Println(err)
-		writeUnExpectedErrorResponse(w)
+		writeUnexpectedErrorResponse(w)
 		return
 	}
 

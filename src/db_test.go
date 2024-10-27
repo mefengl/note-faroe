@@ -17,7 +17,6 @@ func TestCleanUpDatabase(t *testing.T) {
 	user1 := User{
 		Id:             "1",
 		CreatedAt:      now,
-		Email:          "user1@example.com",
 		PasswordHash:   "HASH",
 		RecoveryCode:   "12345678",
 		TOTPRegistered: false,
@@ -66,7 +65,6 @@ func TestCleanUpDatabase(t *testing.T) {
 	user2 := User{
 		Id:             "2",
 		CreatedAt:      now,
-		Email:          "user2@example.com",
 		PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 		RecoveryCode:   "12345678",
 		TOTPRegistered: false,
@@ -79,7 +77,6 @@ func TestCleanUpDatabase(t *testing.T) {
 	user3 := User{
 		Id:             "3",
 		CreatedAt:      now,
-		Email:          "user3@example.com",
 		PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 		RecoveryCode:   "12345678",
 		TOTPRegistered: false,

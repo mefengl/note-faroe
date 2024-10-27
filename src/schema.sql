@@ -1,12 +1,9 @@
 CREATE TABLE IF NOT EXISTS user (
     id TEXT NOT NULL PRIMARY KEY,
     created_at INTEGER NOT NULL,
-    email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     recovery_code TEXT NOT NULL
 ) STRICT;
-
-CREATE INDEX IF NOT EXISTS user_email_index ON user(email);
 
 CREATE TABLE IF NOT EXISTS user_email_verification_request (
     user_id TEXT NOT NULL UNIQUE PRIMARY KEY REFERENCES user(id),

@@ -9,6 +9,7 @@ title: "Update email address"
 Create a new email update request, send the verification code to the user's inbox, and link the update request to the current session.
 
 ```ts
+// Everything not imported is something you need to define yourself.
 import { verifyEmailInput, FaroeError } from "@faroe/sdk";
 
 import type { FaroeEmailUpdateRequest } from "@faroe/sdk";
@@ -36,19 +37,20 @@ async function handleSendEmailUpdateVerificationCodeRequest(
         return;
     }
 
+    const user = await getUserFromEmail(email);
+    if (user !== null) {
+        response.writeHeader(400);
+        response.write("This email address is already used.");
+        return;
+    }
+
     let emailUpdateRequest: FaroeEmailUpdateRequest;
     try {
         emailUpdateRequest = await faroe.createUserEmailUpdateRequest(
-            faroeUser.id,
-            faroeUser.email,
-            clientIP
+            user.faroeId,
+            faroeUser.email
         );
     } catch (e) {
-        if (e instanceof FaroeError && e.code === "EMAIL_ALREADY_USED") {
-            response.writeHeader(400);
-            response.write("This email address is already used.");
-            return;
-        }
         if (e instanceof FaroeError && e.code === "TOO_MANY_REQUESTS") {
             response.writeHeader(429);
             response.write("Please try again later.");
@@ -71,9 +73,10 @@ async function handleSendEmailUpdateVerificationCodeRequest(
 }
 ```
 
-Verify the code and update your application's user's email address.
+Verify the code with `Faroe.verifyNewUserEmail()` and update your application's user's email address.
 
 ```ts
+// Everything not imported is something you need to define yourself.
 import { FaroeError } from "@faroe/sdk";
 
 async function handleUpdateEmailRequest(
@@ -99,12 +102,11 @@ async function handleUpdateEmailRequest(
 
     // ...
 
-    let verifiedEmail: string
+    let newEmail: string
     try {
-        verifiedEmail = await faroe.updateUserEmail(
+        newEmail = await faroe.verifyNewUserEmail(
             session.faroeEmailUpdateRequestId,
-            code,
-            clientIP
+            code
         );
     } catch (e) {
         if (e instanceof FaroeError && e.code === "INVALID_REQUEST") {
@@ -127,7 +129,7 @@ async function handleUpdateEmailRequest(
         return;
     }
 
-    await updateUserEmail(session.userId, verifiedEmail);
+    await updateUserEmailAndSetEmailAsVerified(session.userId, newEmail);
 
     await deleteSessionEmailUpdateRequestId(session.id);
 

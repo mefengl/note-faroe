@@ -56,7 +56,7 @@ async function handleRegisterTOTPRequest(
     // ...
 
     try {
-        await faroe.registerUserTOTPCredential(user.faroeId, key, code, clientIP);
+        await faroe.registerUserTOTPCredential(user.faroeId, key, code);
     } catch (e) {
         if (e instanceof FaroeError && e.code === "INCORRECT_CODE") {
             response.writeHeader(400);
@@ -111,7 +111,7 @@ async function handleVerifyUserTOTP(
     let code: string;
 
     try {
-        await faroe.verifyUser2FAWithTOTP(user.faroeId, code, clientIP);
+        await faroe.verifyUser2FAWithTOTP(user.faroeId, code);
     } catch (e) {
         if (e instanceof FaroeError && e.code === "INCORRECT_CODE") {
             response.writeHeader(400);
@@ -160,7 +160,7 @@ async function handleVerifyPasswordResetUserTOTP(
     let code: string;
 
     try {
-        await faroe.verifyUser2FAWithTOTP(user.faroeId, code, clientIP);
+        await faroe.verifyUser2FAWithTOTP(user.faroeId, code);
     } catch (e) {
         // ...
     }
@@ -202,7 +202,7 @@ async function handleDisonnectTOTPCredential(
         return;
     }
 
-    await faroe.deleteUserTOTPCredential(user.faroeId, clientIP);
+    await faroe.deleteUserTOTPCredential(user.faroeId);
 
     await setUserAsNotRegisteredTOTP(user.Id);
 

@@ -16,14 +16,12 @@ All parameters are optional.
 
 - `sort_by`: Field to sort the list by. One of:
     - `created_at` (default): Sort by when the user was created.
-    - `email`:  Sort by the user's email.
     - `id`: Sort by the user's ID.
 - `sort_order` Order of the list. One of:
     - `ascending` (default)
     - `descending`
 - `per_page`: A positive integer that specifies the number of items in a page (default: 20).
 - `page`: A positive integer that specifies the page number to be returned (default: 1).
-- `email_query: A non-empty string. Only users with an email that includes the keyword will be returned. Multiple keywords are not supported.
 
 ### Example
 
@@ -49,7 +47,6 @@ X-Pagination-Total: 113
     {
         "id": "eeidmqmvdtjhaddujv8twjug",
         "created_at": 1728783738,
-        "email": "user@example.com",
         "email_verified": true,
         "registered_totp": false
     }
