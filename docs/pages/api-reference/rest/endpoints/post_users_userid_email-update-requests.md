@@ -29,7 +29,6 @@ Returns the [email update request model](/api-reference/rest/models/email-verifi
 ## Error codes
 
 - [400] `INVALID_DATA`: Invalid request data.
-- [400] `EMAIL_ALREADY_USED`: The email is already used by an existing account.
 - [400] `TOO_MANY_REQUESTS`: Exceeded rate limit.
 - [404] `NOT_FOUND`: The user does not exist.
 - [500] `UNKNOWN_ERROR`

@@ -28,7 +28,6 @@ async function createUser(
 ## Error codes
 
 - `INVALID_DATA`: Malformed email address; invalid email address or password length.
-- `EMAIL_ALREADY_USED`
 - `WEAK_PASSWORD`: The password is too weak.
 - `TOO_MANY_REQUESTS`: Exceeded rate limit.
 - `UNKNOWN_ERROR`
