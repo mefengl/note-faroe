@@ -86,8 +86,9 @@ Faroe is the middle ground between a dedicated auth backend and a custom impleme
 
 ## Examples
 
-- [Astro basic](https://github.com/faroedev/example-astro-basic)
-- [Next.js basic](https://github.com/faroedev/example-nextjs-basic)
+- [Astro basic example](https://github.com/faroedev/example-astro-basic)
+- [Next.js basic example](https://github.com/faroedev/example-nextjs-basic)
+- [SvelteKit basic example](https://github.com/faroedev/example-sveltekit-basic)
 
 ## Security
 
