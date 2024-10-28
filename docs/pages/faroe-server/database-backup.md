@@ -4,7 +4,7 @@ title: "Database backup"
 
 # Database backup
 
-Faroe does not backup its SQLite database. We recommend using [Litestream](https://litestream.io) to create database replicas locally or externally in services like S3.
+Faroe does not backup its SQLite database. We recommend using [Litestream](https://litestream.io) to create database replicas locally or externally with services like S3.
 
 Use the `replicate` command to create a replica. Faroe should be ran as a child process using the `exec` option.
 
