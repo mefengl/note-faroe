@@ -26,6 +26,9 @@ async function handleLoginRequest(
     let password: string;
     // ...
 
+    // Normalize input.
+	email = email.toLowerCase();
+
     if (!verifyEmailInput(email)) {
         response.writeHeader(400);
         response.write("Please enter a valid email address.");
