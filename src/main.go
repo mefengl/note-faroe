@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -75,19 +76,21 @@ func serveCommand() {
 	os.Args = os.Args[1:]
 
 	var port int
+	var dataDir string
 	var secretString string
 	flag.IntVar(&port, "port", 4000, "Port number")
+	flag.StringVar(&dataDir, "dir", "faroe_data", "Data directory name")
 	flag.StringVar(&secretString, "secret", "", "Server secret")
 	flag.Parse()
 
 	secret := []byte(secretString)
 
-	err := os.MkdirAll("faroe_data", os.ModePerm)
+	err := os.MkdirAll(dataDir, os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	db, err := sql.Open("sqlite", "./faroe_data/sqlite.db")
+	db, err := sql.Open("sqlite", path.Join(dataDir, "sqlite.db"))
 	if err != nil {
 		log.Fatal(err)
 	}
