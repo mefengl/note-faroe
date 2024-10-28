@@ -4,6 +4,7 @@ title: "Implementation checklist"
 
 # Implementation checklist
 
+- Do you normalize email addresses?
 - Do you pass the user's IP address to all Faroe methods that accept it?
 - Do you check that the password reset session has been email verified?
 - Can users without a verified email address manually request for a new verification code?
