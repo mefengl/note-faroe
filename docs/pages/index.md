@@ -28,7 +28,7 @@ if (user === null) {
 
 let faroeUser: FaroeUser;
 try {
-	faroeUser = await faroe.verifyUserPassword(user.faroeId, password, clientIP);
+    faroeUser = await faroe.verifyUserPassword(user.faroeId, password, clientIP);
 } catch (e) {
     if (e instanceof FaroeError && e.code === "INCORRECT_PASSWORD") {
         response.writeHeader(400);
