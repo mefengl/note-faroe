@@ -22,7 +22,7 @@ These work with your application's UI and backend to provide a complete authenti
 const user = await getUserFromEmail(email);
 if (user === null) {
     response.writeHeader(400);
-    response.write("Please enter a valid email address.");
+    response.write("Account does not exist.");
     return;
 }
 
@@ -30,11 +30,6 @@ let faroeUser: FaroeUser;
 try {
 	faroeUser = await faroe.verifyUserPassword(user.faroeId, password, clientIP);
 } catch (e) {
-    if (e instanceof FaroeError && e.code === "USER_NOT_EXISTS") {
-        response.writeHeader(400);
-        response.write("Account does not exist.");
-        return;
-    }
     if (e instanceof FaroeError && e.code === "INCORRECT_PASSWORD") {
         response.writeHeader(400);
         response.write("Incorrect password.");
