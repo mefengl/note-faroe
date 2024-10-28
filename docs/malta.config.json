@@ -35,6 +35,7 @@
         {
             "title": "API reference",
             "pages": [
+                ["CLI", "/reference/cli"],
                 ["Rest API", "/reference/rest"],
                 ["JavaScript SDK", "/reference/sdk-js"]
             ]
