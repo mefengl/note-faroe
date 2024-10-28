@@ -4,7 +4,7 @@ title: "Faroe.verifyPasswordResetRequestEmail()"
 
 # Faroe.verifyPasswordResetRequestEmail()
 
-Mapped to [POST /password-reset-requests/\[request_id\]/verify-email](/api-reference/rest/endpoints/post_password-reset-requests_requestid_verify-email).
+Mapped to [POST /password-reset-requests/\[request_id\]/verify-email](/reference/rest/endpoints/post_password-reset-requests_requestid_verify-email).
 
 Verifies the email linked to a password reset request with a verification code.
 

@@ -4,7 +4,7 @@ title: "Faroe.createUser()"
 
 # Faroe.createUser()
 
-Mapped to [POST /users](/api-reference/rest/endpoints/post_users).
+Mapped to [POST /users](/reference/rest/endpoints/post_users).
 
 Creates a new user.
 
@@ -13,7 +13,7 @@ We highly recommend putting a Captcha or equivalent in front for spam and bot de
 ## Definition
 
 ```ts
-//$ FaroeUser=/api-reference/sdk-js/main/FaroeUser
+//$ FaroeUser=/reference/sdk-js/main/FaroeUser
 async function createUser(
     password: string,
     clientIP: string | null

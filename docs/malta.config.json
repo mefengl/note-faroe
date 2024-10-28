@@ -35,8 +35,8 @@
         {
             "title": "API reference",
             "pages": [
-                ["Rest API", "/api-reference/rest"],
-                ["JavaScript SDK", "/api-reference/sdk-js"]
+                ["Rest API", "/reference/rest"],
+                ["JavaScript SDK", "/reference/sdk-js"]
             ]
         },
         {

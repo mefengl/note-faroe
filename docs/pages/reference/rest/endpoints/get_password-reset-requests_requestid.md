@@ -12,7 +12,7 @@ GET https://your-domain.com/password-reset-requests/REQUEST_ID
 
 ## Successful response
 
-Returns the [password reset request model](/api-reference/rest/models/password-reset-request) if the request exists and is valid.
+Returns the [password reset request model](/reference/rest/models/password-reset-request) if the request exists and is valid.
 
 ## Error codes
 

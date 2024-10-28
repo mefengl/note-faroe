@@ -6,7 +6,7 @@ title: "Faroe"
 
 Represents a Faroe server client.
 
-Server errors are thrown as [`FaroeError`](/api-reference/sdk-js/main/FaroeError). The error code is available from `FaroeError.code`. See each method for a list of possible error codes.
+Server errors are thrown as [`FaroeError`](/reference/sdk-js/main/FaroeError). The error code is available from `FaroeError.code`. See each method for a list of possible error codes.
 
 ```ts
 import { Faroe, FaroeError } from "@faroe/sdk"
@@ -22,7 +22,7 @@ try {
 }
 ```
 
-Errors caused by `fetch()` are wrapped as [`FaroeFetchError`](/api-reference/sdk-js/main/FaroeFetchError).
+Errors caused by `fetch()` are wrapped as [`FaroeFetchError`](/reference/sdk-js/main/FaroeFetchError).
 
 ## Constructor
 
@@ -37,35 +37,35 @@ function constructor(url: string, credential: string | null): this
 
 ## Methods
 
-- [`createUser()`](/api-reference/sdk-js/main/Faroe/createUser)
-- [`createUserEmailUpdateRequest()`](/api-reference/sdk-js/main/Faroe/createUserEmailUpdateRequest)
-- [`createUserEmailVerificationRequest()`](/api-reference/sdk-js/main/Faroe/createUserEmailVerificationRequest)
-- [`createUserPasswordResetRequest()`](/api-reference/sdk-js/main/Faroe/createUserPasswordResetRequest)
-- [`deleteEmailUpdateRequest()`](/api-reference/sdk-js/main/Faroe/deleteEmailUpdateRequest)
-- [`deletePasswordResetRequest()`](/api-reference/sdk-js/main/Faroe/deletePasswordResetRequest)
-- [`deleteUser()`](/api-reference/sdk-js/main/Faroe/deleteUser)
-- [`deleteUserEmailUpdateRequests()`](/api-reference/sdk-js/main/Faroe/deleteUserEmailUpdateRequests)
-- [`deleteUserEmailVerificationRequest()`](/api-reference/sdk-js/main/Faroe/deleteUserEmailVerificationRequest)
-- [`deleteUserPasswordResetRequests()`](/api-reference/sdk-js/main/Faroe/deleteUserPasswordResetRequests)
-- [`deleteUserTOTPCredential()`](/api-reference/sdk-js/main/Faroe/deleteUserTOTPCredential)
-- [`getEmailUpdateRequest()`](/api-reference/sdk-js/main/Faroe/getEmailUpdateRequest)
-- [`getPasswordResetRequest()`](/api-reference/sdk-js/main/Faroe/getPasswordResetRequest)
-- [`getUser()`](/api-reference/sdk-js/main/Faroe/getUser)
-- [`getUserEmailUpdateRequests()`](/api-reference/sdk-js/main/Faroe/getUserEmailUpdateRequests)
-- [`getUserEmailVerificationRequest()`](/api-reference/sdk-js/main/Faroe/getUserEmailVerificationRequest)
-- [`getUserPasswordResetRequests()`](/api-reference/sdk-js/main/Faroe/getUserPasswordResetRequests)
-- [`getUsers()`](/api-reference/sdk-js/main/Faroe/getUsers)
-- [`getUserTOTPCredential()`](/api-reference/sdk-js/main/Faroe/getUserTOTPCredential)
-- [`regenerateUserRecoveryCode()`](/api-reference/sdk-js/main/Faroe/regenerateUserRecoveryCode)
-- [`registerUserTOTPCredential()`](/api-reference/sdk-js/main/Faroe/registerUserTOTPCredential)
-- [`resetUser2FA()`](/api-reference/sdk-js/main/Faroe/resetUser2FA)
-- [`resetUserPassword()`](/api-reference/sdk-js/main/Faroe/resetUserPassword)
-- [`updateUserPassword()`](/api-reference/sdk-js/main/Faroe/updateUserPassword)
-- [`verifyNewUserEmail()`](/api-reference/sdk-js/main/Faroe/verifyNewUserEmail)
-- [`verifyPasswordResetRequestEmail()`](/api-reference/sdk-js/main/Faroe/verifyPasswordResetRequestEmail)
-- [`verifyUser2FAWithTOTP()`](/api-reference/sdk-js/main/Faroe/verifyUser2FAWithTOTP)
-- [`verifyUserEmail()`](/api-reference/sdk-js/main/Faroe/verifyUserEmail)
-- [`verifyUserPassword()`](/api-reference/sdk-js/main/Faroe/verifyUserPassword)
+- [`createUser()`](/reference/sdk-js/main/Faroe/createUser)
+- [`createUserEmailUpdateRequest()`](/reference/sdk-js/main/Faroe/createUserEmailUpdateRequest)
+- [`createUserEmailVerificationRequest()`](/reference/sdk-js/main/Faroe/createUserEmailVerificationRequest)
+- [`createUserPasswordResetRequest()`](/reference/sdk-js/main/Faroe/createUserPasswordResetRequest)
+- [`deleteEmailUpdateRequest()`](/reference/sdk-js/main/Faroe/deleteEmailUpdateRequest)
+- [`deletePasswordResetRequest()`](/reference/sdk-js/main/Faroe/deletePasswordResetRequest)
+- [`deleteUser()`](/reference/sdk-js/main/Faroe/deleteUser)
+- [`deleteUserEmailUpdateRequests()`](/reference/sdk-js/main/Faroe/deleteUserEmailUpdateRequests)
+- [`deleteUserEmailVerificationRequest()`](/reference/sdk-js/main/Faroe/deleteUserEmailVerificationRequest)
+- [`deleteUserPasswordResetRequests()`](/reference/sdk-js/main/Faroe/deleteUserPasswordResetRequests)
+- [`deleteUserTOTPCredential()`](/reference/sdk-js/main/Faroe/deleteUserTOTPCredential)
+- [`getEmailUpdateRequest()`](/reference/sdk-js/main/Faroe/getEmailUpdateRequest)
+- [`getPasswordResetRequest()`](/reference/sdk-js/main/Faroe/getPasswordResetRequest)
+- [`getUser()`](/reference/sdk-js/main/Faroe/getUser)
+- [`getUserEmailUpdateRequests()`](/reference/sdk-js/main/Faroe/getUserEmailUpdateRequests)
+- [`getUserEmailVerificationRequest()`](/reference/sdk-js/main/Faroe/getUserEmailVerificationRequest)
+- [`getUserPasswordResetRequests()`](/reference/sdk-js/main/Faroe/getUserPasswordResetRequests)
+- [`getUsers()`](/reference/sdk-js/main/Faroe/getUsers)
+- [`getUserTOTPCredential()`](/reference/sdk-js/main/Faroe/getUserTOTPCredential)
+- [`regenerateUserRecoveryCode()`](/reference/sdk-js/main/Faroe/regenerateUserRecoveryCode)
+- [`registerUserTOTPCredential()`](/reference/sdk-js/main/Faroe/registerUserTOTPCredential)
+- [`resetUser2FA()`](/reference/sdk-js/main/Faroe/resetUser2FA)
+- [`resetUserPassword()`](/reference/sdk-js/main/Faroe/resetUserPassword)
+- [`updateUserPassword()`](/reference/sdk-js/main/Faroe/updateUserPassword)
+- [`verifyNewUserEmail()`](/reference/sdk-js/main/Faroe/verifyNewUserEmail)
+- [`verifyPasswordResetRequestEmail()`](/reference/sdk-js/main/Faroe/verifyPasswordResetRequestEmail)
+- [`verifyUser2FAWithTOTP()`](/reference/sdk-js/main/Faroe/verifyUser2FAWithTOTP)
+- [`verifyUserEmail()`](/reference/sdk-js/main/Faroe/verifyUserEmail)
+- [`verifyUserPassword()`](/reference/sdk-js/main/Faroe/verifyUserPassword)
 
 ## Example
 

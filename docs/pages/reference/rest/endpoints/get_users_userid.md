@@ -12,7 +12,7 @@ GET https://your-domain.com/users/USER_ID
 
 ## Successful response
 
-Returns the [user model](/api-reference/rest/models/user) of the user if they exist.
+Returns the [user model](/reference/rest/models/user) of the user if they exist.
 
 ## Error codes
 

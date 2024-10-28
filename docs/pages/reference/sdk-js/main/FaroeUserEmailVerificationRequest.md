@@ -4,7 +4,7 @@ title: "FaroeUserEmailVerificationRequest"
 
 # FaroeUserEmailVerificationRequest
 
-Mapped to the [user email verification request model](/api-reference/rest/models/user-email-verification-request).
+Mapped to the [user email verification request model](/reference/rest/models/user-email-verification-request).
 
 Represents an email verification request.
 

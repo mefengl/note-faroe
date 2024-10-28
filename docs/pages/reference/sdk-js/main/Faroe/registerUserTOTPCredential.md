@@ -4,14 +4,14 @@ title: "Faroe.registerUserTOTPCredential()"
 
 # Faroe.registerUserTOTPCredential()
 
-Mapped to [POST /users/\[user_id\/register-totp](/api-reference/rest/endpoints/post_users_userid_register-totp).
+Mapped to [POST /users/\[user_id\/register-totp](/reference/rest/endpoints/post_users_userid_register-totp).
 
 Registers a TOTP (SHA-1, 6 digits, 30 seconds interval) credential to a user.
 
 ## Definition
 
 ```ts
-//$ FaroeUserTOTPCredential=/api-reference/sdk-js/main/FaroeUserTOTPCredential
+//$ FaroeUserTOTPCredential=/reference/sdk-js/main/FaroeUserTOTPCredential
 async function registerUserTOTPCredential(
     userId: string,
     totpKey: Uint8Array,

@@ -4,7 +4,7 @@ title: "Faroe.verifyNewUserEmail()"
 
 # Faroe.verifyNewUserEmail()
 
-Mapped to [POST /verify-new-email](/api-reference/rest/endpoints/post_verify-new-email).
+Mapped to [POST /verify-new-email](/reference/rest/endpoints/post_verify-new-email).
 
 Verifies an email update request's verification code. Upon a successful verification, all email update requests linked to the email address and password reset requests to the user are invalidated.
 

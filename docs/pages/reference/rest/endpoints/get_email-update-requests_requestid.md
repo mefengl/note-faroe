@@ -12,7 +12,7 @@ GET https://your-domain.com/email-update-requests/[request_id]
 
 ## Successful response
 
-Returns the [email update request model](/api-reference/rest/models/email-update-request) if the request exists and is valid.
+Returns the [email update request model](/reference/rest/models/email-update-request) if the request exists and is valid.
 
 ## Error codes
 

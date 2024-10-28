@@ -12,7 +12,7 @@ POST https://your-domain.com/users/USER_ID/email-verification-request
 
 ## Successful response
 
-Returns the [user email verification request model](/api-reference/rest/models/user-email-verification-request) of the created request.
+Returns the [user email verification request model](/reference/rest/models/user-email-verification-request) of the created request.
 
 ## Error codes
 

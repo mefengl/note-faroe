@@ -31,7 +31,7 @@ All parameters are optional.
 
 ## Successful response
 
-Returns a JSON array of [user models](/api-reference/rest/models/user). If there are no users in the page, it will return an empty array.
+Returns a JSON array of [user models](/reference/rest/models/user). If there are no users in the page, it will return an empty array.
 
 You can get the number of total pages from the `X-Pagination-Total-Pages` header and the total number of users with the `X-Pagination-Total` header..
 

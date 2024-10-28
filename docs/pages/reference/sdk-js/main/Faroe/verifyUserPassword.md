@@ -4,7 +4,7 @@ title: "Faroe.verifyUserPassword()"
 
 # Faroe.verifyUserPassword()
 
-Mapped to [POST /users/\[user_id\]/verify-password](/api-reference/rest/endpoints/post_users_userid_verify-password).
+Mapped to [POST /users/\[user_id\]/verify-password](/reference/rest/endpoints/post_users_userid_verify-password).
 
 Verifies a user's password. It will temporary block the IP address if the client sends an incorrect password 5 times in a 15 minute window.
 

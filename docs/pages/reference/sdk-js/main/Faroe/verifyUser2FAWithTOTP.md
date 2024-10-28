@@ -4,7 +4,7 @@ title: "Faroe.verifyUser2FAWithTOTP()"
 
 # Faroe.verifyUser2FAWithTOTP()
 
-Mapped to [POST /users/\[user_id\]/verify-2fa/totp](/api-reference/rest/endpoints/post_users_userid_verify-2fa_totp).
+Mapped to [POST /users/\[user_id\]/verify-2fa/totp](/reference/rest/endpoints/post_users_userid_verify-2fa_totp).
 
 Verifies a user's TOTP code. The user will be locked out from using TOTP as their second factor for 15 minutes after their 5th consecutive failed attempts.
 

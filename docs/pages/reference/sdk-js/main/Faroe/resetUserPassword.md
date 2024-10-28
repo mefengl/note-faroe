@@ -4,7 +4,7 @@ title: "Faroe.resetUserPassword()"
 
 # Faroe.resetUserPassword()
 
-Mapped to [POST /reset-password](/api-reference/rest/endpoints/post_reset-password).
+Mapped to [POST /reset-password](/reference/rest/endpoints/post_reset-password).
 
 Resets a user's password with a password reset request.On validation, it will mark the user's email as verified and invalidate all password reset requests linked to the user.
 

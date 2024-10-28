@@ -4,7 +4,7 @@ title: "FaroePasswordResetRequest"
 
 # FaroePasswordResetRequest
 
-Mapped to the [password reset request model](/api-reference/rest/models/password-reset-request).
+Mapped to the [password reset request model](/reference/rest/models/password-reset-request).
 
 Represents an user.
 

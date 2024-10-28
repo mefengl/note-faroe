@@ -30,7 +30,7 @@ POST https://your-domain.com/users/USER_ID/password-reset-requests
 
 ## Successful response
 
-Returns the [password reset request model](/api-reference/rest/models/password-reset-requests-request) of the created request and a verification code. The code is only available here.
+Returns the [password reset request model](/reference/rest/models/password-reset-requests-request) of the created request and a verification code. The code is only available here.
 
 ```ts
 {

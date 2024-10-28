@@ -35,7 +35,7 @@ POST https://your-domain.com/users
 
 ## Successful response
 
-Returns the [user model](/api-reference/rest/models/user) of the created user.
+Returns the [user model](/reference/rest/models/user) of the created user.
 
 ## Error codes
 

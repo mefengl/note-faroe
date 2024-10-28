@@ -4,14 +4,14 @@ title: "Faroe.getUserTOTPCredential()"
 
 # Faroe.getUserTOTPCredential()
 
-Mapped to [GET /users/\[user_id\]/totp-credential](/api-reference/rest/endpoints/get_users_userid_totp-credential).
+Mapped to [GET /users/\[user_id\]/totp-credential](/reference/rest/endpoints/get_users_userid_totp-credential).
 
 Gets a user's TOTP credential. Returns `null` if the user doesn't exist or if the user doesn't have a TOTP credential.
 
 ## Definition
 
 ```ts
-//$ FaroeUserTOTPCredential=/api-reference/sdk-js/main/FaroeUserTOTPCredential
+//$ FaroeUserTOTPCredential=/reference/sdk-js/main/FaroeUserTOTPCredential
 async function getUserTOTPCredential(userId: string): Promise<$$FaroeUserTOTPCredential | null>
 ```
 

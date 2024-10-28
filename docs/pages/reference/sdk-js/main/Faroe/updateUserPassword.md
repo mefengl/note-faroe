@@ -4,7 +4,7 @@ title: "Faroe.updateUserPassword()"
 
 # Faroe.updateUserPassword()
 
-Mapped to [POST /users/\[user_id\]/password](/api-reference/rest/endpoints/post_users_userid_password).
+Mapped to [POST /users/\[user_id\]/password](/reference/rest/endpoints/post_users_userid_password).
 
 Updates a user's password.
 

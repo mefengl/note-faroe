@@ -4,7 +4,7 @@ title: "FaroeUserTOTPCredential"
 
 # FaroeUserTOTPCredential
 
-Mapped to the [user totp credential model](/api-reference/rest/models/user-totp-credential).
+Mapped to the [user totp credential model](/reference/rest/models/user-totp-credential).
 
 Represents a user's totp credential.
 

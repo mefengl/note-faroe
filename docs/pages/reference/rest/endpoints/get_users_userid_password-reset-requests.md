@@ -12,7 +12,7 @@ GET https://your-domain.com/users/USER_ID/password-reset-requests
 
 ## Successful response
 
-Returns a JSON array of [password reset request models](/api-reference/rest/models/password-reset-request). If the user does not have any update requests, it will return an empty array.
+Returns a JSON array of [password reset request models](/reference/rest/models/password-reset-request). If the user does not have any update requests, it will return an empty array.
 
 ### Example
 

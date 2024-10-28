@@ -4,15 +4,15 @@ title: "Faroe.getUsers()"
 
 # Faroe.getUsers()
 
-Mapped to [GET /users](/api-reference/rest/endpoints/get_users).
+Mapped to [GET /users](/reference/rest/endpoints/get_users).
 
 Gets an array of users. Returns an empty array if there are no users.
 
 ## Definition
 
 ```ts
-//$ PaginationResult=/api-reference/sdk-js/main/PaginationResult
-//$ FaroeUser=/api-reference/sdk-js/main/FaroeUser
+//$ PaginationResult=/reference/sdk-js/main/PaginationResult
+//$ FaroeUser=/reference/sdk-js/main/FaroeUser
 async function getUsers(options?: {
     sortBy: UserSortBy = UserSortBy.CreatedAt,
     sortOrder: SortOrder = SortOrder.Ascending,

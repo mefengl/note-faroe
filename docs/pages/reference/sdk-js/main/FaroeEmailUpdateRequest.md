@@ -4,7 +4,7 @@ title: "FaroeEmailUpdateRequest"
 
 # FaroeEmailUpdateRequest
 
-Mapped to the [email update request model](/api-reference/rest/models/email-update-request).
+Mapped to the [email update request model](/reference/rest/models/email-update-request).
 
 Represents an email update request.
 

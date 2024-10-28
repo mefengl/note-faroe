@@ -4,14 +4,14 @@ title: "Faroe.createUserEmailUpdateRequest()"
 
 # Faroe.createUserEmailUpdateRequest()
 
-Mapped to [POST /users/\[user_id\]/email-update-requests](/api-reference/rest/endpoints/post_users_userid_email-update-requests).
+Mapped to [POST /users/\[user_id\]/email-update-requests](/reference/rest/endpoints/post_users_userid_email-update-requests).
 
 Creates a new email verification request for a user. This can only be called 3 times in a 15 minute window per user.
 
 ## Definition
 
 ```ts
-//$ $$FaroeEmailUpdateRequest=/api-reference/sdk-js/main/$$FaroeEmailUpdateRequest
+//$ $$FaroeEmailUpdateRequest=/reference/sdk-js/main/$$FaroeEmailUpdateRequest
 async function createUserEmailUpdateRequest(
     userId: string,
     email: string

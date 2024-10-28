@@ -6,25 +6,25 @@ title: "@faroe/sdk"
 
 ## Functions
 
-- [`verifyEmailInput()`](/api-reference/sdk-js/main/verifyEmailInput)
-- [`verifyPasswordInput()`](/api-reference/sdk-js/main/verifyPasswordInput)
+- [`verifyEmailInput()`](/reference/sdk-js/main/verifyEmailInput)
+- [`verifyPasswordInput()`](/reference/sdk-js/main/verifyPasswordInput)
 
 ## Classes
 
-- [`Faroe`](/api-reference/sdk-js/main/Faroe)
-- [`FaroeError`](/api-reference/sdk-js/main/FaroeError)
-- [`FaroeFetchError`](/api-reference/sdk-js/main/FaroeFetchError)
+- [`Faroe`](/reference/sdk-js/main/Faroe)
+- [`FaroeError`](/reference/sdk-js/main/FaroeError)
+- [`FaroeFetchError`](/reference/sdk-js/main/FaroeFetchError)
 
 ## Interfaces
 
-- [`FaroeEmailUpdateRequest`](/api-reference/sdk-js/main/FaroeEmailUpdateRequest)
-- [`FaroePasswordResetRequest`](/api-reference/sdk-js/main/FaroePasswordResetRequest)
-- [`FaroeUserEmailVerificationRequest`](/api-reference/sdk-js/main/FaroeUserEmailVerificationRequest)
-- [`FaroeUserTOTPCredential`](/api-reference/sdk-js/main/FaroeUserTOTPCredential)
-- [`FaroeUser`](/api-reference/sdk-js/main/FaroeUser)
-- [`PaginationResult`](/api-reference/sdk-js/main/PaginationResult)
+- [`FaroeEmailUpdateRequest`](/reference/sdk-js/main/FaroeEmailUpdateRequest)
+- [`FaroePasswordResetRequest`](/reference/sdk-js/main/FaroePasswordResetRequest)
+- [`FaroeUserEmailVerificationRequest`](/reference/sdk-js/main/FaroeUserEmailVerificationRequest)
+- [`FaroeUserTOTPCredential`](/reference/sdk-js/main/FaroeUserTOTPCredential)
+- [`FaroeUser`](/reference/sdk-js/main/FaroeUser)
+- [`PaginationResult`](/reference/sdk-js/main/PaginationResult)
 
 ## Enums
 
-- [`UserSortBy`](/api-reference/sdk-js/main/UserSortBy)
-- [`SortOrder`](/api-reference/sdk-js/main/SortOrder)
+- [`UserSortBy`](/reference/sdk-js/main/UserSortBy)
+- [`SortOrder`](/reference/sdk-js/main/SortOrder)

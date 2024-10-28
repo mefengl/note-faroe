@@ -4,7 +4,7 @@ title: "FaroeUser"
 
 # FaroeUser
 
-Represents an user. Mapped to the [user model](/api-reference/rest/models/user).
+Represents an user. Mapped to the [user model](/reference/rest/models/user).
 
 ## Definition
 

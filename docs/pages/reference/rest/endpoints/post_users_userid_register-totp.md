@@ -26,7 +26,7 @@ All fields are required.
 
 ## Response body
 
-Returns the [user TOTP credential model](/api-reference/rest/models/user-totp-credential) of the registered credential.
+Returns the [user TOTP credential model](/reference/rest/models/user-totp-credential) of the registered credential.
 
 ## Error codes
 

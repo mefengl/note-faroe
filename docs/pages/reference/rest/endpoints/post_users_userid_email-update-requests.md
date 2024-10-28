@@ -24,7 +24,7 @@ POST https://your-domain.com/users/USER_ID/email-update-requests
 
 ## Successful response
 
-Returns the [email update request model](/api-reference/rest/models/email-verification-request) of the created request.
+Returns the [email update request model](/reference/rest/models/email-verification-request) of the created request.
 
 ## Error codes
 

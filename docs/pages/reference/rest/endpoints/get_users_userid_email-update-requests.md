@@ -12,7 +12,7 @@ GET https://your-domain.com/users/USER_ID/email-update-requests
 
 ## Successful response
 
-Returns a JSON array of [email update request models](/api-reference/rest/models/email-update-request). If the user does not have any update requests, it will return an empty array.
+Returns a JSON array of [email update request models](/reference/rest/models/email-update-request). If the user does not have any update requests, it will return an empty array.
 
 ### Example
 
