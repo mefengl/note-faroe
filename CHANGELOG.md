@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Added `--dir` option `serve` command.˝
+
 ## 0.2.0
 
 - Removed `email` field from user model.
