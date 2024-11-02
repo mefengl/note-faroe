@@ -4,7 +4,7 @@ title: "Email verification"
 
 # Email verification
 
-*This page uses the JavaScript SDK*.
+_This page uses the JavaScript SDK_.
 
 Ask the user for the email verification code sent to their inbox.
 
@@ -38,11 +38,7 @@ async function handleVerifyEmailRequest(
     // ...
 
     try {
-        await faroe.verifyUserEmail(
-            user.faroeId,
-            code,
-            clientIP
-        );
+        await faroe.verifyUserEmail(user.faroeId, code, clientIP);
     } catch (e) {
         if (e instanceof FaroeError && e.code === "INVALID_REQUEST") {
             const emailVerificationRequest = await faroe.createUserEmailVerificationRequest(
@@ -75,7 +71,6 @@ async function handleVerifyEmailRequest(
     await setUserAsEmailVerified(session.userId);
 
     // ...
-
 }
 ```
 
@@ -138,38 +133,46 @@ async function handleResendEmailVerificationCodeRequest(
     await sendEmail(faroeUser.email, emailContent);
 
     // ...
-
 }
 ```
 
 Faroe will lock out the user from creating a new verification request for a maximum of 15 minutes after their 5th failed attempt. If you plan to automatically create a new verification request if the current user doesn't have a valid request, ensure to expect rate-limiting errors.
 
-
 ```ts
-// Everything not imported is something you need to define yourself.
-import { FaroeError } from "@faroe/sdk";
-
-let verificationRequest = await faroe.getUserEmailVerificationRequest(Astro.locals.user.faroeId);
-if (verificationRequest === null) {
-	try {
-		verificationRequest = await faroe.createUserEmailVerificationRequest(
-            faroeUser.id
+export async function createEmailVerificationRequestIfExpired(
+    faroeUserId: string,
+    email: string
+): Promise<void> {
+    let verificationRequest = await faroe.getUserEmailVerificationRequest(
+        faroeUserId
+    );
+    if (verificationRequest == null) {
+        verificationRequest = await faroe.createUserEmailVerificationRequest(
+            faroeUserId
         );
         // Send verification code to user's inbox.
-        const emailContent = `Your verification code is ${emailVerificationRequest.code}.`;
-        await sendEmail(faroeUser.email, emailContent);
-	} catch (e) {
-		if (e instanceof FaroeError && e.code === "TOO_MANY_REQUESTS") {
-            response.writeHeader(429);
-            response.write("Please try again later.");
-            return;
-		}
-        response.writeHeader(500);
-        response.write("An unknown error occurred. Please try again later.");
-        return;
-	}
+        const emailContent = `Your verification code is ${verificationRequest.code}.`;
+        await sendEmail(email, emailContent);
+    }
 }
+```
 
-// Render form
+```ts
+import { FaroeError } from "@faroe/sdk";
 
+try {
+    verificationRequest = await createEmailVerificationRequestIfExpired(
+        user.faroeId,
+        user.email
+    );
+} catch (e) {
+    if (e instanceof FaroeError && e.code === "TOO_MANY_REQUESTS") {
+        response.writeHeader(429);
+        response.write("Please try again later.");
+        return;
+    }
+    response.writeHeader(500);
+    response.write("An unknown error occurred. Please try again later.");
+    return;
+}
 ```
