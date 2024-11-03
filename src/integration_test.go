@@ -31,7 +31,7 @@ func TestEndpointResponses(t *testing.T) {
 		defer db.Close()
 
 		user1 := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      time.Unix(time.Now().Unix(), 0),
 			PasswordHash:   "HASH1",
 			RecoveryCode:   "12345678",
@@ -249,13 +249,13 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("get /users/userid", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "GET", "/users/1")
+		testAuthentication(t, "GET", "/users/u1")
 
 		db := initializeTestDB(t)
 		defer db.Close()
 
 		user1 := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      time.Unix(time.Now().Unix(), 0),
 			PasswordHash:   "HASH1",
 			RecoveryCode:   "12345678",
@@ -269,13 +269,13 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("GET", "/users/2", nil)
+		r := httptest.NewRequest("GET", "/users/u2", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("GET", "/users/1", nil)
+		r = httptest.NewRequest("GET", "/users/u1", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -300,13 +300,13 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("delete /users/userid", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "DELETE", "/users/1")
+		testAuthentication(t, "DELETE", "/users/u1")
 
 		db := initializeTestDB(t)
 		defer db.Close()
 
 		user1 := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      time.Unix(time.Now().Unix(), 0),
 			PasswordHash:   "HASH1",
 			RecoveryCode:   "12345678",
@@ -320,13 +320,13 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("DELETE", "/users/2", nil)
+		r := httptest.NewRequest("DELETE", "/users/u2", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("DELETE", "/users/1", nil)
+		r = httptest.NewRequest("DELETE", "/users/u1", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -336,13 +336,13 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("post /users/userid/update-password", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "POST", "/users/1/update-password")
+		testAuthentication(t, "POST", "/users/u1/update-password")
 
 		db := initializeTestDB(t)
 		defer db.Close()
 
 		user1 := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      time.Unix(time.Now().Unix(), 0),
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -356,339 +356,35 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("POST", "/users/2/update-password", nil)
+		r := httptest.NewRequest("POST", "/users/u2/update-password", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
 		data := `{"password":"invalid","new_password":"1234"}`
-		r = httptest.NewRequest("POST", "/users/1/update-password", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/users/u1/update-password", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorWeakPassword)
 
 		data = `{"password":"invalid","new_password":"12345678"}`
-		r = httptest.NewRequest("POST", "/users/1/update-password", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/users/u1/update-password", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorWeakPassword)
 
 		data = `{"password":"invalid","new_password":"super_super_secure_password"}`
-		r = httptest.NewRequest("POST", "/users/1/update-password", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/users/u1/update-password", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorIncorrectPassword)
 
 		data = `{"password":"super_secure_password","new_password":"super_super_secure_password"}`
-		r = httptest.NewRequest("POST", "/users/1/update-password", strings.NewReader(data))
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assert.Equal(t, 204, res.StatusCode)
-	})
-
-	t.Run("post /users/userid/register-totp", func(t *testing.T) {
-		t.Parallel()
-
-		testAuthentication(t, "POST", "/users/1/register-totp")
-
-		db := initializeTestDB(t)
-		defer db.Close()
-
-		user1 := User{
-			Id:             "1",
-			CreatedAt:      time.Unix(time.Now().Unix(), 0),
-			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
-			RecoveryCode:   "12345678",
-			TOTPRegistered: false,
-		}
-		err := insertUser(db, context.Background(), &user1)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		env := createEnvironment(db, nil)
-		app := CreateApp(env)
-
-		r := httptest.NewRequest("POST", "/users/2/register-totp", nil)
-		w := httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res := w.Result()
-		assertErrorResponse(t, res, 404, "NOT_FOUND")
-
-		data := `{"key": "moM4ZtcDvWQQIA==", "code": "123456"}`
-		r = httptest.NewRequest("POST", "/users/1/register-totp", strings.NewReader(data))
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertErrorResponse(t, res, 400, ExpectedErrorInvalidData)
-
-		data = `{"key": "j1dCsnrWOnKAfyMxShUPZ9AUwes", "code": "123456"}`
-		r = httptest.NewRequest("POST", "/users/1/register-totp", strings.NewReader(data))
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertErrorResponse(t, res, 400, ExpectedErrorInvalidData)
-
-		data = `{"key": "j1dCsnrWOnKAfyMxShUPZ9AUwe$=", "code": "123456"}`
-		r = httptest.NewRequest("POST", "/users/1/register-totp", strings.NewReader(data))
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertErrorResponse(t, res, 400, ExpectedErrorInvalidData)
-
-		data = `{"key": "j1dCsnrWOnKAfyMxShUPZ9AUwes=", "code": "123456"}`
-		r = httptest.NewRequest("POST", "/users/1/register-totp", strings.NewReader(data))
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertErrorResponse(t, res, 400, ExpectedErrorIncorrectCode)
-
-		key := make([]byte, 20)
-		_, err = rand.Read(key)
-		if err != nil {
-			t.Fatal(err)
-		}
-		totp := otp.GenerateTOTP(time.Now(), key, 30*time.Second, 6)
-		data = fmt.Sprintf(`{"key":"%s", "code":"%s"}`, base64.StdEncoding.EncodeToString(key), totp)
-		r = httptest.NewRequest("POST", "/users/1/register-totp", strings.NewReader(data))
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertJSONResponse(t, res, userTOTPCredentialJSONKeys)
-
-		key = make([]byte, 20)
-		_, err = rand.Read(key)
-		if err != nil {
-			t.Fatal(err)
-		}
-		totp = otp.GenerateTOTP(time.Now(), key, 30*time.Second, 6)
-		data = fmt.Sprintf(`{"key":"%s", "code":"%s"}`, base64.StdEncoding.EncodeToString(key), totp)
-		r = httptest.NewRequest("POST", "/users/1/register-totp", strings.NewReader(data))
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertJSONResponse(t, res, userTOTPCredentialJSONKeys)
-	})
-
-	t.Run("get /user/userid/totp-credential", func(t *testing.T) {
-		t.Parallel()
-
-		testAuthentication(t, "GET", "/users/1/totp-credential")
-
-		db := initializeTestDB(t)
-		defer db.Close()
-
-		now := time.Unix(time.Now().Unix(), 0)
-		user1 := User{
-			Id:             "1",
-			CreatedAt:      now,
-			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
-			RecoveryCode:   "12345678",
-			TOTPRegistered: false,
-		}
-		err := insertUser(db, context.Background(), &user1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		user2 := User{
-			Id:             "2",
-			CreatedAt:      now,
-			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
-			RecoveryCode:   "12345678",
-			TOTPRegistered: false,
-		}
-		err = insertUser(db, context.Background(), &user2)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		credential1 := UserTOTPCredential{
-			UserId:    user1.Id,
-			CreatedAt: now,
-			Key:       make([]byte, 20),
-		}
-		err = insertUserTOTPCredential(db, &credential1)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		env := createEnvironment(db, nil)
-		app := CreateApp(env)
-
-		r := httptest.NewRequest("GET", "/users/3/totp-credential", nil)
-		w := httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res := w.Result()
-		assertErrorResponse(t, res, 404, "NOT_FOUND")
-
-		r = httptest.NewRequest("GET", "/users/2/totp-credential", nil)
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertErrorResponse(t, res, 404, "NOT_FOUND")
-
-		r = httptest.NewRequest("GET", "/users/1/totp-credential", nil)
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assert.Equal(t, 200, res.StatusCode)
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
-		var result UserTOTPCredentialJSON
-		err = json.Unmarshal(body, &result)
-		if err != nil {
-			t.Fatal(err)
-		}
-		var expected UserTOTPCredentialJSON
-		err = json.Unmarshal([]byte(credential1.EncodeToJSON()), &expected)
-		if err != nil {
-			t.Fatal(err)
-		}
-		assert.Equal(t, expected, result)
-	})
-
-	t.Run("delete /users/userid/totp-credential", func(t *testing.T) {
-		t.Parallel()
-
-		testAuthentication(t, "DELETE", "/users/1/totp-credential")
-
-		db := initializeTestDB(t)
-		defer db.Close()
-
-		now := time.Unix(time.Now().Unix(), 0)
-		user1 := User{
-			Id:             "1",
-			CreatedAt:      now,
-			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
-			RecoveryCode:   "12345678",
-			TOTPRegistered: false,
-		}
-		err := insertUser(db, context.Background(), &user1)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		user2 := User{
-			Id:             "2",
-			CreatedAt:      now,
-			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
-			RecoveryCode:   "12345678",
-			TOTPRegistered: false,
-		}
-		err = insertUser(db, context.Background(), &user2)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		credential1 := UserTOTPCredential{
-			UserId:    user1.Id,
-			CreatedAt: now,
-			Key:       make([]byte, 20),
-		}
-		err = insertUserTOTPCredential(db, &credential1)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		env := createEnvironment(db, nil)
-		app := CreateApp(env)
-
-		r := httptest.NewRequest("DELETE", "/users/3/totp-credential", nil)
-		w := httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res := w.Result()
-		assertErrorResponse(t, res, 404, "NOT_FOUND")
-
-		r = httptest.NewRequest("DELETE", "/users/2/totp-credential", nil)
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertErrorResponse(t, res, 404, "NOT_FOUND")
-
-		r = httptest.NewRequest("DELETE", "/users/1/totp-credential", nil)
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assert.Equal(t, 204, res.StatusCode)
-	})
-
-	t.Run("post /users/userid/verify-2fa/totp", func(t *testing.T) {
-		t.Parallel()
-
-		testAuthentication(t, "POST", "/users/1/verify-2fa/totp")
-
-		db := initializeTestDB(t)
-		defer db.Close()
-
-		now := time.Unix(time.Now().Unix(), 0)
-		user1 := User{
-			Id:             "1",
-			CreatedAt:      now,
-			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
-			RecoveryCode:   "12345678",
-			TOTPRegistered: false,
-		}
-		err := insertUser(db, context.Background(), &user1)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		user2 := User{
-			Id:             "2",
-			CreatedAt:      now,
-			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
-			RecoveryCode:   "12345678",
-			TOTPRegistered: false,
-		}
-		err = insertUser(db, context.Background(), &user2)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		key := make([]byte, 20)
-		rand.Read(key)
-		credential1 := UserTOTPCredential{
-			UserId:    user1.Id,
-			CreatedAt: now,
-			Key:       key,
-		}
-		err = insertUserTOTPCredential(db, &credential1)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		env := createEnvironment(db, nil)
-		app := CreateApp(env)
-
-		r := httptest.NewRequest("POST", "/users/3/verify-2fa/totp", nil)
-		w := httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res := w.Result()
-		assertErrorResponse(t, res, 404, "NOT_FOUND")
-
-		r = httptest.NewRequest("POST", "/users/2/verify-2fa/totp", nil)
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertErrorResponse(t, res, 400, ExpectedErrorNotAllowed)
-
-		data := `{"code":"123456"}`
-		r = httptest.NewRequest("POST", "/users/1/verify-2fa/totp", strings.NewReader(data))
-		w = httptest.NewRecorder()
-		app.ServeHTTP(w, r)
-		res = w.Result()
-		assertErrorResponse(t, res, 400, ExpectedErrorIncorrectCode)
-
-		totp := otp.GenerateTOTP(time.Now(), key, 30*time.Second, 6)
-		data = fmt.Sprintf(`{"code":"%s"}`, totp)
-		r = httptest.NewRequest("POST", "/users/1/verify-2fa/totp", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/users/u1/update-password", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -698,14 +394,14 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("post /users/userid/regenerate-recovery-code", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "POST", "/users/1/regenerate-recovery-code")
+		testAuthentication(t, "POST", "/users/u1/regenerate-recovery-code")
 
 		db := initializeTestDB(t)
 		defer db.Close()
 
 		now := time.Unix(time.Now().Unix(), 0)
 		user1 := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -719,30 +415,30 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("POST", "/users/2/regenerate-recovery-code", nil)
+		r := httptest.NewRequest("POST", "/users/u2/regenerate-recovery-code", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("POST", "/users/1/regenerate-recovery-code", nil)
+		r = httptest.NewRequest("POST", "/users/u1/regenerate-recovery-code", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertJSONResponse(t, res, recoveryCodeJSONKeys)
 	})
 
-	t.Run("post /users/userid/reset-2fa", func(t *testing.T) {
+	t.Run("post /users/userid/verify-recovery-code", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "POST", "/users/1/reset-2fa")
+		testAuthentication(t, "POST", "/users/u1/verify-recovery-code")
 
 		db := initializeTestDB(t)
 		defer db.Close()
 
 		now := time.Unix(time.Now().Unix(), 0)
 		user1 := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -756,21 +452,21 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("POST", "/users/2/reset-2fa", nil)
+		r := httptest.NewRequest("POST", "/users/u2/verify-recovery-code", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
 		data := `{"recovery_code":"87654321"}`
-		r = httptest.NewRequest("POST", "/users/1/reset-2fa", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/users/u1/verify-recovery-code", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorIncorrectCode)
 
 		data = `{"recovery_code":"12345678"}`
-		r = httptest.NewRequest("POST", "/users/1/reset-2fa", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/users/u1/verify-recovery-code", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -780,13 +476,13 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("post /users/userid/verify-password", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "POST", "/users/1/verify-password")
+		testAuthentication(t, "POST", "/users/u1/verify-password")
 
 		db := initializeTestDB(t)
 		defer db.Close()
 
 		user1 := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      time.Unix(time.Now().Unix(), 0),
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -800,19 +496,56 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("POST", "/users/2/verify-password", strings.NewReader(`{"password":"12345678"}`))
+		r := httptest.NewRequest("POST", "/users/u2/verify-password", strings.NewReader(`{"password":"12345678"}`))
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("POST", "/users/1/verify-password", strings.NewReader(`{"password":"12345678"}`))
+		r = httptest.NewRequest("POST", "/users/u1/verify-password", strings.NewReader(`{"password":"12345678"}`))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorIncorrectPassword)
 
-		r = httptest.NewRequest("POST", "/users/1/verify-password", strings.NewReader(`{"password":"super_secure_password"}`))
+		r = httptest.NewRequest("POST", "/users/u1/verify-password", strings.NewReader(`{"password":"super_secure_password"}`))
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assert.Equal(t, 204, res.StatusCode)
+	})
+
+	t.Run("delete /users/userid/second-factors", func(t *testing.T) {
+		t.Parallel()
+
+		testAuthentication(t, "DELETE", "/users/u1/second-factors")
+
+		db := initializeTestDB(t)
+		defer db.Close()
+
+		now := time.Unix(time.Now().Unix(), 0)
+		user1 := User{
+			Id:             "u1",
+			CreatedAt:      now,
+			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
+			RecoveryCode:   "12345678",
+			TOTPRegistered: false,
+		}
+		err := insertUser(db, context.Background(), &user1)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		env := createEnvironment(db, nil)
+		app := CreateApp(env)
+
+		r := httptest.NewRequest("DELETE", "/users/u2/second-factors", nil)
+		w := httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res := w.Result()
+		assertErrorResponse(t, res, 404, "NOT_FOUND")
+
+		r = httptest.NewRequest("DELETE", "/users/u1/second-factors", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -822,13 +555,13 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("post /users/userid/email-verification-request", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "POST", "/users/1/email-verification-request")
+		testAuthentication(t, "POST", "/users/u1/email-verification-request")
 
 		db := initializeTestDB(t)
 		defer db.Close()
 
 		user1 := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      time.Unix(time.Now().Unix(), 0),
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -842,19 +575,19 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("POST", "/users/2/email-verification-request", nil)
+		r := httptest.NewRequest("POST", "/users/u2/email-verification-request", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("POST", "/users/1/email-verification-request", nil)
+		r = httptest.NewRequest("POST", "/users/u1/email-verification-request", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertJSONResponse(t, res, userEmailVerificationRequestJSONKeys)
 
-		r = httptest.NewRequest("POST", "/users/1/email-verification-request", nil)
+		r = httptest.NewRequest("POST", "/users/u1/email-verification-request", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -864,7 +597,7 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("get /users/userid/email-verification-request", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "GET", "/users/1/email-verification-request")
+		testAuthentication(t, "GET", "/users/u1/email-verification-request")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -872,7 +605,7 @@ func TestEndpointResponses(t *testing.T) {
 		now := time.Unix(time.Now().Unix(), 0)
 
 		user1 := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -884,7 +617,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		user2 := User{
-			Id:             "2",
+			Id:             "u2",
 			CreatedAt:      now,
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -896,7 +629,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		user3 := User{
-			Id:             "3",
+			Id:             "u3",
 			CreatedAt:      now,
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -913,7 +646,7 @@ func TestEndpointResponses(t *testing.T) {
 			Code:      "12345678",
 			ExpiresAt: now.Add(10 * time.Minute),
 		}
-		err = insertUserEmailVerificationRequest(db, &verificationRequest1)
+		err = insertUserEmailVerificationRequest(db, context.Background(), &verificationRequest1)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -924,7 +657,7 @@ func TestEndpointResponses(t *testing.T) {
 			Code:      "12345678",
 			ExpiresAt: now.Add(-10 * time.Minute),
 		}
-		err = insertUserEmailVerificationRequest(db, &verificationRequest2)
+		err = insertUserEmailVerificationRequest(db, context.Background(), &verificationRequest2)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -938,19 +671,19 @@ func TestEndpointResponses(t *testing.T) {
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("GET", "/users/3/email-verification-request", nil)
+		r = httptest.NewRequest("GET", "/users/u3/email-verification-request", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("GET", "/users/2/email-verification-request", nil)
+		r = httptest.NewRequest("GET", "/users/u2/email-verification-request", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("GET", "/users/1/email-verification-request", nil)
+		r = httptest.NewRequest("GET", "/users/u1/email-verification-request", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -975,7 +708,7 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("delete /users/userid/email-verification-request", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "DELETE", "/users/1/email-verification-request")
+		testAuthentication(t, "DELETE", "/users/u1/email-verification-request")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -983,7 +716,7 @@ func TestEndpointResponses(t *testing.T) {
 		now := time.Unix(time.Now().Unix(), 0)
 
 		user1 := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -995,7 +728,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		user2 := User{
-			Id:             "2",
+			Id:             "u2",
 			CreatedAt:      now,
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -1007,7 +740,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		user3 := User{
-			Id:             "3",
+			Id:             "u3",
 			CreatedAt:      now,
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -1024,7 +757,7 @@ func TestEndpointResponses(t *testing.T) {
 			Code:      "12345678",
 			ExpiresAt: now.Add(10 * time.Minute),
 		}
-		err = insertUserEmailVerificationRequest(db, &verificationRequest1)
+		err = insertUserEmailVerificationRequest(db, context.Background(), &verificationRequest1)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1035,7 +768,7 @@ func TestEndpointResponses(t *testing.T) {
 			Code:      "12345678",
 			ExpiresAt: now.Add(-10 * time.Minute),
 		}
-		err = insertUserEmailVerificationRequest(db, &verificationRequest2)
+		err = insertUserEmailVerificationRequest(db, context.Background(), &verificationRequest2)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1049,19 +782,19 @@ func TestEndpointResponses(t *testing.T) {
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("DELETE", "/users/3/email-verification-request", nil)
+		r = httptest.NewRequest("DELETE", "/users/u3/email-verification-request", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("DELETE", "/users/2/email-verification-request", nil)
+		r = httptest.NewRequest("DELETE", "/users/u2/email-verification-request", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("DELETE", "/users/1/email-verification-request", nil)
+		r = httptest.NewRequest("DELETE", "/users/u1/email-verification-request", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -1071,7 +804,7 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("post /users/userid/verify-email", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "POST", "/users/1/verify-email")
+		testAuthentication(t, "POST", "/users/u1/verify-email")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1079,7 +812,7 @@ func TestEndpointResponses(t *testing.T) {
 		now := time.Unix(time.Now().Unix(), 0)
 
 		user1 := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -1091,7 +824,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		user2 := User{
-			Id:             "2",
+			Id:             "u2",
 			CreatedAt:      now,
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -1103,7 +836,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		user3 := User{
-			Id:             "3",
+			Id:             "u3",
 			CreatedAt:      now,
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -1120,7 +853,7 @@ func TestEndpointResponses(t *testing.T) {
 			Code:      "12345678",
 			ExpiresAt: now.Add(10 * time.Minute),
 		}
-		err = insertUserEmailVerificationRequest(db, &verificationRequest1)
+		err = insertUserEmailVerificationRequest(db, context.Background(), &verificationRequest1)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1131,7 +864,7 @@ func TestEndpointResponses(t *testing.T) {
 			Code:      "12345678",
 			ExpiresAt: now.Add(-10 * time.Minute),
 		}
-		err = insertUserEmailVerificationRequest(db, &verificationRequest2)
+		err = insertUserEmailVerificationRequest(db, context.Background(), &verificationRequest2)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1145,27 +878,27 @@ func TestEndpointResponses(t *testing.T) {
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("POST", "/users/3/verify-email", nil)
+		r = httptest.NewRequest("POST", "/users/u3/verify-email", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorNotAllowed)
 
-		r = httptest.NewRequest("POST", "/users/2/verify-email", nil)
+		r = httptest.NewRequest("POST", "/users/u2/verify-email", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorNotAllowed)
 
 		data := `{"code":"87654321"}`
-		r = httptest.NewRequest("POST", "/users/1/verify-email", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/users/u1/verify-email", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorIncorrectCode)
 
 		data = `{"code":"12345678"}`
-		r = httptest.NewRequest("POST", "/users/1/verify-email", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/users/u1/verify-email", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -1175,7 +908,7 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("post /users/userid/email-update-requests", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "POST", "/users/1/email-update-requests")
+		testAuthentication(t, "POST", "/users/u1/email-update-requests")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1183,7 +916,7 @@ func TestEndpointResponses(t *testing.T) {
 		now := time.Unix(time.Now().Unix(), 0)
 
 		user1 := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -1198,14 +931,14 @@ func TestEndpointResponses(t *testing.T) {
 		app := CreateApp(env)
 
 		data := `{"email":"email"}`
-		r := httptest.NewRequest("POST", "/users/1/email-update-requests", strings.NewReader(data))
+		r := httptest.NewRequest("POST", "/users/u1/email-update-requests", strings.NewReader(data))
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorInvalidData)
 
 		data = `{"email":"user2@example.com"}`
-		r = httptest.NewRequest("POST", "/users/1/email-update-requests", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/users/u1/email-update-requests", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -1215,7 +948,7 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("get /users/userid/email-update-requests", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "GET", "/users/1/email-update-requests")
+		testAuthentication(t, "GET", "/users/u1/email-update-requests")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1223,7 +956,7 @@ func TestEndpointResponses(t *testing.T) {
 		now := time.Unix(time.Now().Unix(), 0)
 
 		user1 := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
@@ -1235,7 +968,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		user2 := User{
-			Id:             "2",
+			Id:             "u2",
 			CreatedAt:      now,
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
@@ -1247,7 +980,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		updateRequest1 := EmailUpdateRequest{
-			Id:        "1",
+			Id:        "eur1",
 			UserId:    user1.Id,
 			CreatedAt: now,
 			Email:     "user1b@example.com",
@@ -1260,7 +993,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		updateRequest2 := EmailUpdateRequest{
-			Id:        "2",
+			Id:        "eur2",
 			UserId:    user1.Id,
 			CreatedAt: now,
 			Email:     "user1c@example.com",
@@ -1273,7 +1006,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		updateRequest3 := EmailUpdateRequest{
-			Id:        "3",
+			Id:        "eur3",
 			UserId:    user2.Id,
 			CreatedAt: now,
 			Email:     "user2b@example.com",
@@ -1288,13 +1021,13 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("GET", "/users/3/email-update-requests", nil)
+		r := httptest.NewRequest("GET", "/users/u3/email-update-requests", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("GET", "/users/1/email-update-requests", nil)
+		r = httptest.NewRequest("GET", "/users/u1/email-update-requests", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -1320,7 +1053,7 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("delete /users/userid/email-update-requests", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "DELETE", "/users/1/email-update-requests")
+		testAuthentication(t, "DELETE", "/users/u1/email-update-requests")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1328,7 +1061,7 @@ func TestEndpointResponses(t *testing.T) {
 		now := time.Unix(time.Now().Unix(), 0)
 
 		user := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
@@ -1340,7 +1073,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		updateRequest := EmailUpdateRequest{
-			Id:        "1",
+			Id:        "eur1",
 			UserId:    user.Id,
 			CreatedAt: now,
 			Email:     "user1b@example.com",
@@ -1355,13 +1088,13 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("DELETE", "/users/2/email-update-requests", nil)
+		r := httptest.NewRequest("DELETE", "/users/u2/email-update-requests", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("DELETE", "/users/1/email-update-requests", nil)
+		r = httptest.NewRequest("DELETE", "/users/u1/email-update-requests", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -1371,7 +1104,7 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("get /email-update-requests/requestid", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "GET", "/email-update-requests/1")
+		testAuthentication(t, "GET", "/email-update-requests/eur1")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1379,7 +1112,7 @@ func TestEndpointResponses(t *testing.T) {
 		now := time.Unix(time.Now().Unix(), 0)
 
 		user := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -1391,7 +1124,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		updateRequest1 := EmailUpdateRequest{
-			Id:        "1",
+			Id:        "eur1",
 			UserId:    user.Id,
 			CreatedAt: now,
 			Email:     "user1b@example.com",
@@ -1404,7 +1137,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		updateRequest2 := EmailUpdateRequest{
-			Id:        "2",
+			Id:        "eur2",
 			UserId:    user.Id,
 			CreatedAt: now,
 			Email:     "user1c@example.com",
@@ -1419,19 +1152,19 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("GET", "/email-update-requests/3", nil)
+		r := httptest.NewRequest("GET", "/email-update-requests/eur3", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("GET", "/email-update-requests/2", nil)
+		r = httptest.NewRequest("GET", "/email-update-requests/eur2", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("GET", "/email-update-requests/1", nil)
+		r = httptest.NewRequest("GET", "/email-update-requests/eur1", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -1456,7 +1189,7 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("delete /email-update-requests/requestid", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "DELETE", "/email-update-requests/1")
+		testAuthentication(t, "DELETE", "/email-update-requests/eur1")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1464,7 +1197,7 @@ func TestEndpointResponses(t *testing.T) {
 		now := time.Unix(time.Now().Unix(), 0)
 
 		user := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -1476,7 +1209,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		updateRequest1 := EmailUpdateRequest{
-			Id:        "1",
+			Id:        "eur1",
 			UserId:    user.Id,
 			CreatedAt: now,
 			Email:     "user1b@example.com",
@@ -1489,7 +1222,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		updateRequest2 := EmailUpdateRequest{
-			Id:        "2",
+			Id:        "eur2",
 			UserId:    user.Id,
 			CreatedAt: now,
 			Email:     "user1c@example.com",
@@ -1504,19 +1237,19 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("DELETE", "/email-update-requests/3", nil)
+		r := httptest.NewRequest("DELETE", "/email-update-requests/eur3", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("DELETE", "/email-update-requests/2", nil)
+		r = httptest.NewRequest("DELETE", "/email-update-requests/eur2", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("DELETE", "/email-update-requests/1", nil)
+		r = httptest.NewRequest("DELETE", "/email-update-requests/eur1", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -1534,7 +1267,7 @@ func TestEndpointResponses(t *testing.T) {
 		now := time.Unix(time.Now().Unix(), 0)
 
 		user := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -1546,7 +1279,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		updateRequest1 := EmailUpdateRequest{
-			Id:        "1",
+			Id:        "eur1",
 			UserId:    user.Id,
 			CreatedAt: now,
 			Email:     "user1b@example.com",
@@ -1559,7 +1292,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		updateRequest2 := EmailUpdateRequest{
-			Id:        "2",
+			Id:        "eur2",
 			UserId:    user.Id,
 			CreatedAt: now,
 			Email:     "user1c@example.com",
@@ -1574,28 +1307,28 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		data := `{"request_id":"3","code":"123445678"}`
+		data := `{"request_id":"eur3","code":"123445678"}`
 		r := httptest.NewRequest("POST", "/verify-new-email", strings.NewReader(data))
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorInvalidRequest)
 
-		data = `{"request_id":"2","code":"123445678"}`
+		data = `{"request_id":"eur2","code":"123445678"}`
 		r = httptest.NewRequest("POST", "/verify-new-email", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorInvalidRequest)
 
-		data = `{"request_id":"1","code":"87654321"}`
+		data = `{"request_id":"eur1","code":"87654321"}`
 		r = httptest.NewRequest("POST", "/verify-new-email", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorIncorrectCode)
 
-		data = `{"request_id":"1","code":"12345678"}`
+		data = `{"request_id":"eur1","code":"12345678"}`
 		r = httptest.NewRequest("POST", "/verify-new-email", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
@@ -1618,10 +1351,378 @@ func TestEndpointResponses(t *testing.T) {
 		assert.Equal(t, expected, result)
 	})
 
+	t.Run("post /users/userid/register-totp-credential", func(t *testing.T) {
+		t.Parallel()
+
+		testAuthentication(t, "POST", "/users/u1/register-totp-credential")
+
+		db := initializeTestDB(t)
+		defer db.Close()
+
+		user1 := User{
+			Id:             "u1",
+			CreatedAt:      time.Unix(time.Now().Unix(), 0),
+			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
+			RecoveryCode:   "12345678",
+			TOTPRegistered: false,
+		}
+		err := insertUser(db, context.Background(), &user1)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		env := createEnvironment(db, nil)
+		app := CreateApp(env)
+
+		r := httptest.NewRequest("POST", "/users/u2/register-totp-credential", nil)
+		w := httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res := w.Result()
+		assertErrorResponse(t, res, 404, "NOT_FOUND")
+
+		data := `{"key": "moM4ZtcDvWQQIA==", "code": "123456"}`
+		r = httptest.NewRequest("POST", "/users/u1/register-totp-credential", strings.NewReader(data))
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assertErrorResponse(t, res, 400, ExpectedErrorInvalidData)
+
+		data = `{"key": "j1dCsnrWOnKAfyMxShUPZ9AUwes", "code": "123456"}`
+		r = httptest.NewRequest("POST", "/users/u1/register-totp-credential", strings.NewReader(data))
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assertErrorResponse(t, res, 400, ExpectedErrorInvalidData)
+
+		data = `{"key": "j1dCsnrWOnKAfyMxShUPZ9AUwe$=", "code": "123456"}`
+		r = httptest.NewRequest("POST", "/users/u1/register-totp-credential", strings.NewReader(data))
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assertErrorResponse(t, res, 400, ExpectedErrorInvalidData)
+
+		data = `{"key": "j1dCsnrWOnKAfyMxShUPZ9AUwes=", "code": "123456"}`
+		r = httptest.NewRequest("POST", "/users/u1/register-totp-credential", strings.NewReader(data))
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assertErrorResponse(t, res, 400, ExpectedErrorIncorrectCode)
+
+		key := make([]byte, 20)
+		_, err = rand.Read(key)
+		if err != nil {
+			t.Fatal(err)
+		}
+		totp := otp.GenerateTOTP(time.Now(), key, 30*time.Second, 6)
+		data = fmt.Sprintf(`{"key":"%s", "code":"%s"}`, base64.StdEncoding.EncodeToString(key), totp)
+		r = httptest.NewRequest("POST", "/users/u1/register-totp-credential", strings.NewReader(data))
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assertJSONResponse(t, res, totpCredentialJSONKeys)
+
+		key = make([]byte, 20)
+		_, err = rand.Read(key)
+		if err != nil {
+			t.Fatal(err)
+		}
+		totp = otp.GenerateTOTP(time.Now(), key, 30*time.Second, 6)
+		data = fmt.Sprintf(`{"key":"%s", "code":"%s"}`, base64.StdEncoding.EncodeToString(key), totp)
+		r = httptest.NewRequest("POST", "/users/u1/register-totp-credential", strings.NewReader(data))
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assertJSONResponse(t, res, totpCredentialJSONKeys)
+	})
+
+	t.Run("get /users/userid/totp-credentials", func(t *testing.T) {
+		t.Parallel()
+
+		testAuthentication(t, "GET", "/users/u1/totp-credentials")
+
+		db := initializeTestDB(t)
+		defer db.Close()
+
+		now := time.Unix(time.Now().Unix(), 0)
+
+		user := User{
+			Id:             "u1",
+			CreatedAt:      now,
+			PasswordHash:   "HASH",
+			RecoveryCode:   "12345678",
+			TOTPRegistered: false,
+		}
+		err := insertUser(db, context.Background(), &user)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		credential := TOTPCredential{
+			Id:        "tc1",
+			UserId:    user.Id,
+			CreatedAt: now,
+			Key:       make([]byte, 20),
+		}
+		err = insertTOTPCredential(db, context.Background(), &credential)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		env := createEnvironment(db, nil)
+		app := CreateApp(env)
+
+		r := httptest.NewRequest("GET", "/users/u2/totp-credentials", nil)
+		w := httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res := w.Result()
+		assertErrorResponse(t, res, 404, "NOT_FOUND")
+
+		r = httptest.NewRequest("GET", "/users/u1/totp-credentials", nil)
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assert.Equal(t, 200, res.StatusCode)
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var result []TOTPCredentialJSON
+		err = json.Unmarshal(body, &result)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var expected1 TOTPCredentialJSON
+		err = json.Unmarshal([]byte(credential.EncodeToJSON()), &expected1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, []TOTPCredentialJSON{expected1}, result)
+	})
+
+	t.Run("delete /users/userid/totp-credentials", func(t *testing.T) {
+		t.Parallel()
+
+		testAuthentication(t, "DELETE", "/users/u1/totp-credentials")
+
+		db := initializeTestDB(t)
+		defer db.Close()
+
+		now := time.Unix(time.Now().Unix(), 0)
+
+		user := User{
+			Id:             "u1",
+			CreatedAt:      now,
+			PasswordHash:   "HASH",
+			RecoveryCode:   "12345678",
+			TOTPRegistered: false,
+		}
+		err := insertUser(db, context.Background(), &user)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		credential := TOTPCredential{
+			Id:        "tc1",
+			UserId:    user.Id,
+			CreatedAt: now,
+			Key:       make([]byte, 20),
+		}
+		err = insertTOTPCredential(db, context.Background(), &credential)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		env := createEnvironment(db, nil)
+		app := CreateApp(env)
+
+		r := httptest.NewRequest("DELETE", "/users/u2/totp-credentials", nil)
+		w := httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res := w.Result()
+		assertErrorResponse(t, res, 404, "NOT_FOUND")
+
+		r = httptest.NewRequest("DELETE", "/users/u1/totp-credentials", nil)
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assert.Equal(t, 204, res.StatusCode)
+	})
+
+	t.Run("get /totp-credentials/credentialid", func(t *testing.T) {
+		t.Parallel()
+
+		testAuthentication(t, "GET", "/totp-credentials/tc1")
+
+		db := initializeTestDB(t)
+		defer db.Close()
+
+		now := time.Unix(time.Now().Unix(), 0)
+		user := User{
+			Id:             "u1",
+			CreatedAt:      now,
+			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
+			RecoveryCode:   "12345678",
+			TOTPRegistered: false,
+		}
+		err := insertUser(db, context.Background(), &user)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		credential := TOTPCredential{
+			Id:        "tc1",
+			UserId:    user.Id,
+			CreatedAt: now,
+			Key:       make([]byte, 20),
+		}
+		err = insertTOTPCredential(db, context.Background(), &credential)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		env := createEnvironment(db, nil)
+		app := CreateApp(env)
+
+		r := httptest.NewRequest("GET", "/totp-credentials/2", nil)
+		w := httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res := w.Result()
+		assertErrorResponse(t, res, 404, "NOT_FOUND")
+
+		r = httptest.NewRequest("GET", "/totp-credentials/tc1", nil)
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assert.Equal(t, 200, res.StatusCode)
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var result TOTPCredentialJSON
+		err = json.Unmarshal(body, &result)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var expected TOTPCredentialJSON
+		err = json.Unmarshal([]byte(credential.EncodeToJSON()), &expected)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, expected, result)
+	})
+
+	t.Run("delete /totp-credentials/credentialid", func(t *testing.T) {
+		t.Parallel()
+
+		testAuthentication(t, "DELETE", "/totp-credentials/tc1")
+
+		db := initializeTestDB(t)
+		defer db.Close()
+
+		now := time.Unix(time.Now().Unix(), 0)
+		user := User{
+			Id:             "u1",
+			CreatedAt:      now,
+			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
+			RecoveryCode:   "12345678",
+			TOTPRegistered: false,
+		}
+		err := insertUser(db, context.Background(), &user)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		credential := TOTPCredential{
+			Id:        "tc1",
+			UserId:    user.Id,
+			CreatedAt: now,
+			Key:       make([]byte, 20),
+		}
+		err = insertTOTPCredential(db, context.Background(), &credential)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		env := createEnvironment(db, nil)
+		app := CreateApp(env)
+
+		r := httptest.NewRequest("DELETE", "/totp-credentials/2", nil)
+		w := httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res := w.Result()
+		assertErrorResponse(t, res, 404, "NOT_FOUND")
+
+		r = httptest.NewRequest("DELETE", "/totp-credentials/tc1", nil)
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assert.Equal(t, 204, res.StatusCode)
+	})
+
+	t.Run("post /totp-credentials/credentialid/verify-totp", func(t *testing.T) {
+		t.Parallel()
+
+		testAuthentication(t, "POST", "/totp-credentials/tc1/verify-totp")
+
+		db := initializeTestDB(t)
+		defer db.Close()
+
+		now := time.Unix(time.Now().Unix(), 0)
+		user := User{
+			Id:             "u1",
+			CreatedAt:      now,
+			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
+			RecoveryCode:   "12345678",
+			TOTPRegistered: false,
+		}
+		err := insertUser(db, context.Background(), &user)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		key := make([]byte, 20)
+		rand.Read(key)
+		credential := TOTPCredential{
+			Id:        "tc1",
+			UserId:    user.Id,
+			CreatedAt: now,
+			Key:       key,
+		}
+		err = insertTOTPCredential(db, context.Background(), &credential)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		env := createEnvironment(db, nil)
+		app := CreateApp(env)
+
+		r := httptest.NewRequest("POST", "/totp-credentials/2/verify-totp", nil)
+		w := httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res := w.Result()
+		assertErrorResponse(t, res, 404, "NOT_FOUND")
+
+		data := `{"code":"123456"}`
+		r = httptest.NewRequest("POST", "/totp-credentials/tc1/verify-totp", strings.NewReader(data))
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assertErrorResponse(t, res, 400, ExpectedErrorIncorrectCode)
+
+		totp := otp.GenerateTOTP(time.Now(), key, 30*time.Second, 6)
+		data = fmt.Sprintf(`{"code":"%s"}`, totp)
+		r = httptest.NewRequest("POST", "/totp-credentials/tc1/verify-totp", strings.NewReader(data))
+		w = httptest.NewRecorder()
+		app.ServeHTTP(w, r)
+		res = w.Result()
+		assert.Equal(t, 204, res.StatusCode)
+	})
+
 	t.Run("post /users/userid/password-reset-requests", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "POST", "/users/1/password-reset-requests")
+		testAuthentication(t, "POST", "/users/u1/password-reset-requests")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1629,7 +1730,7 @@ func TestEndpointResponses(t *testing.T) {
 		now := time.Unix(time.Now().Unix(), 0)
 
 		user1 := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "$argon2id$v=19$m=19456,t=2,p=1$enc5MDZrSElTSVE0ODdTSw$CS/AV+PQs08MhdeIrHhfmQ",
 			RecoveryCode:   "12345678",
@@ -1643,19 +1744,19 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("POST", "/users/2/password-reset-requests", nil)
+		r := httptest.NewRequest("POST", "/users/u2/password-reset-requests", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("POST", "/users/1/password-reset-requests", nil)
+		r = httptest.NewRequest("POST", "/users/u1/password-reset-requests", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertJSONResponse(t, res, passwordResetRequestWithCodeJSONKeys)
 
-		r = httptest.NewRequest("POST", "/users/1/password-reset-requests", strings.NewReader((`{}`)))
+		r = httptest.NewRequest("POST", "/users/u1/password-reset-requests", strings.NewReader((`{}`)))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -1665,7 +1766,7 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("get /password-reset-requests/requestid", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "POST", "/password-reset-requests/1")
+		testAuthentication(t, "POST", "/password-reset-requests/psr1")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1673,7 +1774,7 @@ func TestEndpointResponses(t *testing.T) {
 		now := time.Unix(time.Now().Unix(), 0)
 
 		user := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
@@ -1685,7 +1786,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		resetRequest1 := PasswordResetRequest{
-			Id:        "1",
+			Id:        "psr1",
 			UserId:    user.Id,
 			CreatedAt: now,
 			ExpiresAt: now.Add(10 * time.Minute),
@@ -1697,7 +1798,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		resetRequest2 := PasswordResetRequest{
-			Id:        "2",
+			Id:        "psr2",
 			UserId:    user.Id,
 			CreatedAt: now,
 			ExpiresAt: now.Add(-10 * time.Minute),
@@ -1711,19 +1812,19 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("GET", "/password-reset-requests/3", nil)
+		r := httptest.NewRequest("GET", "/password-reset-requests/psr3", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("GET", "/password-reset-requests/2", nil)
+		r = httptest.NewRequest("GET", "/password-reset-requests/psr2", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("GET", "/password-reset-requests/1", nil)
+		r = httptest.NewRequest("GET", "/password-reset-requests/psr1", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -1748,7 +1849,7 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("delete /password-reset-requests/requestid", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "DELETE", "/password-reset-requests/1")
+		testAuthentication(t, "DELETE", "/password-reset-requests/psr1")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1756,7 +1857,7 @@ func TestEndpointResponses(t *testing.T) {
 		now := time.Unix(time.Now().Unix(), 0)
 
 		user := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
@@ -1768,7 +1869,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		resetRequest1 := PasswordResetRequest{
-			Id:        "1",
+			Id:        "psr1",
 			UserId:    user.Id,
 			CreatedAt: now,
 			ExpiresAt: now.Add(10 * time.Minute),
@@ -1780,7 +1881,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		resetRequest2 := PasswordResetRequest{
-			Id:        "2",
+			Id:        "psr2",
 			UserId:    user.Id,
 			CreatedAt: now,
 			ExpiresAt: now.Add(-10 * time.Minute),
@@ -1794,19 +1895,19 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("DELETE", "/password-reset-requests/3", nil)
+		r := httptest.NewRequest("DELETE", "/password-reset-requests/psr3", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("DELETE", "/password-reset-requests/2", nil)
+		r = httptest.NewRequest("DELETE", "/password-reset-requests/psr2", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("DELETE", "/password-reset-requests/1", nil)
+		r = httptest.NewRequest("DELETE", "/password-reset-requests/psr1", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -1816,7 +1917,7 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("get /users/userid/password-reset-requests", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "GET", "/users/1/password-reset-requests")
+		testAuthentication(t, "GET", "/users/u1/password-reset-requests")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1824,7 +1925,7 @@ func TestEndpointResponses(t *testing.T) {
 		now := time.Unix(time.Now().Unix(), 0)
 
 		user1 := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
@@ -1836,7 +1937,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		user2 := User{
-			Id:             "2",
+			Id:             "u2",
 			CreatedAt:      now,
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
@@ -1848,7 +1949,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		resetRequest1 := PasswordResetRequest{
-			Id:        "1",
+			Id:        "psr1",
 			UserId:    user1.Id,
 			CreatedAt: now,
 			ExpiresAt: now.Add(10 * time.Minute),
@@ -1860,7 +1961,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		resetRequest2 := PasswordResetRequest{
-			Id:        "2",
+			Id:        "psr2",
 			UserId:    user1.Id,
 			CreatedAt: now,
 			ExpiresAt: now.Add(-10 * time.Minute),
@@ -1872,7 +1973,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		updateRequest3 := PasswordResetRequest{
-			Id:        "3",
+			Id:        "psr3",
 			UserId:    user2.Id,
 			CreatedAt: now,
 			ExpiresAt: now.Add(10 * time.Minute),
@@ -1886,13 +1987,13 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("GET", "/users/3/password-reset-requests", nil)
+		r := httptest.NewRequest("GET", "/users/u3/password-reset-requests", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("GET", "/users/1/password-reset-requests", nil)
+		r = httptest.NewRequest("GET", "/users/u1/password-reset-requests", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -1918,7 +2019,7 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("delete /users/userid/password-reset-requests", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "DELETE", "/users/1/password-reset-requests")
+		testAuthentication(t, "DELETE", "/users/u1/password-reset-requests")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1926,7 +2027,7 @@ func TestEndpointResponses(t *testing.T) {
 		now := time.Unix(time.Now().Unix(), 0)
 
 		user := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
@@ -1938,7 +2039,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		resetRequest := PasswordResetRequest{
-			Id:        "1",
+			Id:        "psr1",
 			UserId:    user.Id,
 			CreatedAt: now,
 			ExpiresAt: now.Add(10 * time.Minute),
@@ -1952,13 +2053,13 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		r := httptest.NewRequest("DELETE", "/users/2/password-reset-requests", nil)
+		r := httptest.NewRequest("DELETE", "/users/u2/password-reset-requests", nil)
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
-		r = httptest.NewRequest("DELETE", "/users/1/password-reset-requests", nil)
+		r = httptest.NewRequest("DELETE", "/users/u1/password-reset-requests", nil)
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -1968,7 +2069,7 @@ func TestEndpointResponses(t *testing.T) {
 	t.Run("post /password-reset-requests/requestid/verify-email", func(t *testing.T) {
 		t.Parallel()
 
-		testAuthentication(t, "POST", "/password-reset-requests/1/verify-email")
+		testAuthentication(t, "POST", "/password-reset-requests/psr1/verify-email")
 
 		db := initializeTestDB(t)
 		defer db.Close()
@@ -1976,7 +2077,7 @@ func TestEndpointResponses(t *testing.T) {
 		now := time.Unix(time.Now().Unix(), 0)
 
 		user := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
@@ -1988,7 +2089,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		resetRequest1 := PasswordResetRequest{
-			Id:        "1",
+			Id:        "psr1",
 			UserId:    user.Id,
 			CreatedAt: now,
 			ExpiresAt: now.Add(10 * time.Minute),
@@ -2000,7 +2101,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		resetRequest2 := PasswordResetRequest{
-			Id:        "2",
+			Id:        "psr2",
 			UserId:    user.Id,
 			CreatedAt: now,
 			ExpiresAt: now.Add(-10 * time.Minute),
@@ -2015,28 +2116,28 @@ func TestEndpointResponses(t *testing.T) {
 		app := CreateApp(env)
 
 		data := `{"code":"123445678"}`
-		r := httptest.NewRequest("POST", "/password-reset-requests/3/verify-email", strings.NewReader(data))
+		r := httptest.NewRequest("POST", "/password-reset-requests/psr3/verify-email", strings.NewReader(data))
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
 		data = `{"code":"123445678"}`
-		r = httptest.NewRequest("POST", "/password-reset-requests/2/verify-email", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/password-reset-requests/psr2/verify-email", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 404, "NOT_FOUND")
 
 		data = `{"code":"87654321"}`
-		r = httptest.NewRequest("POST", "/password-reset-requests/1/verify-email", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/password-reset-requests/psr1/verify-email", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorIncorrectCode)
 
 		data = `{"code":"12345678"}`
-		r = httptest.NewRequest("POST", "/password-reset-requests/1/verify-email", strings.NewReader(data))
+		r = httptest.NewRequest("POST", "/password-reset-requests/psr1/verify-email", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
@@ -2054,7 +2155,7 @@ func TestEndpointResponses(t *testing.T) {
 		now := time.Unix(time.Now().Unix(), 0)
 
 		user := User{
-			Id:             "1",
+			Id:             "u1",
 			CreatedAt:      now,
 			PasswordHash:   "HASH",
 			RecoveryCode:   "12345678",
@@ -2066,7 +2167,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		resetRequest1 := PasswordResetRequest{
-			Id:        "1",
+			Id:        "psr1",
 			UserId:    user.Id,
 			CreatedAt: now,
 			ExpiresAt: now.Add(10 * time.Minute),
@@ -2078,7 +2179,7 @@ func TestEndpointResponses(t *testing.T) {
 		}
 
 		resetRequest2 := PasswordResetRequest{
-			Id:        "2",
+			Id:        "psr2",
 			UserId:    user.Id,
 			CreatedAt: now,
 			ExpiresAt: now.Add(-10 * time.Minute),
@@ -2092,28 +2193,28 @@ func TestEndpointResponses(t *testing.T) {
 		env := createEnvironment(db, nil)
 		app := CreateApp(env)
 
-		data := `{"request_id":"3","password":"123445678"}`
+		data := `{"request_id":"psr3","password":"123445678"}`
 		r := httptest.NewRequest("POST", "/reset-password", strings.NewReader(data))
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res := w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorInvalidRequest)
 
-		data = `{"request_id":"2","password":"123445678"}`
+		data = `{"request_id":"psr2","password":"123445678"}`
 		r = httptest.NewRequest("POST", "/reset-password", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorInvalidRequest)
 
-		data = `{"request_id":"1","password":"123445678"}`
+		data = `{"request_id":"psr1","password":"123445678"}`
 		r = httptest.NewRequest("POST", "/reset-password", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
 		res = w.Result()
 		assertErrorResponse(t, res, 400, ExpectedErrorWeakPassword)
 
-		data = `{"request_id":"1","password":"super_secure_password"}`
+		data = `{"request_id":"psr1","password":"super_secure_password"}`
 		r = httptest.NewRequest("POST", "/reset-password", strings.NewReader(data))
 		w = httptest.NewRecorder()
 		app.ServeHTTP(w, r)
@@ -2293,32 +2394,41 @@ func TestApp(t *testing.T) {
 		t.Fatal(err)
 	}
 	totp := otp.GenerateTOTP(time.Now(), key, 30*time.Second, 6)
-	url = fmt.Sprintf("/users/%s/register-totp", user.Id)
+	url = fmt.Sprintf("/users/%s/register-totp-credential", user.Id)
 	data = fmt.Sprintf(`{"key":"%s","code":"%s"}`, base64.StdEncoding.EncodeToString(key), totp)
 	r = httptest.NewRequest("POST", url, strings.NewReader(data))
 	w = httptest.NewRecorder()
 	app.ServeHTTP(w, r)
 	res = w.Result()
-	assert.Equal(t, 200, res.StatusCode, "POST /users/[user_id]/register-totp status code")
+	assert.Equal(t, 200, res.StatusCode, "POST /users/[user_id]/register-totp-credential status code")
+	body, err = io.ReadAll(res.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var totpCredential TOTPCredentialJSON
+	err = json.Unmarshal(body, &totpCredential)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Verify TOTP
 	totp = otp.GenerateTOTP(time.Now(), key, 30*time.Second, 6)
-	url = fmt.Sprintf("/users/%s/verify-2fa/totp", user.Id)
+	url = fmt.Sprintf("/totp-credentials/%s/verify-totp", totpCredential.Id)
 	data = fmt.Sprintf(`{"code":"%s"}`, totp)
 	r = httptest.NewRequest("POST", url, strings.NewReader(data))
 	w = httptest.NewRecorder()
 	app.ServeHTTP(w, r)
 	res = w.Result()
-	assert.Equal(t, 204, res.StatusCode, "POST /users/[user_id]/verify-2fa/totp status code")
+	assert.Equal(t, 204, res.StatusCode, "POST /totp-credentials/[credential_id]/verify-totp status code")
 
-	// Reset 2FA credentials
-	url = fmt.Sprintf("/users/%s/reset-2fa", user.Id)
+	// Use recovery code
+	url = fmt.Sprintf("/users/%s/verify-recovery-code", user.Id)
 	data = fmt.Sprintf(`{"recovery_code":"%s"}`, user.RecoveryCode)
 	r = httptest.NewRequest("POST", url, strings.NewReader(data))
 	w = httptest.NewRecorder()
 	app.ServeHTTP(w, r)
 	res = w.Result()
-	assert.Equal(t, 200, res.StatusCode, "POST /users/[user_id]/reset-2fa status code")
+	assert.Equal(t, 200, res.StatusCode, "POST /users/[user_id]/verify-recovery-code status code")
 	body, err = io.ReadAll(res.Body)
 	if err != nil {
 		t.Fatal(err)
@@ -2330,13 +2440,13 @@ func TestApp(t *testing.T) {
 	}
 
 	// Use regenerated recovery code
-	url = fmt.Sprintf("/users/%s/reset-2fa", user.Id)
+	url = fmt.Sprintf("/users/%s/verify-recovery-code", user.Id)
 	data = fmt.Sprintf(`{"recovery_code":"%s"}`, recoveryCodeResult.RecoveryCode)
 	r = httptest.NewRequest("POST", url, strings.NewReader(data))
 	w = httptest.NewRecorder()
 	app.ServeHTTP(w, r)
 	res = w.Result()
-	assert.Equal(t, 200, res.StatusCode, "POST /users/[user_id]/reset-2fa status code")
+	assert.Equal(t, 200, res.StatusCode, "POST /users/[user_id]/verify-recovery-code status code")
 
 	// Manually regenerate recovery code
 	url = fmt.Sprintf("/users/%s/regenerate-recovery-code", user.Id)
@@ -2355,13 +2465,13 @@ func TestApp(t *testing.T) {
 	}
 
 	// Use manually regenerated recovery code
-	url = fmt.Sprintf("/users/%s/reset-2fa", user.Id)
+	url = fmt.Sprintf("/users/%s/verify-recovery-code", user.Id)
 	data = fmt.Sprintf(`{"recovery_code":"%s"}`, recoveryCodeResult.RecoveryCode)
 	r = httptest.NewRequest("POST", url, strings.NewReader(data))
 	w = httptest.NewRecorder()
 	app.ServeHTTP(w, r)
 	res = w.Result()
-	assert.Equal(t, 200, res.StatusCode, "POST /users/[user_id]/reset-2fa status code")
+	assert.Equal(t, 200, res.StatusCode, "POST /users/[user_id]/verify-recovery-code status code")
 }
 
 func assertErrorResponse(t *testing.T, res *http.Response, expectedStatus int, expectedError string) {
@@ -2399,7 +2509,7 @@ func assertJSONResponse(t *testing.T, res *http.Response, jsonKeys []string) {
 }
 
 var userJSONKeys = []string{"id", "created_at", "totp_registered", "recovery_code"}
-var userTOTPCredentialJSONKeys = []string{"user_id", "created_at", "key"}
+var totpCredentialJSONKeys = []string{"id", "user_id", "created_at", "key"}
 var recoveryCodeJSONKeys = []string{"recovery_code"}
 var userEmailVerificationRequestJSONKeys = []string{"user_id", "created_at", "expires_at", "code"}
 var emailUpdateRequestJSONKeys = []string{"id", "user_id", "created_at", "email", "expires_at", "code"}

@@ -387,7 +387,7 @@ func handleGetUserPasswordResetRequestsRequest(env *Environment, w http.Response
 		return
 	}
 
-	resetRequest, err := getUserPasswordResetRequests(env.db, r.Context(), userId)
+	resetRequests, err := getUserPasswordResetRequests(env.db, r.Context(), userId)
 	if err != nil {
 		log.Println(err)
 		writeUnexpectedErrorResponse(w)
@@ -396,14 +396,14 @@ func handleGetUserPasswordResetRequestsRequest(env *Environment, w http.Response
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
-	if len(resetRequest) == 0 {
+	if len(resetRequests) == 0 {
 		w.Write([]byte("[]"))
 		return
 	}
 	w.Write([]byte("["))
-	for i, user := range resetRequest {
-		w.Write([]byte(user.EncodeToJSON()))
-		if i != len(resetRequest)-1 {
+	for i, resetRequest := range resetRequests {
+		w.Write([]byte(resetRequest.EncodeToJSON()))
+		if i != len(resetRequests)-1 {
 			w.Write([]byte(","))
 		}
 	}
@@ -483,8 +483,8 @@ func getPasswordResetRequest(db *sql.DB, ctx context.Context, requestId string) 
 	return request, nil
 }
 
-func getUserPasswordResetRequests(db *sql.DB, ctx context.Context, requestId string) ([]PasswordResetRequest, error) {
-	rows, err := db.QueryContext(ctx, "SELECT id, user_id, created_at, code_hash, expires_at FROM password_reset_request WHERE id = ?", requestId)
+func getUserPasswordResetRequests(db *sql.DB, ctx context.Context, userId string) ([]PasswordResetRequest, error) {
+	rows, err := db.QueryContext(ctx, "SELECT id, user_id, created_at, code_hash, expires_at FROM password_reset_request WHERE user_id = ?", userId)
 	if err != nil {
 		return nil, err
 	}

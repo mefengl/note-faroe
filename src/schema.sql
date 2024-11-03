@@ -33,16 +33,18 @@ CREATE TABLE IF NOT EXISTS password_reset_request (
 
 CREATE INDEX IF NOT EXISTS password_reset_request_user_id_index ON password_reset_request(user_id);
 
-CREATE TABLE IF NOT EXISTS user_totp_credential (
-    user_id TEXT NOT NULL PRIMARY KEY REFERENCES user(id),
+CREATE TABLE IF NOT EXISTS totp_credential (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES user(id),
     created_at INTEGER NOT NULL,
     key BLOB NULL
 ) STRICT;
 
+CREATE INDEX IF NOT EXISTS totp_credential_user_id_index ON totp_credential(user_id);
+
 CREATE TABLE IF NOT EXISTS passkey_credential (
     id TEXT NOT NULL,
     user_id TEXT NOT NULL REFERENCES user(id),
-    name TEXT NOT NULL,
     created_at INTEGER NOT NULL,
     cose_algorithm_id INTEGER NOT NULL,
     public_key BLOB NULL
@@ -53,7 +55,6 @@ CREATE INDEX IF NOT EXISTS passkey_credential_user_id_index ON passkey_credentia
 CREATE TABLE IF NOT EXISTS security_key (
     id TEXT NOT NULL,
     user_id TEXT NOT NULL REFERENCES user(id),
-    name TEXT NOT NULL,
     created_at INTEGER NOT NULL,
     cose_algorithm_id INTEGER NOT NULL,
     public_key BLOB NULL

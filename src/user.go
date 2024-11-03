@@ -238,7 +238,7 @@ func handleUpdateUserPasswordRequest(env *Environment, w http.ResponseWriter, r 
 	w.WriteHeader(204)
 }
 
-func handleResetUser2FARequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func handleVerifyUserRecoveryCodeRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -287,7 +287,7 @@ func handleResetUser2FARequest(env *Environment, w http.ResponseWriter, r *http.
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
-	newRecoveryCode, valid, err := resetUser2FAWithRecoveryCode(env.db, r.Context(), userId, *data.RecoveryCode)
+	newRecoveryCode, valid, err := verifyUserRecoveryCode(env.db, r.Context(), userId, *data.RecoveryCode)
 	if err != nil {
 		log.Println(err)
 		writeUnexpectedErrorResponse(w)
@@ -337,6 +337,38 @@ func handleRegenerateUserRecoveryCodeRequest(env *Environment, w http.ResponseWr
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	w.Write([]byte(encodeRecoveryCodeToJSON(newRecoveryCode)))
+}
+
+func handleDeleteUserSecondFactorsRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
+		writeNotAuthenticatedErrorResponse(w)
+		return
+	}
+	if !verifyJSONAcceptHeader(r) {
+		writeNotAcceptableErrorResponse(w)
+		return
+	}
+
+	userId := params.ByName("user_id")
+	userExists, err := checkUserExists(env.db, r.Context(), userId)
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !userExists {
+		writeNotFoundErrorResponse(w)
+		return
+	}
+
+	err = deleteUserSecondFactors(env.db, r.Context(), userId)
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+
+	w.WriteHeader(204)
 }
 
 func handleGetUsersRequest(env *Environment, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -462,7 +494,7 @@ func getUser(db *sql.DB, ctx context.Context, userId string) (User, error) {
 	var user User
 	var createdAtUnix int64
 	var totpRegisteredInt int
-	row := db.QueryRowContext(ctx, "SELECT user.id, user.created_at, user.password_hash, user.recovery_code, IIF(user_totp_credential.user_id IS NOT NULL, 1, 0) FROM user LEFT JOIN user_totp_credential ON user.id = user_totp_credential.user_id WHERE user.id = ?", userId)
+	row := db.QueryRowContext(ctx, "SELECT user.id, user.created_at, user.password_hash, user.recovery_code, IIF(totp_credential.user_id IS NOT NULL, 1, 0) FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id WHERE user.id = ?", userId)
 	err := row.Scan(&user.Id, &createdAtUnix, &user.PasswordHash, &user.RecoveryCode, &totpRegisteredInt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrRecordNotFound
@@ -494,8 +526,8 @@ func getUsers(db *sql.DB, ctx context.Context, sortBy UserSortBy, sortOrder Sort
 		return nil, 0, errors.New("invalid 'sortOrder' value")
 	}
 
-	query := fmt.Sprintf(`SELECT user.id, user.created_at, user.password_hash, user.recovery_code, IIF(user_totp_credential.user_id IS NOT NULL, 1, 0)
-		FROM user LEFT JOIN user_totp_credential ON user.id = user_totp_credential.user_id
+	query := fmt.Sprintf(`SELECT user.id, user.created_at, user.password_hash, user.recovery_code, IIF(totp_credential.user_id IS NOT NULL, 1, 0)
+		FROM user LEFT JOIN totp_credential ON user.id = totp_credential.user_id
 		ORDER BY %s %s LIMIT ? OFFSET ?`, orderBySQL, orderSQL)
 
 	var users []User
@@ -531,7 +563,7 @@ func deleteUsers(db *sql.DB, ctx context.Context) error {
 		return err
 	}
 	defer tx.Rollback()
-	_, err = tx.Exec("DELETE FROM user_totp_credential")
+	_, err = tx.Exec("DELETE FROM totp_credential")
 	if err != nil {
 		return err
 	}
@@ -555,6 +587,20 @@ func deleteUsers(db *sql.DB, ctx context.Context) error {
 	return err
 }
 
+func deleteUserSecondFactors(db *sql.DB, ctx context.Context, userId string) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	_, err = tx.Exec("DELETE FROM totp_credential WHERE user_id = ?", userId)
+	if err != nil {
+		return err
+	}
+	err = tx.Commit()
+	return err
+}
+
 func checkUserExists(db *sql.DB, ctx context.Context, userId string) (bool, error) {
 	var count int
 	err := db.QueryRowContext(ctx, "SELECT count(*) FROM user WHERE id = ?", userId).Scan(&count)
@@ -570,7 +616,7 @@ func deleteUser(db *sql.DB, ctx context.Context, userId string) error {
 		return err
 	}
 	defer tx.Rollback()
-	_, err = tx.Exec("DELETE FROM user_totp_credential WHERE user_id = ?", userId)
+	_, err = tx.Exec("DELETE FROM totp_credential WHERE user_id = ?", userId)
 	if err != nil {
 		return err
 	}
@@ -599,17 +645,12 @@ func updateUserPassword(db *sql.DB, ctx context.Context, userId string, password
 	return err
 }
 
-func resetUser2FAWithRecoveryCode(db *sql.DB, ctx context.Context, userId string, recoveryCode string) (string, bool, error) {
+func verifyUserRecoveryCode(db *sql.DB, ctx context.Context, userId string, recoveryCode string) (string, bool, error) {
 	newRecoveryCode, err := generateSecureCode()
 	if err != nil {
 		return "", false, err
 	}
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return "", false, err
-	}
-	defer tx.Rollback()
-	result, err := tx.Exec("UPDATE user SET recovery_code = ? WHERE id = ? AND recovery_code = ?", newRecoveryCode, userId, recoveryCode)
+	result, err := db.Exec("UPDATE user SET recovery_code = ? WHERE id = ? AND recovery_code = ?", newRecoveryCode, userId, recoveryCode)
 	if err != nil {
 		return "", false, err
 	}
@@ -618,15 +659,6 @@ func resetUser2FAWithRecoveryCode(db *sql.DB, ctx context.Context, userId string
 		return "", false, err
 	}
 	if affected < 1 {
-		return "", false, err
-	}
-	_, err = tx.Exec("DELETE FROM user_totp_credential WHERE user_id = ?", userId)
-	if err != nil {
-		return "", false, err
-	}
-
-	err = tx.Commit()
-	if err != nil {
 		return "", false, err
 	}
 	return newRecoveryCode, true, nil

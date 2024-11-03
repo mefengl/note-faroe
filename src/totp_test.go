@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"testing"
@@ -10,36 +9,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func insertUserTOTPCredential(db *sql.DB, credential *UserTOTPCredential) error {
-	_, err := db.Exec("INSERT INTO user_totp_credential (user_id, created_at, key) VALUES (?, ?, ?)", credential.UserId, credential.CreatedAt.Unix(), credential.Key)
-	return err
-}
-
-func TestUserTOTPCredentialEncodeToJSON(t *testing.T) {
+func TestTOTPCredentialEncodeToJSON(t *testing.T) {
 	t.Parallel()
 
 	now := time.Unix(time.Now().Unix(), 0)
 
-	credential := UserTOTPCredential{
+	credential := TOTPCredential{
+		Id:        "1",
 		UserId:    "1",
 		CreatedAt: now,
 		Key:       []byte{0x01, 0x02, 0x03},
 	}
 
-	expected := UserTOTPCredentialJSON{
+	expected := TOTPCredentialJSON{
+		Id:            "1",
 		UserId:        credential.UserId,
 		CreatedAtUnix: credential.CreatedAt.Unix(),
 		EncodedKey:    base64.StdEncoding.EncodeToString(credential.Key),
 	}
 
-	var result UserTOTPCredentialJSON
+	var result TOTPCredentialJSON
 
 	json.Unmarshal([]byte(credential.EncodeToJSON()), &result)
 
 	assert.Equal(t, expected, result)
 }
 
-type UserTOTPCredentialJSON struct {
+type TOTPCredentialJSON struct {
+	Id            string `json:"id"`
 	UserId        string `json:"user_id"`
 	CreatedAtUnix int64  `json:"created_at"`
 	EncodedKey    string `json:"key"`

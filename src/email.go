@@ -524,8 +524,8 @@ func handleGetUserEmailUpdateRequestsRequest(env *Environment, w http.ResponseWr
 		return
 	}
 	w.Write([]byte("["))
-	for i, user := range updateRequests {
-		w.Write([]byte(user.EncodeToJSON()))
+	for i, updateRequest := range updateRequests {
+		w.Write([]byte(updateRequest.EncodeToJSON()))
 		if i != len(updateRequests)-1 {
 			w.Write([]byte(","))
 		}

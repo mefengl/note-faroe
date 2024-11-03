@@ -92,7 +92,7 @@ func TestCleanUpDatabase(t *testing.T) {
 		Code:      "12345678",
 		ExpiresAt: now.Add(10 * time.Minute),
 	}
-	err = insertUserEmailVerificationRequest(db, &verificationRequest1)
+	err = insertUserEmailVerificationRequest(db, context.Background(), &verificationRequest1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func TestCleanUpDatabase(t *testing.T) {
 		Code:      "12345678",
 		ExpiresAt: now.Add(-10 * time.Minute),
 	}
-	err = insertUserEmailVerificationRequest(db, &verificationRequest2)
+	err = insertUserEmailVerificationRequest(db, context.Background(), &verificationRequest2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestCleanUpDatabase(t *testing.T) {
 		Code:      "12345678",
 		ExpiresAt: now.Add(-10 * time.Minute),
 	}
-	err = insertUserEmailVerificationRequest(db, &verificationRequest3)
+	err = insertUserEmailVerificationRequest(db, context.Background(), &verificationRequest3)
 	if err != nil {
 		t.Fatal(err)
 	}

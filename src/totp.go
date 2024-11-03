@@ -16,7 +16,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func handleRegisterTOTPRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func handleRegisterUserTOTPCredentialRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -77,7 +77,7 @@ func handleRegisterTOTPRequest(env *Environment, w http.ResponseWriter, r *http.
 		return
 	}
 
-	credential, err := registerUserTOTPCredential(env.db, r.Context(), userId, key)
+	credential, err := createTOTPCredential(env.db, r.Context(), userId, key)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -93,7 +93,7 @@ func handleRegisterTOTPRequest(env *Environment, w http.ResponseWriter, r *http.
 	w.Write([]byte(credential.EncodeToJSON()))
 }
 
-func handleVerifyTOTPRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func handleVerifyTOTPCredentialTOTPRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -103,21 +103,10 @@ func handleVerifyTOTPRequest(env *Environment, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	userId := params.ByName("user_id")
-	userExists, err := checkUserExists(env.db, r.Context(), userId)
-	if err != nil {
-		log.Println(err)
-		writeUnexpectedErrorResponse(w)
-		return
-	}
-	if !userExists {
-		writeNotFoundErrorResponse(w)
-		return
-	}
-
-	credential, err := getUserTOTPCredential(env.db, r.Context(), userId)
+	credentialId := params.ByName("credential_id")
+	credential, err := getTOTPCredential(env.db, r.Context(), credentialId)
 	if errors.Is(err, ErrRecordNotFound) {
-		writeExpectedErrorResponse(w, ExpectedErrorNotAllowed)
+		writeNotFoundErrorResponse(w)
 		return
 	}
 	if err != nil {
@@ -144,7 +133,7 @@ func handleVerifyTOTPRequest(env *Environment, w http.ResponseWriter, r *http.Re
 		writeExpectedErrorResponse(w, ExpectedErrorInvalidData)
 		return
 	}
-	if !env.totpUserRateLimit.Consume(userId) {
+	if !env.totpUserRateLimit.Consume(credential.UserId) {
 		writeExpectedErrorResponse(w, ExpectedErrorTooManyRequests)
 		return
 	}
@@ -153,19 +142,19 @@ func handleVerifyTOTPRequest(env *Environment, w http.ResponseWriter, r *http.Re
 		writeExpectedErrorResponse(w, ExpectedErrorIncorrectCode)
 		return
 	}
-	env.totpUserRateLimit.Reset(userId)
+	env.totpUserRateLimit.Reset(credential.UserId)
 
 	w.WriteHeader(204)
 }
 
-func handleDeleteUserTOTPCredentialRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func handleDeleteTOTPCredentialRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
 	}
 
-	userId := params.ByName("user_id")
-	_, err := getUserTOTPCredential(env.db, r.Context(), userId)
+	credentialId := params.ByName("credential_id")
+	_, err := getTOTPCredential(env.db, r.Context(), credentialId)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -176,7 +165,7 @@ func handleDeleteUserTOTPCredentialRequest(env *Environment, w http.ResponseWrit
 		return
 	}
 
-	err = deleteUserTOTPCredential(env.db, r.Context(), userId)
+	err = deleteTOTPCredential(env.db, r.Context(), credentialId)
 	if err != nil {
 		log.Println(err)
 		writeUnexpectedErrorResponse(w)
@@ -186,7 +175,7 @@ func handleDeleteUserTOTPCredentialRequest(env *Environment, w http.ResponseWrit
 	w.WriteHeader(204)
 }
 
-func handleGetUserTOTPCredentialRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func handleGetTOTPCredentialRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	if !verifyRequestSecret(env.secret, r) {
 		writeNotAuthenticatedErrorResponse(w)
 		return
@@ -195,8 +184,8 @@ func handleGetUserTOTPCredentialRequest(env *Environment, w http.ResponseWriter,
 		writeUnsupportedMediaTypeErrorResponse(w)
 		return
 	}
-	userId := params.ByName("user_id")
-	credential, err := getUserTOTPCredential(env.db, r.Context(), userId)
+	credentialId := params.ByName("credential_id")
+	credential, err := getTOTPCredential(env.db, r.Context(), credentialId)
 	if errors.Is(err, ErrRecordNotFound) {
 		writeNotFoundErrorResponse(w)
 		return
@@ -206,44 +195,155 @@ func handleGetUserTOTPCredentialRequest(env *Environment, w http.ResponseWriter,
 	w.Write([]byte(credential.EncodeToJSON()))
 }
 
-func getUserTOTPCredential(db *sql.DB, ctx context.Context, userId string) (UserTOTPCredential, error) {
-	var credential UserTOTPCredential
+func handleGetUserTOTPCredentialsRequest(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
+		writeNotAuthenticatedErrorResponse(w)
+		return
+	}
+	if !verifyJSONAcceptHeader(r) {
+		writeNotAcceptableErrorResponse(w)
+		return
+	}
+
+	userId := params.ByName("user_id")
+	userExists, err := checkUserExists(env.db, r.Context(), userId)
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !userExists {
+		writeNotFoundErrorResponse(w)
+		return
+	}
+
+	credentials, err := getUserTOTPCredentials(env.db, r.Context(), userId)
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	if len(credentials) == 0 {
+		w.Write([]byte("[]"))
+		return
+	}
+	w.Write([]byte("["))
+	for i, credential := range credentials {
+		w.Write([]byte(credential.EncodeToJSON()))
+		if i != len(credentials)-1 {
+			w.Write([]byte(","))
+		}
+	}
+	w.Write([]byte("]"))
+}
+
+func handleDeleteUserTOTPCredentialRequests(env *Environment, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !verifyRequestSecret(env.secret, r) {
+		writeNotAuthenticatedErrorResponse(w)
+		return
+	}
+	if !verifyJSONAcceptHeader(r) {
+		writeNotAcceptableErrorResponse(w)
+		return
+	}
+
+	userId := params.ByName("user_id")
+	userExists, err := checkUserExists(env.db, r.Context(), userId)
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	if !userExists {
+		writeNotFoundErrorResponse(w)
+		return
+	}
+
+	err = deleteUserTOTPCredentials(env.db, r.Context(), userId)
+	if err != nil {
+		log.Println(err)
+		writeUnexpectedErrorResponse(w)
+		return
+	}
+	w.WriteHeader(204)
+}
+
+func getTOTPCredential(db *sql.DB, ctx context.Context, credentialId string) (TOTPCredential, error) {
+	var credential TOTPCredential
 	var createdAtUnix int64
-	row := db.QueryRowContext(ctx, "SELECT user_id, created_at, key FROM user_totp_credential WHERE user_id = ?", userId)
-	err := row.Scan(&credential.UserId, &createdAtUnix, &credential.Key)
+	row := db.QueryRowContext(ctx, "SELECT id, user_id, created_at, key FROM totp_credential WHERE id = ?", credentialId)
+	err := row.Scan(&credential.Id, &credential.UserId, &createdAtUnix, &credential.Key)
 	if errors.Is(err, sql.ErrNoRows) {
-		return UserTOTPCredential{}, ErrRecordNotFound
+		return TOTPCredential{}, ErrRecordNotFound
 	}
 	credential.CreatedAt = time.Unix(createdAtUnix, 0)
 	return credential, nil
 }
 
-func registerUserTOTPCredential(db *sql.DB, ctx context.Context, userId string, key []byte) (UserTOTPCredential, error) {
-	credential := UserTOTPCredential{
+func createTOTPCredential(db *sql.DB, ctx context.Context, userId string, key []byte) (TOTPCredential, error) {
+	id, err := generateId()
+	if err != nil {
+		return TOTPCredential{}, nil
+	}
+	credential := TOTPCredential{
+		Id:        id,
 		UserId:    userId,
 		CreatedAt: time.Unix(time.Now().Unix(), 0),
 		Key:       key,
 	}
-	_, err := db.ExecContext(ctx, `INSERT INTO user_totp_credential (user_id, created_at, key) VALUES (?, ?, ?)
-		ON CONFLICT (user_id) DO UPDATE SET created_at = ?, key = ? WHERE user_id = ?`, credential.UserId, credential.CreatedAt.Unix(), credential.Key, credential.CreatedAt.Unix(), credential.Key, credential.UserId)
+	err = insertTOTPCredential(db, ctx, &credential)
 	if err != nil {
-		return UserTOTPCredential{}, err
+		return TOTPCredential{}, err
 	}
 	return credential, nil
 }
 
-func deleteUserTOTPCredential(db *sql.DB, ctx context.Context, userId string) error {
-	_, err := db.ExecContext(ctx, "DELETE FROM user_totp_credential WHERE user_id = ?", userId)
+func insertTOTPCredential(db *sql.DB, ctx context.Context, credential *TOTPCredential) error {
+	_, err := db.ExecContext(ctx, "INSERT INTO totp_credential (id, user_id, created_at, key) VALUES (?, ?, ?, ?)", credential.Id, credential.UserId, credential.CreatedAt.Unix(), credential.Key)
 	return err
 }
 
-type UserTOTPCredential struct {
+func deleteTOTPCredential(db *sql.DB, ctx context.Context, id string) error {
+	_, err := db.ExecContext(ctx, "DELETE FROM totp_credential WHERE id = ?", id)
+	return err
+}
+
+func getUserTOTPCredentials(db *sql.DB, ctx context.Context, userId string) ([]TOTPCredential, error) {
+	rows, err := db.QueryContext(ctx, "SELECT id, user_id, created_at, key FROM totp_credential WHERE user_id = ?", userId)
+	if err != nil {
+		return nil, err
+	}
+	var credentials []TOTPCredential
+	defer rows.Close()
+	for rows.Next() {
+		var credential TOTPCredential
+		var createdAtUnix int64
+		err := rows.Scan(&credential.Id, &credential.UserId, &createdAtUnix, &credential.Key)
+		if err != nil {
+			return nil, err
+		}
+		credential.CreatedAt = time.Unix(createdAtUnix, 0)
+		credentials = append(credentials, credential)
+	}
+	return credentials, nil
+}
+
+func deleteUserTOTPCredentials(db *sql.DB, ctx context.Context, userId string) error {
+	_, err := db.ExecContext(ctx, "DELETE FROM totp_credential WHERE user_id = ?", userId)
+	return err
+}
+
+type TOTPCredential struct {
+	Id        string
 	UserId    string
 	CreatedAt time.Time
 	Key       []byte
 }
 
-func (c *UserTOTPCredential) EncodeToJSON() string {
-	encoded := fmt.Sprintf("{\"user_id\":\"%s\",\"created_at\":%d,\"key\":\"%s\"}", c.UserId, c.CreatedAt.Unix(), base64.StdEncoding.EncodeToString(c.Key))
+func (c *TOTPCredential) EncodeToJSON() string {
+	encoded := fmt.Sprintf(`{"id":"%s","user_id":"%s","created_at":%d,"key":"%s"}`, c.Id, c.UserId, c.CreatedAt.Unix(), base64.StdEncoding.EncodeToString(c.Key))
 	return encoded
 }

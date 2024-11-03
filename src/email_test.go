@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"testing"
@@ -9,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func insertUserEmailVerificationRequest(db *sql.DB, request *UserEmailVerificationRequest) error {
-	_, err := db.Exec("INSERT INTO user_email_verification_request (user_id, created_at, expires_at, code) VALUES (?, ?, ?, ?)", request.UserId, request.CreatedAt.Unix(), request.ExpiresAt.Unix(), request.Code, request.CreatedAt.Unix(), request.Code, request.UserId)
+func insertUserEmailVerificationRequest(db *sql.DB, ctx context.Context, request *UserEmailVerificationRequest) error {
+	_, err := db.ExecContext(ctx, "INSERT INTO user_email_verification_request (user_id, created_at, expires_at, code) VALUES (?, ?, ?, ?)", request.UserId, request.CreatedAt.Unix(), request.ExpiresAt.Unix(), request.Code, request.CreatedAt.Unix(), request.Code, request.UserId)
 	return err
 }
 func TestEncodeEmailToJSON(t *testing.T) {
