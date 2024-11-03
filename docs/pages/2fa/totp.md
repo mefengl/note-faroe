@@ -30,6 +30,8 @@ const qrcode = createQRCode(keyURI);
 Ask the user to scan the QR code of the key with their authenticator app and enter the OTP code from the app. Send both the key (e.g. encode it with base64) and the code.
 
 ```ts
+import type { FaroeTOTPCredential } from "@faroe/sdk";
+
 // HTTPRequest and HTTPResponse are just generic interfaces
 async function handleRegisterTOTPRequest(
     request: HTTPRequest,
@@ -43,8 +45,12 @@ async function handleRegisterTOTPRequest(
         response.write("Not authenticated.");
         return;
     }
-
-    if (user.registeredTOTP && !session.twoFactorVerified) {
+    if (!user.emailVerified) {
+        response.writeHeader(403);
+        response.write("Not allowed.");
+        return;
+    }
+    if (user.faroeTOTPCredentialId !== null && !session.twoFactorVerified) {
         response.writeHeader(403);
         response.write("Not allowed.");
         return;
@@ -55,8 +61,9 @@ async function handleRegisterTOTPRequest(
 
     // ...
 
+    let totpCredential: FaroeTOTPCredential;
     try {
-        await faroe.registerUserTOTPCredential(user.faroeId, key, code);
+        totpCredential = await faroe.registerUserTOTPCredential(user.faroeId, key, code);
     } catch (e) {
         if (e instanceof FaroeError && e.code === "INCORRECT_CODE") {
             response.writeHeader(400);
@@ -73,7 +80,7 @@ async function handleRegisterTOTPRequest(
         return;
     }
 
-    await setUserAsRegisteredTOTP(user.id);
+    await setUserFaroeTOTPCredentialId(totpCredential.id);
     await setSessionAs2FAVerified(session.id);
 
     // ...
@@ -83,9 +90,9 @@ async function handleRegisterTOTPRequest(
 
 ## Verify TOTP
 
-Use `Faroe.verifyUser2FAWithTOTP()` to verify TOTP codes.
+Use `Faroe.verifyTOTP()` to verify TOTP codes.
 
-If successful, set the session as `two_factor_verified`.
+If successful, mark the session as two-factor verified.
 
 ```ts
 // HTTPRequest and HTTPResponse are just generic interfaces
@@ -102,7 +109,12 @@ async function handleVerifyUserTOTP(
         return;
     }
 
-    if (!user.registeredTOTP) {
+    if (!user.emailVerified) {
+        response.writeHeader(403);
+        response.write("Not allowed.");
+        return;
+    }
+    if (user.faroeTOTPCredentialId === null) {
         response.writeHeader(403);
         response.write("Not allowed.");
         return;
@@ -110,8 +122,10 @@ async function handleVerifyUserTOTP(
 
     let code: string;
 
+    // ...
+
     try {
-        await faroe.verifyUser2FAWithTOTP(user.faroeId, code);
+        await faroe.verifyTOTP(user.faroeTOTPCredentialId, code);
     } catch (e) {
         if (e instanceof FaroeError && e.code === "INCORRECT_CODE") {
             response.writeHeader(400);
@@ -119,7 +133,7 @@ async function handleVerifyUserTOTP(
             return;
         }
         if (e instanceof FaroeError && e.code === "TOO_MANY_REQUESTS") {
-            response.writeHeader(400);
+            response.writeHeader(429);
             response.write("Please try again later.");
             return;
                 }
@@ -150,8 +164,13 @@ async function handleVerifyPasswordResetUserTOTP(
         response.write("Not authenticated.");
         return;
     }
+    if (!session.emailVerified) {
+        response.writeHeader(403);
+        response.write("Not allowed.");
+        return;
+    }
 
-    if (!user.registeredTOTP) {
+    if (user.faroeTOTPCredentialId === null) {
         response.writeHeader(403);
         response.write("Not allowed.");
         return;
@@ -159,8 +178,10 @@ async function handleVerifyPasswordResetUserTOTP(
 
     let code: string;
 
+    // ...
+
     try {
-        await faroe.verifyUser2FAWithTOTP(user.faroeId, code);
+        await faroe.verifyTOTP(user.faroeTOTPCredentialId, code);
     } catch (e) {
         // ...
     }
@@ -174,11 +195,11 @@ async function handleVerifyPasswordResetUserTOTP(
 
 ## Disconnect TOTP credential
 
-Use `Faroe.deleteUserTOTPCredential()` to delete a user's TOTP credential. Make sure that the user is 2FA-verified and to set `registered_totp` of the user to false afterwards.
+Use `Faroe.deleteTOTPCredential()` to delete a TOTP credential. Make sure to delete the TOTP credential ID from your database first. We do not want a situation where updating your database fails and your database references a deleted Faroe TOTP credential.
 
 ```ts
 // HTTPRequest and HTTPResponse are just generic interfaces
-async function handleDisonnectTOTPCredential(
+async function handleDisconnectTOTPCredential(
     request: HTTPRequest,
     response: HTTPResponse
 ): Promise<void> {
@@ -191,7 +212,12 @@ async function handleDisonnectTOTPCredential(
         return;
     }
 
-    if (!user.registeredTOTP) {
+    if (!user.emailVerified) {
+        response.writeHeader(403);
+        response.write("Not allowed.");
+        return;
+    }
+    if (user.faroeTOTPCredentialId === null) {
         response.writeHeader(403);
         response.write("Not allowed.");
         return;
@@ -202,9 +228,9 @@ async function handleDisonnectTOTPCredential(
         return;
     }
 
-    await faroe.deleteUserTOTPCredential(user.faroeId);
+    await deleteUserFaroeTOTPCredentialId(user.Id);
 
-    await setUserAsNotRegisteredTOTP(user.Id);
+    await faroe.deleteTOTPCredential(user.faroeTOTPCredentialId);
 
     // ...
 }

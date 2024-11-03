@@ -14,7 +14,9 @@ Use `Faroe.getUserRecoveryCode()` to get the user's recovery code. The code shou
 const recoveryCode = await faroe.getUserRecoveryCode(faroeUserId);
 ```
 
-Use `Faroe.resetUser2FA()` to reset the user's second factors with a recovery code. This will delete the user's TOTP credential and generate a new recovery code. Set the `totp_registered` user attribute to `false`.
+Use `Faroe.verifyUserRecoveryCode()` to verify a user's recovery code. If valid, it will invalidate it and generate a new recovery code.
+
+Set the session as not two-factor verified and delete the user's TOTP credential ID. Finally, use `Faroe.deleteUserSecondFactors()` to delete the Faroe user's second factors. The order is important here since we don't want a situation where updating your application's database fails and your database references deleted Faroe items.
 
 ```ts
 import { FaroeError } from "@faroe/sdk";
@@ -33,7 +35,7 @@ async function handleReset2FARequest(
         response.write("Not authenticated.");
         return;
     }
-    if (!user.totpRegistered) {
+    if (user.faroeTOTPRecoveryCode == null) {
         response.writeHeader(403);
         response.write("Not allowed.");
         return;
@@ -44,7 +46,7 @@ async function handleReset2FARequest(
     // ...
 
     try {
-        await faroe.resetUser2FA(user.id, recoveryCode);
+        await faroe.verifyUserRecoveryCode(user.id, recoveryCode);
     } catch (e) {
         if (e instanceof FaroeError && e.code === "INCORRECT_CODE") {
             response.writeHeader(400);
@@ -61,14 +63,17 @@ async function handleReset2FARequest(
         return;
     }
 
-    await setUserAsNot2FARegistered(user.id);
     await setSessionAsNot2FAVerified(session.id);
+    
+    await deleteUserFaroeTOTPCredentialId(user.id);
+
+    await faroe.deleteUserSecondFactors(user.faroeId);
 
     // ...
 }
 ```
 
-Use `Faroe.regenerateUserRecoveryCode()` to generate a new recovery code. Make sure that the user is 2FA-verified.
+Use `Faroe.regenerateUserRecoveryCode()` to generate a new recovery code.
 
 ```ts
 async function handleReset2FARequest(

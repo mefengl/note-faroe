@@ -20,6 +20,38 @@ CREATE TABLE session (
 );
 ```
 
+Add a `faroe_totp_credential_id` attribute to your users.
+
+```sql
+CREATE TABLE user (
+    id INTEGER NOT NULL PRIMARY KEY,
+    faroe_id TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    email_verified INTEGER NOT NULL DEFAULT 0,
+    faroe_totp_credential_id TEXT
+)
+```
+
+Add a 2FA check for all your routes. If 2FA is optional, only check if the user is two-factor verified if they have a TOTP credential.
+
+```ts
+const { session, user } = await validateRequest(request);
+if (passwordResetSession === null) {
+    response.writeHeader(401);
+    response.write("Not authenticated.");
+    return;
+}
+if (!user.emailVerified) {
+    response.writeHeader(403);
+    response.write("Forbidden.");
+    return;
+if (user.faroeTOTPCredentialId !== null && !session.twoFactorVerified) {
+    response.writeHeader(403);
+    response.write("Not allowed.");
+    return;
+}
+```
+
 ## Update password reset flow
 
 Add a `two_factor_verified` attribute to your password reset sessions.
@@ -31,11 +63,11 @@ CREATE TABLE password_reset_session (
     faroe_request_id TEXT NOT NULL,
     expires_at INTEGER NOT NULL,
     email_verified INTEGER NOT NULL DEFAULT 0,
-    two_factor_verified INTGEGER NOT NULL DEFAULT 0
+    two_factor_verified INTEGER NOT NULL DEFAULT 0
 );
 ```
 
-If the user has a second factor registered, users should be prompted for it before they can reset their password.
+Verify the user's second factor before they can reset their password. If 2FA is optional, only check if the user is two-factor verified if they have a TOTP credential.
 
 ```ts
 const { session: passwordResetSession, user } = await validatePasswordResetRequest(request);
@@ -50,9 +82,9 @@ if (!passwordResetSession.emailVerified) {
     response.write("Forbidden.");
     return;
 }
-if (user.registeredTOTP && !session.twoFactorVerified) {
+if (user.faroeTOTPCredentialId !== null && !session.twoFactorVerified) {
     response.writeHeader(403);
-    response.write("Forbidden.");
+    response.write("Not allowed.");
     return;
 }
 
