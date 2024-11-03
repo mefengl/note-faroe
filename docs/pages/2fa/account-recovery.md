@@ -35,7 +35,7 @@ async function handleReset2FARequest(
         response.write("Not authenticated.");
         return;
     }
-    if (user.faroeTOTPRecoveryCode == null) {
+    if (user.faroeUserTOTPCredentialId == null) {
         response.writeHeader(403);
         response.write("Not allowed.");
         return;
