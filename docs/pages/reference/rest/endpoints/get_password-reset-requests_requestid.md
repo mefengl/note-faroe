@@ -17,4 +17,4 @@ Returns the [password reset request model](/reference/rest/models/password-reset
 ## Error codes
 
 - [404] `NOT_FOUND`: The request does not exist or has expired.
-- [500] `UNKNOWN_ERROR`
+- [500] `INTERNAL_ERROR`

@@ -17,4 +17,4 @@ Returns the [user email verification request model](/reference/rest/models/user-
 ## Error codes
 
 - [404] `NOT_FOUND`: The user doesn't exist, the user doesn't have a verification request, or their verification request has expired.
-- [500] `UNKNOWN_ERROR`
+- [500] `INTERNAL_ERROR`

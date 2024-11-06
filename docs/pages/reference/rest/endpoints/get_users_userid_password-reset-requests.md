@@ -30,4 +30,4 @@ Returns a JSON array of [password reset request models](/reference/rest/models/p
 ## Error codes
 
 - [404] `NOT_FOUND`: The user does not exist.
-- [500] `UNKNOWN_ERROR`
+- [500] `INTERNAL_ERROR`

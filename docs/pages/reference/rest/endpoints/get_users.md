@@ -55,4 +55,4 @@ X-Pagination-Total: 113
 
 ## Error codes
 
-- [500] `UNKNOWN_ERROR`
+- [500] `INTERNAL_ERROR`

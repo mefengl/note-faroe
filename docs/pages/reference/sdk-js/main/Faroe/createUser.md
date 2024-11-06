@@ -30,4 +30,4 @@ async function createUser(
 - `INVALID_DATA`: Malformed email address; invalid email address or password length.
 - `WEAK_PASSWORD`: The password is too weak.
 - `TOO_MANY_REQUESTS`: Exceeded rate limit.
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

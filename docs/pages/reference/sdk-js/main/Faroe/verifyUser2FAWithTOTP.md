@@ -25,4 +25,4 @@ async function verifyUser2FAWithTOTP(userId: string, code: string): Promise<void
 - `TOO_MANY_REQUESTS`: Rate limit exceeded.
 - `INCORRECT_CODE`: Incorrect TOTP code.
 - `NOT_FOUND`: The user does not exist.
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

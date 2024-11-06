@@ -32,4 +32,4 @@ Returns a JSON array of [email update request models](/reference/rest/models/ema
 ## Error codes
 
 - [404] `NOT_FOUND`: The user does not exist.
-- [500] `UNKNOWN_ERROR`
+- [500] `INTERNAL_ERROR`

@@ -23,4 +23,4 @@ async function getPasswordResetRequest(
 
 ## Error codes
 
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

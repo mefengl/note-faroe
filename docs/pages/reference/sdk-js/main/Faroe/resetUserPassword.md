@@ -31,4 +31,4 @@ async function resetUserPassword(
 - `WEAK_PASSWORD`: The password is too weak.
 - `TOO_MANY_REQUESTS`: Exceeded rate limit.
 - `INVALID_REQUEST`: Invalid reset request ID.
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

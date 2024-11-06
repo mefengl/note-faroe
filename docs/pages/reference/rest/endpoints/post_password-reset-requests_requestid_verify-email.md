@@ -43,4 +43,4 @@ No response body (204).
 - [400] `INCORRECT_CODE`: The one-time code is incorrect.
 - [400] `TOO_MANY_REQUESTS`: Exceeded rate limit.
 - [404] `NOT_FOUND`: The password reset request does not exist or has expired.
-- [500] `UNKNOWN_ERROR`
+- [500] `INTERNAL_ERROR`

@@ -40,4 +40,4 @@ The email address linked to the email update request.
 - [400] `TOO_MANY_REQUESTS`: Rate limit exceeded.
 - [400] `INCORRECT_CODE`: Incorrect verification code.
 - [400] `INVALID_REQUEST`: Invalid update request ID.
-- [500] `UNKNOWN_ERROR`
+- [500] `INTERNAL_ERROR`

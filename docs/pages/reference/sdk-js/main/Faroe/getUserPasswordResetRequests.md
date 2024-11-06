@@ -18,4 +18,4 @@ async function getUserPasswordResetRequests(
 ```
 ## Error codes
 
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

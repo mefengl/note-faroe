@@ -31,4 +31,4 @@ async function verifyPasswordResetRequestEmail(
 - `INCORRECT_CODE`: The one-time code is incorrect.
 - `TOO_MANY_REQUESTS`: Exceeded rate limit.
 - `NOT_FOUND`: The password reset request does not exist or has expired.
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

@@ -30,7 +30,7 @@ async function registerUserTOTPCredential(
 - `INVALID_DATA`: Invalid TOTP key length.
 - `INCORRECT_CODE`
 - `NOT_FOUND`: Invalid user ID.
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`
 
 ### Example
 

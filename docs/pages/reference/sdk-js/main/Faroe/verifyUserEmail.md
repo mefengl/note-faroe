@@ -25,4 +25,4 @@ async function verifyUserEmail(userId: string, code: string): Promise<void>
 - `INCORRECT_CODE`: The one-time code is incorrect.
 - `TOO_MANY_REQUESTS`: Exceeded rate limit.
 - `NOT_FOUND`: The user does not exist.
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

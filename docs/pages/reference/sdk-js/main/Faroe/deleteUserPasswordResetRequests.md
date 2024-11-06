@@ -17,4 +17,4 @@ async function deleteUserPasswordResetRequests(
 ```
 ## Error codes
 
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

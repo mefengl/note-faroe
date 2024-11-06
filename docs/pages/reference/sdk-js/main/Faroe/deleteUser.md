@@ -20,4 +20,4 @@ async function deleteUser(userId: string): Promise<void>
 
 ## Error codes
 
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

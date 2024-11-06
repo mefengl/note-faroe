@@ -17,4 +17,4 @@ async function deleteUserEmailUpdateRequests(
 ```
 ## Error codes
 
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

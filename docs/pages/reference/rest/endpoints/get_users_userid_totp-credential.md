@@ -17,4 +17,4 @@ Returns the [user TOTP credential model](/reference/rest/models/user-totp-creden
 ## Error codes
 
 - [404] `NOT_FOUND`: The user or credential does not exist.
-- [500] `UNKNOWN_ERROR`
+- [500] `INTERNAL_ERROR`

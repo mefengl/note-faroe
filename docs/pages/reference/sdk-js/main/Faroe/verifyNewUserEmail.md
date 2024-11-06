@@ -26,4 +26,4 @@ function verifyNewUserEmail(requestId: string, code: string): Promise<string>;
 - `TOO_MANY_REQUESTS`: Rate limit exceeded.
 - `INCORRECT_CODE`: Incorrect verification code.
 - `INVALID_REQUEST`: Invalid update request ID.
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

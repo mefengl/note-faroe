@@ -20,4 +20,4 @@ async function deleteEmailUpdateRequest(requestId: string): Promise<void>
 
 ## Error codes
 
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

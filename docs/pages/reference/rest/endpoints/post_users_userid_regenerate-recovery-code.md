@@ -31,4 +31,4 @@ Return the user's new recovery code if the user exists.
 ## Error codes
 
 - [404] `NOT_FOUND`: The user does not exist.
-- [500] `UNKNOWN_ERROR`
+- [500] `INTERNAL_ERROR`

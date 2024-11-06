@@ -28,5 +28,5 @@ async function verifyUserPassword(
 
 - `INCORRECT_PASSWORD`
 - `TOO_MANY_REQUESTS`: Exceeded rate limit.
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`
 - `NOT_FOUND`: User does not exist.

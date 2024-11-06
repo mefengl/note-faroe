@@ -21,4 +21,4 @@ async function getUser(userId: string): Promise<$$FaroeUser | null>
 
 ## Error codes
 
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

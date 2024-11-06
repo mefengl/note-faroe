@@ -28,4 +28,4 @@ async function createUserEmailUpdateRequest(
 - `INVALID_DATA`: Invalid email address.
 - `TOO_MANY_REQUESTS`: Exceeded rate limit.
 - `NOT_FOUND`: The user does not exist.
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

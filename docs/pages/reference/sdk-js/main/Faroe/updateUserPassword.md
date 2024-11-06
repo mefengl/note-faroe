@@ -32,4 +32,4 @@ async function updateUserPassword(
 - `WEAK_PASSWORD`: The password is too weak.
 - `TOO_MANY_REQUESTS`: Exceeded rate limit.
 - `NOT_FOUND`: The user does not exist.
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

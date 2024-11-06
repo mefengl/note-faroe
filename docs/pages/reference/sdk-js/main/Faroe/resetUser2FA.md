@@ -28,4 +28,4 @@ async function resetUser2FA(
 - `TOO_MANY_REQUESTS`: Rate limit exceeded.
 - `INCORRECT_CODE`: Incorrect recovery code.
 - `NOT_FOUND`: The user does not exist.
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

@@ -30,7 +30,7 @@ async function getUsers(options?: {
 
 ## Error codes
 
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`
 
 ## Examples
 

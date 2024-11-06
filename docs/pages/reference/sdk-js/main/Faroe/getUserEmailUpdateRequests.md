@@ -19,4 +19,4 @@ async function getUserEmailUpdateRequests(
 ## Error codes
 
 - `NOT_FOUND`: The user does not exist.
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

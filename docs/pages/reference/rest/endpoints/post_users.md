@@ -42,4 +42,4 @@ Returns the [user model](/reference/rest/models/user) of the created user.
 - [400] `INVALID_DATA`: Malformed email address; invalid password length.
 - [400] `WEAK_PASSWORD`: The password is too weak.
 - [400] `TOO_MANY_REQUESTS`: Exceeded rate limit.
-- [500] `UNKNOWN_ERROR`
+- [500] `INTERNAL_ERROR`

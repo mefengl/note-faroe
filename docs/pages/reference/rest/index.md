@@ -43,7 +43,7 @@ All error responses have a 4xx or 5xx status and includes a JSON object with an 
 
 -   [User](/reference/rest/models/user)
 -   [User email verification request](/reference/rest/models/user-email-verification-request)
--   [User TOTP credential](/reference/rest/models/user-totp-credential)
+-   [TOTP credential](/reference/rest/models/totp-credential)
 -   [Password reset request](/reference/rest/models/password-reset-request)
 
 ## Endpoints
@@ -60,14 +60,29 @@ All error responses have a 4xx or 5xx status and includes a JSON object with an 
 -   [DELETE /users/\[user_id\]](/reference/rest/endpoints/delete_users_userid): Delete a user.
 -   [POST /users/\[user_id\]/update-password](/reference/rest/endpoints/post_users_userid_update-password): Update a user's password.
 
-#### Email verification
+### Two-factor authentication
+
+-   [POST /users/\[user_id\]/verify-recovery-code](/reference/rest/endpoints/post_users_userid_verify-recovery-code): Verify a user's recovery code.
+-   [POST /users/\[user_id\]/regenerate-recovery-code](/reference/rest/endpoints/post_users_userid_regenerate-recovery-code): Generate a new user recovery code.
+-   [DELETE /users/\[user_id\]/second-factors](/reference/rest/endpoints/delete_users_userid_second-factors): Deletes user's TOTP credentials.
+
+### TOTP
+
+-   [POST /users/\[user_id\/register-totp-credential](/reference/rest/endpoints/post_users_userid_register-totp-credential): Register a TOTP credential.
+-   [GET /users/\[user_id\/totp-credentials](/reference/rest/endpoints/get_users_userid_totp-credentials): Get a list of a user's TOTP credential.
+-   [DELETE /users/\[user_id\/totp-credentials](/reference/rest/endpoints/delete_users_userid_totp-credentials): Delete a user's TOTP credential.
+-   [GET /totp-credentials/\[credential_id\]](/reference/rest/endpoints/get_totp-credentials-crendentialid): Get a TOTP credential.
+-   [DELETE /totp-credentials/\[credential_id\]](/reference/rest/endpoints/delete_totp-credentials-crendentialid): Delete a TOTP credential.
+-   [POST /totp-credentials/\[credential_id\]/verify-totp](/reference/rest/endpoints/post_totp-credentials-crendentialid_verify-totp): Verify a TOTP.
+
+### Email verification
 
 -   [POST /users/\[user_id\]/email-verification-request](/reference/rest/endpoints/post_users_userid_email-verification-request): Create a new user email verification request.
 -   [GET /users/\[user_id\]/email-verification-request](/reference/rest/endpoints/get_users_userid_email-verification-request): Get a user's email verification request.
 -   [DELETE /users/\[user_id\]/email-verification-request](/reference/rest/endpoints/delete_users_userid_email-verification-request): Delete a user's email verification request.
 -   [POST /users/\[user_id\]/verify-email](/reference/rest/endpoints/post_users_userid_verify-email): Verify their email verification request code.
 
-#### Email update
+### Email update
 
 -   [POST /users/\[user_id\]/email-update-requests](/reference/rest/endpoints/post_users_userid_email-update-requests): Create a new user email update request.
 -   [GET /users/\[user_id\]/email-update-requests](/reference/rest/endpoints/get_users_userid_email-update-requests): Gets a list of a user's email update requests.
@@ -76,18 +91,11 @@ All error responses have a 4xx or 5xx status and includes a JSON object with an 
 -   [DELETE /email-update-requests/\[request_id\]](/reference/rest/endpoints/delete_email-update-requests_requestid): Delete an email update request.
 -   [POST /verify-new-email](/reference/rest/endpoints/post_verify-new-email): Update a user's email by verifying their email update request code.
 
-#### Two-factor authentication
-
--   [POST /users/\[user_id\/register-totp](/reference/rest/endpoints/post_users_userid_register-totp): Register a TOTP credential.
--   [GET /users/\[user_id\]/totp-credential](/reference/rest/endpoints/get_users_userid_totp-credential): Get a user's TOTP credential.
--   [DELETE /users/\[user_id\]/totp-credential](/reference/rest/endpoints/delete_users_userid_totp-credential): Delete a user's TOTP credential.
--   [POST /users/\[user_id\]/verify-2fa/totp](/reference/rest/endpoints/post_users_userid_verify-2fa_totp): Verify a user's TOTP code.
--   [POST /users/\[user_id\]/regenerate-recovery-code](/reference/rest/endpoints/post_users_userid_regenerate-recovery-code): Generate a new user recovery code.
--   [POST /users/\[user_id\]/reset-2fa](/reference/rest/endpoints/post_users_userid_reset-2fa): Reset a user's second factors with a recovery code.
-
 ### Password reset
 
 -   [POST /users/\[user_id\]/password-reset-requests](/reference/rest/endpoints/post_users_userid_password-reset-requests): Create a new password reset request for a user.
+-   [GET /users/\[user_id\]/password-reset-requests](/reference/rest/endpoints/get_users_userid_password-reset-requests): Get a list of a user's password reset requests.
+-   [DELETE /users/\[user_id\]/password-reset-requests](/reference/rest/endpoints/delete_users_userid_password-reset-requests): Delete a user's password reset requests.
 -   [GET /password-reset-requests/\[request_id\]](/reference/rest/endpoints/get_password-reset-requests_requestid): Get a password reset request.
 -   [DELETE /password-reset-requests/\[request_id\]](/reference/rest/endpoints/delete_password-reset-requests_requestid): Delete a password reset request.
 -   [POST /password-reset-requests/\[request_id\]/verify-email](/reference/rest/endpoints/post_password-reset-requests_requestid_verify-email): Verify a reset request's email.

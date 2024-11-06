@@ -21,4 +21,4 @@ async function getUserTOTPCredential(userId: string): Promise<$$FaroeUserTOTPCre
 
 ## Error codes
 
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`

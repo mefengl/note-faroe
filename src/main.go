@@ -184,7 +184,7 @@ func writeExpectedErrorResponse(w http.ResponseWriter, message string) {
 func writeUnexpectedErrorResponse(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
-	w.Write([]byte("{\"error\":\"UNEXPECTED_ERROR\"}"))
+	w.Write([]byte("{\"error\":\"INTERNAL_ERROR\"}"))
 }
 
 func writeNotFoundErrorResponse(w http.ResponseWriter) {

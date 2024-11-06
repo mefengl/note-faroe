@@ -23,4 +23,4 @@ async function getEmailUpdateRequest(
 
 ## Error codes
 
-- `UNKNOWN_ERROR`
+- `INTERNAL_ERROR`
