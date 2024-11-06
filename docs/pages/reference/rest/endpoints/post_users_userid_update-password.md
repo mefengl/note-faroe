@@ -12,7 +12,7 @@ POST https://your-domain.com/users/USER_ID/update-password
 
 ## Request body
 
-```ts
+```json
 {
     "password": string,
     "new_password": string,

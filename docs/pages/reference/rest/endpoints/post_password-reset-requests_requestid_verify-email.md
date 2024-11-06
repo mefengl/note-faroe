@@ -14,7 +14,7 @@ POST https://your-domain.com/password-reset-requests/REQUEST_ID/verify-email
 
 ## Request body
 
-```ts
+```json
 {
     "code": string,
     "client_ip": string

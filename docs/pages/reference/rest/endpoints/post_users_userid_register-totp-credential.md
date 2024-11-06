@@ -14,7 +14,7 @@ POST https://your-domain.com/users/USER_ID/register-totp-credential
 
 All fields are required.
 
-```ts
+```json
 {
     "totp_key": string,
     "code": string

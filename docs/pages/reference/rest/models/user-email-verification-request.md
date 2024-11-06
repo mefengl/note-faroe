@@ -4,7 +4,7 @@ title: "User email verification request model"
 
 # User email verification request model
 
-```ts
+```json
 {
     "user_id": string,
     "created_at": number,

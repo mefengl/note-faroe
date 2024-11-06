@@ -14,7 +14,7 @@ POST https://your-domain.com/users/USER_ID/verify-email
 
 All fields are required.
 
-```ts
+```json
 {
     "code": string
 }

@@ -14,7 +14,7 @@ POST https://your-domain.com/verify-new-email
 
 ## Request body
 
-```ts
+```json
 {
     "request_id": string,
     "code": string
@@ -28,7 +28,7 @@ POST https://your-domain.com/verify-new-email
 
 The email address linked to the email update request.
 
-```ts
+```json
 {
     "email": string
 }

@@ -14,7 +14,7 @@ POST https://your-domain.com/users/USER_ID/regenerate-recovery-code
 
 Return the user's new recovery code if the user exists.
 
-```ts
+```json
 {
     "recovery_code": string
 }

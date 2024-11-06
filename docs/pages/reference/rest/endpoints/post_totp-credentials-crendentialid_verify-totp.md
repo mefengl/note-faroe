@@ -14,7 +14,7 @@ POST https://your-domain.com/totp-credentials/CREDENTIAL_ID/verify-totp
 
 All fields are required.
 
-```ts
+```json
 {
     "code": string
 }

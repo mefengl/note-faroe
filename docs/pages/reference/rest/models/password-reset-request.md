@@ -4,7 +4,7 @@ title: "Password reset request model"
 
 # Password reset request model
 
-```ts
+```json
 {
     "id": string,
     "user_id": string,

@@ -4,7 +4,7 @@ title: "Email update request model"
 
 # Email update request model
 
-```ts
+```json
 {
     "id": string,
     "user_id": string,

@@ -14,7 +14,7 @@ POST https://your-domain.com/users/USER_ID/password-reset-requests
 
 ## Request body
 
-```ts
+```json
 {
     "client_ip": string
 }
@@ -32,7 +32,7 @@ POST https://your-domain.com/users/USER_ID/password-reset-requests
 
 Returns the [password reset request model](/reference/rest/models/password-reset-requests-request) of the created request and a verification code. The code is only available here.
 
-```ts
+```json
 {
     "id": string,
     "user_id": string,

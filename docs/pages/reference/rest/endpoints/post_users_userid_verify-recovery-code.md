@@ -26,7 +26,7 @@ All fields are required.
 
 Return the user's new recovery code.
 
-```ts
+```json 
 {
     "recovery_code": string
 }

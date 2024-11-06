@@ -4,7 +4,7 @@ title: "TOTP credential model"
 
 # TOTP credential model
 
-```ts
+```json
 {
     "id": string,
     "user_id": string,

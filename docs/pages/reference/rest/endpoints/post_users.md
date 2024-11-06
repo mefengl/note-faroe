@@ -14,7 +14,7 @@ POST https://your-domain.com/users
 
 ## Request body
 
-```ts
+```json
 {
     "password": string,
     "client_ip": string

@@ -12,7 +12,7 @@ POST /reset-password
 
 ## Request body
 
-```ts
+```json
 {
     "request_id": string,
     "password": string,

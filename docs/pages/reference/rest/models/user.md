@@ -4,7 +4,7 @@ title: "User model"
 
 # User model
 
-```ts
+```json
 {
     "id": string,
     "created_at": number,

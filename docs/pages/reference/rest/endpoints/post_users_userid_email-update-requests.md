@@ -14,7 +14,7 @@ POST https://your-domain.com/users/USER_ID/email-update-requests
 
 ## Request body
 
-```ts
+```json
 {
     "email": string
 }

@@ -12,7 +12,7 @@ POST https://your-domain.com/users/USER_ID/verify-password
 
 ## Request body
 
-```ts
+```json
 {
     "password": string,
     "client_ip": string
