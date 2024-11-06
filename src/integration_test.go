@@ -2509,7 +2509,7 @@ func assertJSONResponse(t *testing.T, res *http.Response, jsonKeys []string) {
 }
 
 var userJSONKeys = []string{"id", "created_at", "totp_registered", "recovery_code"}
-var totpCredentialJSONKeys = []string{"id", "user_id", "created_at", "key"}
+var totpCredentialJSONKeys = []string{"id", "user_id", "created_at"}
 var recoveryCodeJSONKeys = []string{"recovery_code"}
 var userEmailVerificationRequestJSONKeys = []string{"user_id", "created_at", "expires_at", "code"}
 var emailUpdateRequestJSONKeys = []string{"id", "user_id", "created_at", "email", "expires_at", "code"}

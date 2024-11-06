@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"testing"
 	"time"
@@ -25,7 +24,6 @@ func TestTOTPCredentialEncodeToJSON(t *testing.T) {
 		Id:            "1",
 		UserId:        credential.UserId,
 		CreatedAtUnix: credential.CreatedAt.Unix(),
-		EncodedKey:    base64.StdEncoding.EncodeToString(credential.Key),
 	}
 
 	var result TOTPCredentialJSON
@@ -39,5 +37,4 @@ type TOTPCredentialJSON struct {
 	Id            string `json:"id"`
 	UserId        string `json:"user_id"`
 	CreatedAtUnix int64  `json:"created_at"`
-	EncodedKey    string `json:"key"`
 }

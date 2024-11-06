@@ -344,6 +344,6 @@ type TOTPCredential struct {
 }
 
 func (c *TOTPCredential) EncodeToJSON() string {
-	encoded := fmt.Sprintf(`{"id":"%s","user_id":"%s","created_at":%d,"key":"%s"}`, c.Id, c.UserId, c.CreatedAt.Unix(), base64.StdEncoding.EncodeToString(c.Key))
+	encoded := fmt.Sprintf(`{"id":"%s","user_id":"%s","created_at":%d}`, c.Id, c.UserId, c.CreatedAt.Unix())
 	return encoded
 }
