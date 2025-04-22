@@ -1,4 +1,54 @@
-# Faroe
+## 代码阅读推荐顺序
+
+- [./README.md](./README.md)
+- [./LICENSE](./LICENSE)
+- [./CHANGELOG.md](./CHANGELOG.md)
+- **文档 (docs)**
+  - [./docs/malta.config.json](./docs/malta.config.json)
+  - [./docs/pages/index.md](./docs/pages/index.md)
+  - **页面 (pages)** (注：以下文件基于推测，实际需确认)
+    - [./docs/pages/2fa/README.md](./docs/pages/2fa/README.md)
+    - [./docs/pages/email-password/README.md](./docs/pages/email-password/README.md)
+    - [./docs/pages/faroe-server/README.md](./docs/pages/faroe-server/README.md)
+    - [./docs/pages/reference/README.md](./docs/pages/reference/README.md)
+- **脚本 (scripts)**
+  - [./scripts/build.sh](./scripts/build.sh)
+- **源代码 (src)**
+  - [./src/go.mod](./src/go.mod)
+  - [./src/go.sum](./src/go.sum)
+  - [./src/schema.sql](./src/schema.sql)
+  - [./src/main.go](./src/main.go) (入口文件，优先阅读)
+  - [./src/db.go](./src/db.go) (数据库相关)
+  - [./src/request.go](./src/request.go) (请求处理)
+  - [./src/auth.go](./src/auth.go) (核心认证逻辑)
+  - [./src/user.go](./src/user.go) (用户管理)
+  - [./src/email.go](./src/email.go) (邮件相关)
+  - [./src/code.go](./src/code.go) (验证码/Token生成)
+  - [./src/password-reset.go](./src/password-reset.go) (密码重置)
+  - [./src/totp.go](./src/totp.go) (TOTP 2FA)
+  - [./src/strings.go](./src/strings.go) (字符串工具)
+  - **密码哈希 (argon2id)**
+    - [./src/argon2id/main.go](./src/argon2id/main.go)
+  - **OTP (otp)**
+    - [./src/otp/main.go](./src/otp/main.go)
+  - **速率限制 (ratelimit)**
+    - [./src/ratelimit/counter.go](./src/ratelimit/counter.go)
+    - [./src/ratelimit/token-bucket.go](./src/ratelimit/token-bucket.go)
+  - **测试文件 (tests)**
+    - [./src/main_test.go](./src/main_test.go)
+    - [./src/db_test.go](./src/db_test.go)
+    - [./src/request_test.go](./src/request_test.go)
+    - [./src/email_test.go](./src/email_test.go)
+    - [./src/password-reset_test.go](./src/password-reset_test.go)
+    - [./src/totp_test.go](./src/totp_test.go)
+    - [./src/user_test.go](./src/user_test.go)
+    - [./src/argon2id/main_test.go](./src/argon2id/main_test.go)
+    - [./src/otp/main_test.go](./src/otp/main_test.go)
+    - [./src/integration_test.go](./src/integration_test.go) (集成测试)
+
+---
+
+## Faroe
 
 **Documentation: [faroe.dev](https://faroe.dev)**
 
